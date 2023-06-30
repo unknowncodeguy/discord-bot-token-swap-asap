@@ -1,0 +1,20 @@
+{
+    "mainchannel":{
+        "type":0,
+        "guild":"1064811697027698698",
+        "guildId":"1064811697027698698",
+        "permissionOverwrites":[],
+        "messages":[],
+        "threads":[],
+        "nsfw":false,
+        "flags":0,
+        "id":"1124086769529405551",
+        "name":"asaptestnet",
+        "rawPosition":7,
+        "parentId":"1064811697027698699",
+        "topic":null,
+        "lastMessageId":null,
+        "rateLimitPerUser":0,
+        "createdTimestamp":1688073570378
+    }
+}
