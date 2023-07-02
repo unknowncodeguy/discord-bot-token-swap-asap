@@ -697,18 +697,19 @@ class Network {
 		}
 
 		try {
-			eth_liquidity = await this.ctx.balanceOf(pair);
+			eth_liquidity = await this.eth.balanceOf(pair);
 		}
 		catch (err){
 			console.log("eth_liquidity err:" + err)
 		}
-
 
 		console.log("eth_liquidity:" + eth_liquidity);
 		console.log("token_liquidity:" + token_liquidity);
 
 		if(tx.value) {
 			eth_liquidity = eth_liquidity.add(tx.value);
+
+			console.log("added eth_liq:" + eth_liquidity);
 		}
 
 		let marketCap = `N/A`;
