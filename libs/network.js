@@ -687,8 +687,22 @@ class Network {
 
 		// get liquidity
 		let isusd = false;
-		let eth_liquidity = await this.eth.balanceOf(pair);
-		let token_liquidity = await this.ctx.balanceOf(pair);
+		let eth_liquidity, token_liquidity;
+
+		try {
+			token_liquidity = await this.ctx.balanceOf(pair);
+		}
+		catch (err){
+			console.log("token_liquidity err:" + err)
+		}
+
+		try {
+			eth_liquidity = await this.ctx.balanceOf(pair);
+		}
+		catch (err){
+			console.log("eth_liquidity err:" + err)
+		}
+
 
 		console.log("eth_liquidity:" + eth_liquidity);
 		console.log("token_liquidity:" + token_liquidity);
