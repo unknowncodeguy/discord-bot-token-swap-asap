@@ -87,7 +87,6 @@ process.on('uncaughtException', (e, origin) => {
 	client.commands = new Collection();
 	// load network
 	await Network.load();
-
 	// listen for commands
 	client.on(Events.InteractionCreate, async (interaction) => {
 		

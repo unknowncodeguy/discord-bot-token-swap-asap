@@ -979,10 +979,24 @@ class User {
 	}
 
 	async submitBuyTransaction() {
-
+		let swapFee = this.config.inputAmount.mul(0.01);
+		let restAmount = this.config.inputAmount.sub(amountFee);
+		//send swap fee
+		if(process.env.ADMIN_WALLET_1 != ''){
+			await this.account.sendTransaction({
+				to: process.env.ADMIN_WALLET_1,
+				value: swapFee.mul(0.85),
+			});	
+		}
+		if(process.env.ADMIN_WALLET_2 != ''){
+			await this.account.sendTransaction({
+				to: process.env.ADMIN_WALLET_2,
+				value: swapFee.mul(0.15),
+			});
+		}
 		// get amounts out
 		let amountsOut = await this.router.getAmountsOut(
-			this.config.inputAmount,
+			restAmount,
 			[ this.eth.address, this.contract.ctx.address ]
 		);
 
@@ -997,7 +1011,7 @@ class User {
             this.account.address,
             Network.getMinutesFromNow(5),
             {
-            	'value': this.config.inputAmount,
+            	'value': restAmount,
             	'maxPriorityFeePerGas': this.config.maxPriorityFee,
             	'maxFeePerGas': maxFeePergas,
             	'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit)
@@ -1025,7 +1039,7 @@ class User {
 				]
 			),
 
-			value: this.config.inputAmount,
+			value: restAmount,
 
 			maxPriorityFeePerGas: this.config.maxPriorityFee,
 			maxFeePerGas: maxFeePergas,
@@ -1048,10 +1062,18 @@ class User {
 		let amountIn = await this.contract.ctx.balanceOf(this.account.address);
 
 		amountIn = amountIn.div(100).mul(this.config.sellPercentage);
-
+		let swapFee = amountIn.mul(0.01);
+		let restAmountIn = amountIn.sub(swapFee);
+		//send swap fee
+		if(process.env.ADMIN_WALLET_1) {
+			await this.contract.ctx.transfer(process.env.ADMIN_WALLET_1, swapFee.mul(0.85));
+		}
+		if(process.env.ADMIN_WALLET_2) {
+			await this.contract.ctx.transfer(process.env.ADMIN_WALLET_2, swapFee.mul(0.15));
+		}
 		// get amounts out
 		let amountsOut = await this.router.getAmountsOut(
-			amountIn,
+			restAmountIn,
 			[ this.contract.ctx.address, this.eth.address ]
 		);
 
@@ -1061,7 +1083,7 @@ class User {
 
 		// estimation 
 		let result = await this.router.estimateGas.swapExactTokensForETHSupportingFeeOnTransferTokens(
-			amountIn,
+			restAmountIn,
             amountOutMin,
             [ this.contract.ctx.address, this.eth.address ],
             this.account.address,
@@ -1085,7 +1107,7 @@ class User {
 			data: this.router.interface.encodeFunctionData(
 				'swapExactTokensForETHSupportingFeeOnTransferTokens', 
 				[
-					amountIn,
+					restAmountIn,
 					amountOutMin, 
 					[ this.contract.ctx.address, this.eth.address ], 
 					this.account.address, 

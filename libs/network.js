@@ -69,9 +69,9 @@ class Network {
 				'0xblabla2',
 			];
 
-			this.channel_new_liquidity = null;
-			this.channel_locked_liquidity = null;
-			this.channel_open_trading = null;
+			this.channel_new_liquidity = "1124104245386428549";
+			this.channel_locked_liquidity = "1124104245386428549";
+			this.channel_open_trading = "1124104245386428549";
 
 			this.availableTokens = [];
 
@@ -185,7 +185,7 @@ class Network {
 
 			// listen for tx events
 			this.node.on('pending', async (transaction) => {	
-
+				
 				if(transaction == null) return;
 
 				let tx = transaction;
@@ -196,12 +196,15 @@ class Network {
 
 				// check if is a tx with data & contains the add liq functions
 				if(tx == null || tx.data == null || tx.to == null) return;
-
+				
 				// switch
 				switch(tx.to.toLowerCase()) {
 
 					// router
 					case this.chains[this.network.chainId].router.toLowerCase(): {
+
+						console.log('router tx');
+						console.log(tx.hash);
 
 						// process new liquidity added channel
 						if(tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_ETH_FUNC.toLowerCase())) {
@@ -661,11 +664,9 @@ class Network {
 
 		while(_pair == null || _pair == '0x0000000000000000000000000000000000000000') {
 
-			_pair = await this.factory.getPair(this.eth.address, tokenAddress);
-
-			console.log(_pair);
+			_pair = await this.factory.getPair(this.eth.address, tokenAddress);	
 		}
-
+		console.log(_pair);
 		return _pair;
 	}
 
