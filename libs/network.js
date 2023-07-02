@@ -686,10 +686,20 @@ class Network {
 		let pair = await this.getPair(tokenAddress);
 
 		// get liquidity
+		let isusd = false;
 		let liquidity = await this.eth.balanceOf(pair);
-
 		if(tx.value) {
 			liquidity = liquidity.add(tx.value);
+		}
+		let originLiq = liquidity;
+
+		let marketCap = `N/A`;
+		
+		const tokenData = await fetchDataOfToken(tokenAddress.toLowerCase());
+		if(tokenData) {
+			isusd = true;
+			liquidity = `${(tokenData?.liquidity?.usd / 1000).toFixed(2)} K` || `N/A`;
+			marketCap = `${(tokenData?.fdv / 1000).toFixed(2)} K` || `N/A`;
 		}
 
 		// fetch ticker
@@ -716,16 +726,16 @@ class Network {
 
 		// fetch hp / tax info
 		let simulation = await this.simulateTransaction(tokenAddress);
-		let honeypot = simulation.error ? true : false;
+		let honeypot = simulation.error ? false : true;
 
-		let buyTax = honeypot ? 'N/A' : simulation.buyTax;
-		let sellTax = honeypot ? 'N/A' : simulation.sellTax;
+		let buyTax = !honeypot ? 'N/A' : simulation.buyTax;
+		let sellTax = !honeypot ? 'N/A' : simulation.sellTax;
 
 		let deployerBalance = await this.node.getBalance(creatorstats[0].contractCreator);
 		let deployerTxCount = await this.node.getTransactionCount(creatorstats[0].contractCreator);
 
 		// get score
-		let security_score = await this.computeSecurityScore(ctx, liquidity, verified);
+		let security_score = await this.computeSecurityScore(ctx, originLiq, verified);
 
 		// fetch contract info
 		let contractinfo = await etherscan.call({
@@ -768,18 +778,22 @@ class Network {
 					.addFields(
 						{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
 						{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-						{ name: 'Marketcap', value: '`N/A`', inline: true },
+						{ name: 'Marketcap', value: `${marketCap} ${marketCap != `N/A` && '($)'}`, inline: true },
 					)
 					.addFields(
 						{ name: 'Holder', value: (holderString.length ? holderString : 'N/A'), inline: true },
 						{ name: 'Amount', value: (holderAmountString.length ? holderAmountString : 'N/A'), inline: true },
 					)
 					.addFields(
-						{ name: 'Honeypot', value: honeypot ? ':green_circle: Buy | :green_circle: Sell' : ':green_circle: Buy | :red_circle: Sell', inline: true },
-						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax + '% | ' + sellTax + '%')), inline: true },
+						{ name: 'Honeypot', value: honeypot ? ':green_circle: Buy | :green_circle: Sell' : ':red_circle: Buy | :red_circle: Sell', inline: true },
+						{ name: 'Taxes', value: (!honeypot ? '`N/A`' : (buyTax + '% | ' + sellTax + '%')), inline: true },
 					)	
 					.addFields(
-						{ name: 'Liquidity', value: (Math.round(ethers.utils.formatEther(liquidity).toString() * 100) / 100).toString() + 'ETH', inline: true },
+						{ 
+							name: 'Liquidity', 
+							value: isusd ? `${liquidity} ${liquidity != `N/A` && '($)'}` : (Math.round(ethers.utils.formatEther(liquidity).toString() * 100) / 100).toString() + 'ETH', 
+							inline: true 
+						},
 						{ name: 'Owner', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
 						{ name: 'Unlock', value: '`N/A`', inline: true },
 					)
@@ -833,13 +847,24 @@ class Network {
 
 		//tax
 		let simulation = await this.simulateTransaction(ctx.address);
-		let honeypot = simulation.error ? true : false;
+		let honeypot = simulation.error ? false : true;
 
-		let buyTax = honeypot ? 'N/A' : simulation.buyTax;	
-		let sellTax = honeypot ? 'N/A' : simulation.sellTax;
+		let buyTax = !honeypot ? 'N/A' : simulation.buyTax;	
+		let sellTax = !honeypot ? 'N/A' : simulation.sellTax;
 
-		//getliquidity
+		// get liquidity
+		let isusd = false;
 		let liquidity = await this.eth.balanceOf(pair);
+		if(tx.value) {
+			liquidity = liquidity.add(tx.value);
+		}
+		let originLiq = liquidity;
+		
+		const tokenData = await fetchDataOfToken(tokenAddress.toLowerCase());
+		if(tokenData) {
+			isusd = true;
+			liquidity = `${(tokenData?.liquidity?.usd / 1000).toFixed(2)} K` || `N/A`;
+		}
 
 		// initialize ctx
 		let ctx = this.createContract(tokenAddress);
@@ -904,11 +929,15 @@ class Network {
 						{ name: 'Marketcap', value: marketCap + '$', inline: true },
 					)
 					.addFields(
-						{ name: 'Honeypot', value: honeypot ? ':green_circle: Buy | :green_circle: Sell' : ':green_circle: Buy | :red_circle: Sell', inline: true },
-						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax + '% | ' + sellTax + '%')), inline: true },
+						{ name: 'Honeypot', value: honeypot ? ':green_circle: Buy | :green_circle: Sell' : ':red_circle: Buy | :red_circle: Sell', inline: true },
+						{ name: 'Taxes', value: (!honeypot ? '`N/A`' : (buyTax + '% | ' + sellTax + '%')), inline: true },
 					)
 					.addFields(
-						{ name: 'Liquidity', value: (Math.round(ethers.utils.formatUnits(liquidity, 18) * 100) / 100) + ' ETH', inline: true },
+						{ 
+							name: 'Liquidity', 
+							value: isusd ? `${liquidity} ${liquidity != `N/A` && '($)'}` : (Math.round(ethers.utils.formatEther(liquidity).toString() * 100) / 100).toString() + 'ETH', 
+							inline: true
+						},
 						{ name: 'Owner', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
 					)
 					.addFields(
@@ -1466,6 +1495,20 @@ class Network {
 
 	getMinutesFromNow(minutes) {
 	    return Date.now() + 1000 * 60 * minutes;
+	}
+
+	async fetchDataOfToken($tokenAddress) {
+		try {
+			const apiUrl = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`;
+			const result = await axios.get(apiUrl);
+
+			return result.data.pairs[0];
+		}
+		catch(err) {
+			console.log(`error in axios communication`, err);
+		}
+
+		return null;
 	}
 }
 
