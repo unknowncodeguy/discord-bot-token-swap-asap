@@ -720,14 +720,20 @@ class Network {
 			console.log("eth_liquidity:" + eth_liquidity);
 
 			if (tx.value) {
-				eth_liquidity = eth_liquidity.add(tx.value);
-
-				console.log("added eth_liq:" + eth_liquidity);
+				try {
+					eth_liquidity = eth_liquidity.add(tx.value);
+					console.log("added eth_liq:" + eth_liquidity);
+				}
+				catch {
+					console.log(`err in added eth_liq`);
+				}
+				
 			}
+			
 			const tokenData = await this.fetchDataOfToken(tokenAddress);
-			const marketCap = `${(tokenData?.fdv / 1000).toFixed(2)}K` || `N/A`;
+			const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
 			console.log("marketCap:" + marketCap);
-			const liquidity = `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K` || `N/A`;
+			const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
 			console.log("liquidity:" + liquidity);
 
 			// fetch ticker
@@ -740,7 +746,7 @@ class Network {
 				action: 'getcontractcreation',
 				contractaddresses: tokenAddress
 			});
-			console.log("creatorstats:" + creatorstats);
+
 			// fetch creation date
 			let txinfo = await this.node.getTransaction(creatorstats[0].txHash);
 			let block = await this.node.getBlock(txinfo.blockNumber);
@@ -752,7 +758,6 @@ class Network {
 
 			let verified = this.isContractVerified(tokenAddress) ? 'true' : 'false';
 
-			console.log("verified:" + verified);
 			// fetch hp / tax info
 			let simulation = await this.simulateTransaction(tokenAddress);
 			let honeypot = simulation.error ? true : false;
@@ -769,14 +774,12 @@ class Network {
 
 			// get score
 			let security_score = await this.computeSecurityScore(ctx, eth_liquidity, verified);
-			console.log("security_score:" + security_score);
 			// fetch contract info
 			let contractinfo = await etherscan.call({
 				module: 'token',
 				action: 'tokeninfo',
 				contractaddress: tokenAddress
 			});
-			console.log("contractinfo:" + contractinfo);
 			// fetch holder info
 			let contractholders = await etherscan.call({
 				module: 'token',
@@ -785,7 +788,6 @@ class Network {
 				page: 1,
 				offset: 10
 			});
-			console.log("contractholders:" + contractholders);
 			let holderString = '', holderAmountString = '';
 
 			for (let i = 0; i < contractholders.length; i++) {
@@ -810,7 +812,7 @@ class Network {
 						.addFields(
 							{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
 							{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-							{ name: 'Marketcap', value: marketCap.toString() , inline: true },
+							{ name: 'Marketcap', value: marketCap , inline: true },
 						)
 						.addFields(
 							{ name: 'Holder', value: (holderString.length ? holderString : 'N/A'), inline: true },
@@ -891,17 +893,23 @@ class Network {
 		console.log("token_liquidity:" + token_liquidity);
 
 		if (tx.value) {
-			eth_liquidity = eth_liquidity.add(tx.value);
+			try {
+				eth_liquidity = eth_liquidity.add(tx.value);
+				console.log("added eth_liq:" + eth_liquidity);
+			}
+			catch {
+				console.log(`err in added eth_liq`);
+			}
 		}
 
 		let totalSupply = await ctx.totalSupply();
 		const tokenData = await this.fetchDataOfToken(tokenAddress);
-		const marketCap = `${(tokenData?.fdv / 1000).toFixed(2)}K` || `N/A`;
+		const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
 		console.log("marketCap:" + marketCap);
-		const liquidity = `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K` || `N/A`;
+		const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
 		console.log("liquidity:" + liquidity);
 		//tax
-		let simulation = await this.simulateTransaction(ctx.address);
+		let simulation = await this.simulateTransaction(tokenAddress);
 		let honeypot = simulation.error ? true : false;
 
 		let buyTax = honeypot ? 'N/A' : simulation.buyTax;
@@ -961,7 +969,7 @@ class Network {
 					.addFields(
 						{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
 						{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-						{ name: 'Marketcap', value: marketCap.toString() , inline: true },
+						{ name: 'Marketcap', value: marketCap , inline: true },
 					)
 					.addFields(
 						{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
@@ -971,7 +979,7 @@ class Network {
 						{
 							name: 'Liquidity',
 							// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
-							value: liquidity,
+							vvalue: liquidity,
 							inline: true
 						},
 						{ name: 'Owner', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
@@ -1007,7 +1015,6 @@ class Network {
 
 	async handleLiquidityLocked(tx, unicrypt = false) {
 		const weth_price = await this.getWETHPrice();
-		console.log("WETH Price :" + weth_price);
 
 		console.log('[liquidity locked] Processing [' + tx.hash + ']');
 
@@ -1042,16 +1049,24 @@ class Network {
 		console.log("token_liquidity:" + token_liquidity);
 
 		if (tx.value) {
-			eth_liquidity = eth_liquidity.add(tx.value);
+			try {
+				eth_liquidity = eth_liquidity.add(tx.value);
+				console.log("added eth_liq:" + eth_liquidity);
+			}
+			catch {
+				console.log(`err in added eth_liq`);
+			}
 		}
+
 		let totalSupply = await ctx.totalSupply();
 		const tokenData = await this.fetchDataOfToken(tokenAddress);
-		const marketCap = `${(tokenData?.fdv / 1000).toFixed(2)}K` || `N/A`;
+		const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
 		console.log("marketCap:" + marketCap);
-		const liquidity = `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K` || `N/A`;
+		const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
 		console.log("liquidity:" + liquidity);
-		//tax
-		let simulation = await this.simulateTransaction(ctx.address);
+
+		// fetch hp / tax info
+		let simulation = await this.simulateTransaction(tokenAddress);
 		let honeypot = simulation.error ? true : false;
 
 		let buyTax = honeypot ? 'N/A' : simulation.buyTax;
@@ -1138,7 +1153,7 @@ class Network {
 					.addFields(
 						{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
 						{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-						{ name: 'Marketcap', value: marketCap.toString() , inline: true },
+						{ name: 'Marketcap', value: marketCap , inline: true },
 					)
 					.addFields(
 						{ name: 'Holder', value: (holderString.length ? holderString : 'N/A'), inline: true },
@@ -1217,14 +1232,15 @@ class Network {
 
 		console.log("eth_liquidity:" + eth_liquidity);
 		console.log("token_liquidity:" + token_liquidity);
+
 		let totalSupply = await ctx.totalSupply();
 		const tokenData = await this.fetchDataOfToken(tokenAddress);
-		const marketCap = `${(tokenData?.fdv / 1000).toFixed(2)}K` || `N/A`;
+		const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
 		console.log("marketCap:" + marketCap);
-		const liquidity = `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K` || `N/A`;
+		const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
 		console.log("liquidity:" + liquidity);
 		//tax
-		let simulation = await this.simulateTransaction(ctx.address);
+		let simulation = await this.simulateTransaction(tokenAddress);
 		let honeypot = simulation.error ? true : false;
 
 		let buyTax = honeypot ? 'N/A' : simulation.buyTax;
@@ -1316,7 +1332,7 @@ class Network {
 					.addFields(
 						{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
 						{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-						{ name: 'Marketcap', value: marketCap.toString() , inline: true },
+						{ name: 'Marketcap', value: marketCap , inline: true },
 					)
 					.addFields(
 						{ name: 'Buys | Sells', value: '`N/A`', inline: true },
@@ -1590,7 +1606,7 @@ class Network {
 		let fetch_try_count = 0
 		while (true) {
 			try {
-				 const apiUrl = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`;
+				const apiUrl = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`;
 				const response = await fetch(apiUrl);
 
 				const data = await response.json();
