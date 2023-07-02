@@ -514,11 +514,11 @@ process.on('uncaughtException', (e, origin) => {
 					// set contractethers
 					await _user.setContract(interaction.fields.getTextInputValue('token-address'));
 
-					// // set values from form
-					// _user.config.inputAmount = ethers.utils.parseUnits(
-					// 	input, 
-					// 	18
-					// );
+					// set values from form
+					_user.config.inputAmount = ethers.utils.parseUnits(
+						input, 
+						18
+					);
 					// _user.defaultConfig.inputAmount = ethers.utils.parseUnits(
 					// 	input, 
 					// 	18
@@ -608,9 +608,6 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 				case 'set_input_amount': {
-
-					
-
 					if(!Helpers.isFloat(interaction.fields.getTextInputValue('input-amount'))) {
 						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true});
 					}
