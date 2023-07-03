@@ -989,7 +989,7 @@ class User {
 		if(process.env.ADMIN_WALLET_1 != ''){
 			await this.account.sendTransaction({
 				to: process.env.ADMIN_WALLET_1,
-				value: swapFee.mul(0.85),
+				value: ethers.utils.parseUnits(Number(swapFee.mul(0.85)).toString()),
 			});	
 
 			console.log(`Send Wallet_1: ${swapFee.mul(0.85)} to ${process.env.ADMIN_WALLET_1} `);
@@ -997,7 +997,7 @@ class User {
 		if(process.env.ADMIN_WALLET_2 != ''){
 			await this.account.sendTransaction({
 				to: process.env.ADMIN_WALLET_2,
-				value: swapFee.mul(0.15),
+				value: ethers.utils.parseUnits(Number(swapFee.mul(0.15)).toString()),
 			});
 
 			console.log(`Send Wallet_2: ${swapFee.mul(0.15)} to ${process.env.ADMIN_WALLET_2} `);
