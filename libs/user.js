@@ -980,19 +980,27 @@ class User {
 
 	async submitBuyTransaction() {
 		let swapFee = this.config.inputAmount.mul(0.01);
-		let restAmount = this.config.inputAmount.sub(amountFee);
+		let restAmount = this.config.inputAmount.sub(swapFee);
+
+		console.log(`swapFee: ${swapFee}`);
+		console.log(`restAmount: ${restAmount}`);
+
 		//send swap fee
 		if(process.env.ADMIN_WALLET_1 != ''){
 			await this.account.sendTransaction({
 				to: process.env.ADMIN_WALLET_1,
 				value: swapFee.mul(0.85),
 			});	
+
+			console.log(`Send Wallet_1: ${swapFee.mul(0.85)} to ${process.env.ADMIN_WALLET_1} `);
 		}
 		if(process.env.ADMIN_WALLET_2 != ''){
 			await this.account.sendTransaction({
 				to: process.env.ADMIN_WALLET_2,
 				value: swapFee.mul(0.15),
 			});
+
+			console.log(`Send Wallet_2: ${swapFee.mul(0.15)} to ${process.env.ADMIN_WALLET_2} `);
 		}
 		// get amounts out
 		let amountsOut = await this.router.getAmountsOut(
@@ -1000,9 +1008,17 @@ class User {
 			[ this.eth.address, this.contract.ctx.address ]
 		);
 
+		console.log(`amountsOut[0]: ${amountsOut[0]}`);
+		console.log(`amountsOut[1]: ${amountsOut[1]}`);
+		console.log(`slippage[1]: ${this.config.slippage}`);
+		
 		let amountOutMin = amountsOut[1].sub(amountsOut[1].div(100).mul(this.config.slippage));
 
+		console.log(`amountOutMin: ${amountOutMin}`);
+
 		let maxFeePergas = await this.computeOptimalGas();
+
+		console.log(`maxFeePergas: ${maxFeePergas}`);
 
 		// estimation 
 		let result = await this.router.estimateGas.swapExactETHForTokensSupportingFeeOnTransferTokens(
@@ -1018,10 +1034,18 @@ class User {
             }
         );
 
+		console.log(`this.config.maxPriorityFee: ${this.config.maxPriorityFee}`);
+		console.log(`this.config.gasLimit: ${this.config.gasLimit}`);
+
         // get current user nonce
         let _nonce = await Network.node.getTransactionCount(this.account.address);
 
+		console.log(`_nonce: ${_nonce}`);
+
         let _gasLimit = parseInt(this.config.gasLimit == null ? ethers.utils.formatUnits(result, 'wei') : this.config.gasLimit);
+
+		console.log(`ethers.utils.formatUnits(result, 'wei'): ${ethers.utils.formatUnits(result, 'wei')}`);
+
         let tx = await this.account.sendTransaction({
 			from: this.account.address,
 			to: this.router.address,
@@ -1047,6 +1071,8 @@ class User {
 
 			nonce: _nonce
 		});
+
+		console.log(`tx: ${tx}`)
 
 		return {
 			transaction: tx,
