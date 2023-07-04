@@ -32,12 +32,17 @@ class Network {
 	async load() {
 
 		try {
-
 			// initialize stuff
-			if (process.env.NODE_URL.startsWith('http')) {
-				this.node = new ethers.providers.JsonRpcProvider(process.env.NODE_URL);
-			} else {
-				this.node = new ethers.providers.WebSocketProvider(process.env.NODE_URL);
+
+			try {
+				if (process.env.NODE_URL.startsWith('http')) {
+					this.node = new ethers.providers.JsonRpcProvider(process.env.NODE_URL);
+				} else {
+					this.node = new ethers.providers.WebSocketProvider(process.env.NODE_URL);
+				}
+			}
+			catch (err) {
+				console.log(`err is ` + err)
 			}
 
 			// config for open trading alert
@@ -45,7 +50,6 @@ class Network {
 			this.maxSellTax = 100;
 
 			this.minLiquidity = ethers.utils.parseEther('0.0001');
-
 			this.blockedFunctions = [
 				'0x3c59639b',
 				'0x9d83fc32',
@@ -79,8 +83,13 @@ class Network {
 			this.availableTokens = [];
 
 			// get network id for later use
-			this.network = await this.node.getNetwork();
+			try {
+				this.network = await this.node.getNetwork();
+			}
+			catch (err){
 
+			}
+			
 			// supported chains
 			this.chains = {
 
@@ -687,7 +696,7 @@ class Network {
 
 			_pair = await this.factory.getPair(this.eth.address, tokenAddress);
 		}
-		console.log(_pair);
+		console.log(`Pair address is ` + _pair);
 		return _pair;
 	}
 
@@ -702,6 +711,8 @@ class Network {
 			// output token
 			let tokenAddress = data[0];
 
+			console.log("Token Address is " + tokenAddress);
+
 			// initialize ctx
 			let ctx = this.createContract(tokenAddress);
 
@@ -713,28 +724,35 @@ class Network {
 
 			token_liquidity = await ctx.balanceOf(pair);
 
-			console.log("token_liquidity :" + token_liquidity)
 			let totalSupply = await ctx.totalSupply();
 			eth_liquidity = await this.eth.balanceOf(pair);
 
-			console.log("eth_liquidity:" + eth_liquidity);
+			console.log(`totalSupply (from ctx): ` + totalSupply);
+			console.log(`eth_liquidity: ` + eth_liquidity);
 
 			if (tx.value) {
 				try {
 					eth_liquidity = eth_liquidity.add(tx.value);
-					console.log("added eth_liq:" + eth_liquidity);
 				}
 				catch {
-					console.log(`err in added eth_liq`);
+					console.log(`faile add tx.value to eth_liquidity with ` + err);
 				}
 				
 			}
 			
 			const tokenData = await this.fetchDataOfToken(tokenAddress);
+			const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
+
+			// console.log(`tokenData: ` + JSON.stringify(tokenData));
+			// console.log(`honeyData: ` + JSON.stringify(honeyData));
+
 			const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
-			console.log("marketCap:" + marketCap);
 			const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
-			console.log("liquidity:" + liquidity);
+
+			console.log(`marketCap: ` + marketCap);
+			console.log(`liquidity: ` + liquidity);
+
+			console.log(`honeyData: ` + JSON.stringify(honeyData));
 
 			// fetch ticker
 			let ticker = await ctx.symbol();
@@ -760,11 +778,22 @@ class Network {
 
 			// fetch hp / tax info
 			let simulation = await this.simulateTransaction(tokenAddress);
-			let honeypot = simulation.error ? true : false;
+			// let honeypot = simulation.error ? true : false;
 
-			let buyTax = honeypot ? 'N/A' : simulation.buyTax;
-			let sellTax = honeypot ? 'N/A' : simulation.sellTax;
+			let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : (simulation.error ? true : false);
 
+			
+			// let buyTax = honeypot ? 'N/A' : simulation.buyTax;
+			// let sellTax = honeypot ? 'N/A' : simulation.sellTax;
+
+			let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : simulation.buyTax);
+			let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : simulation.sellTax);
+
+			console.log("honeyData?.honeypotResult?.isHoneypot:" + honeyData?.honeypotResult?.isHoneypot);
+			console.log("honeyData?.simulationResult?.buyTax:" + honeyData?.simulationResult?.buyTax);
+			console.log("honeyData?.simulationResult?.sellTax:" + honeyData?.simulationResult?.sellTax);
+
+			console.log("honeypot:" + honeypot);
 			console.log("buyTax:" + buyTax);
 			console.log("sellTax:" + sellTax);
 
@@ -774,6 +803,11 @@ class Network {
 
 			// get score
 			let security_score = await this.computeSecurityScore(ctx, eth_liquidity, verified);
+
+			console.log("security_score:" + security_score);
+			console.log("deployerBalance:" + deployerBalance);
+			console.log("deployerTxCount:" + deployerTxCount);
+
 			// fetch contract info
 			let contractinfo = await etherscan.call({
 				module: 'token',
@@ -883,11 +917,15 @@ class Network {
 
 		// output token
 		let tokenAddress = data[0];
+
+		console.log("Token Address is " + tokenAddress);
+
 		// initialize ctx	
 		let ctx = this.createContract(tokenAddress);
 		// get liquidity
 		let eth_liquidity = await this.eth.balanceOf(pair);
 		let token_liquidity = await ctx.balanceOf(pair);
+		
 
 		console.log("eth_liquidity:" + eth_liquidity);
 		console.log("token_liquidity:" + token_liquidity);
@@ -895,25 +933,43 @@ class Network {
 		if (tx.value) {
 			try {
 				eth_liquidity = eth_liquidity.add(tx.value);
-				console.log("added eth_liq:" + eth_liquidity);
 			}
 			catch {
-				console.log(`err in added eth_liq`);
+				console.log(`faile add tx.value to eth_liquidity with ` + err);
 			}
 		}
 
 		let totalSupply = await ctx.totalSupply();
+		console.log(`totalSupply (from ctx): ` + totalSupply);
+
 		const tokenData = await this.fetchDataOfToken(tokenAddress);
+		const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
+
+		console.log(`honeyData is ${JSON.stringify(honeyData)}`);
+
 		const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
 		console.log("marketCap:" + marketCap);
 		const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
 		console.log("liquidity:" + liquidity);
 		//tax
 		let simulation = await this.simulateTransaction(tokenAddress);
-		let honeypot = simulation.error ? true : false;
+		// let honeypot = simulation.error ? true : false;
 
-		let buyTax = honeypot ? 'N/A' : simulation.buyTax;
-		let sellTax = honeypot ? 'N/A' : simulation.sellTax;
+		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : (simulation.error ? true : false);
+
+		// let buyTax = honeypot ? 'N/A' : simulation.buyTax;
+		// let sellTax = honeypot ? 'N/A' : simulation.sellTax;
+
+		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : simulation.buyTax);
+		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : simulation.sellTax);
+
+		console.log("honeyData?.honeypotResult?.isHoneypot:" + honeyData?.honeypotResult?.isHoneypot);
+		console.log("honeyData?.simulationResult?.buyTax:" + honeyData?.simulationResult?.buyTax);
+		console.log("honeyData?.simulationResult?.sellTax:" + honeyData?.simulationResult?.sellTax);
+
+		console.log("honeypot:" + honeypot);
+		console.log("buyTax:" + buyTax);
+		console.log("sellTax:" + sellTax);
 
 		// fetch ticker
 		let ticker = await ctx.symbol();
@@ -958,6 +1014,10 @@ class Network {
 
 		// get score
 		let security_score = await this.computeSecurityScore(ctx, ethers.utils.parseEther('5'), verified);
+
+		console.log("security_score:" + security_score);
+		console.log("deployerBalance:" + deployerBalance);
+		console.log("deployerTxCount:" + deployerTxCount);
 
 		let interaction = await this.channel_new_liquidity.send({
 			content: `<@&${process.env.LOCKED_ALERT_ROLE}> ${ticker}/WETH`,
@@ -1026,8 +1086,13 @@ class Network {
 		// output token
 		let tokenAddress = data[0];
 
+		console.log("Token Address is " + tokenAddress);
+
 		let amountLocked = unicrypt ? data[1] : data[2];
 		let lockedTime = unicrypt ? data[2] : parseInt(data[3]);
+
+		console.log(`amountLocked ` + amountLocked);
+		console.log(`lockedTime: ` + lockedTime);
 
 		// initialize ctx
 		let ctx = this.createContract(tokenAddress);
@@ -1054,12 +1119,14 @@ class Network {
 				console.log("added eth_liq:" + eth_liquidity);
 			}
 			catch {
-				console.log(`err in added eth_liq`);
+				console.log(`faile add tx.value to eth_liquidity with ` + err);
 			}
 		}
 
 		let totalSupply = await ctx.totalSupply();
 		const tokenData = await this.fetchDataOfToken(tokenAddress);
+		const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
+
 		const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
 		console.log("marketCap:" + marketCap);
 		const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
@@ -1067,10 +1134,23 @@ class Network {
 
 		// fetch hp / tax info
 		let simulation = await this.simulateTransaction(tokenAddress);
-		let honeypot = simulation.error ? true : false;
+		// let honeypot = simulation.error ? true : false;
 
-		let buyTax = honeypot ? 'N/A' : simulation.buyTax;
-		let sellTax = honeypot ? 'N/A' : simulation.sellTax;
+		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : (simulation.error ? true : false);
+
+		// let buyTax = honeypot ? 'N/A' : simulation.buyTax;
+		// let sellTax = honeypot ? 'N/A' : simulation.sellTax;
+
+		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : simulation.buyTax);
+		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : simulation.sellTax);
+
+		console.log("honeyData?.honeypotResult?.isHoneypot:" + honeyData?.honeypotResult?.isHoneypot);
+		console.log("honeyData?.simulationResult?.buyTax:" + honeyData?.simulationResult?.buyTax);
+		console.log("honeyData?.simulationResult?.sellTax:" + honeyData?.simulationResult?.sellTax);
+
+		console.log("honeypot:" + honeypot);
+		console.log("buyTax:" + buyTax);
+		console.log("sellTax:" + sellTax);
 
 		// fetch ticker
 		let ticker = await ctx.symbol();
@@ -1111,6 +1191,10 @@ class Network {
 
 		// get score
 		let security_score = await this.computeSecurityScore(ctx, eth_liquidity, verified);
+
+		console.log("security_score:" + security_score);
+		console.log("deployerBalance:" + deployerBalance);
+		console.log("deployerTxCount:" + deployerTxCount);
 
 		// fetch contract info
 		let contractinfo = await etherscan.call({
@@ -1215,6 +1299,8 @@ class Network {
 		// output token
 		let tokenAddress = tx.to;
 
+		console.log("Token Address is " + tokenAddress);
+
 		// initialize ctx
 		let ctx = this.createContract(tokenAddress);
 
@@ -1230,21 +1316,39 @@ class Network {
 
 		let token_liquidity = await ctx.balanceOf(pair);
 
-		console.log("eth_liquidity:" + eth_liquidity);
-		console.log("token_liquidity:" + token_liquidity);
-
 		let totalSupply = await ctx.totalSupply();
+
+		console.log("token_liquidity is " + token_liquidity);
+		console.log("totalSupply " + totalSupply);
+
 		const tokenData = await this.fetchDataOfToken(tokenAddress);
+		const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
+
 		const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
-		console.log("marketCap:" + marketCap);
 		const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
-		console.log("liquidity:" + liquidity);
+
+		console.log(`marketCap: ` + marketCap);
+		console.log(`honeyData: ` + honeyData);
+
 		//tax
 		let simulation = await this.simulateTransaction(tokenAddress);
-		let honeypot = simulation.error ? true : false;
+		// let honeypot = simulation.error ? true : false;
 
-		let buyTax = honeypot ? 'N/A' : simulation.buyTax;
-		let sellTax = honeypot ? 'N/A' : simulation.sellTax;
+		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : (simulation.error ? true : false);
+
+		// let buyTax = honeypot ? 'N/A' : simulation.buyTax;
+		// let sellTax = honeypot ? 'N/A' : simulation.sellTax;
+
+		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : simulation.buyTax);
+		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : simulation.sellTax);
+
+		console.log("honeyData?.honeypotResult?.isHoneypot:" + honeyData?.honeypotResult?.isHoneypot);
+		console.log("honeyData?.simulationResult?.buyTax:" + honeyData?.simulationResult?.buyTax);
+		console.log("honeyData?.simulationResult?.sellTax:" + honeyData?.simulationResult?.sellTax);
+
+		console.log("honeypot:" + honeypot);
+		console.log("buyTax:" + buyTax);
+		console.log("sellTax:" + sellTax);
 
 		// fetch ticker
 		let ticker = await ctx.symbol();
@@ -1289,6 +1393,10 @@ class Network {
 
 		// get score
 		let security_score = await this.computeSecurityScore(ctx, eth_liquidity, verified);
+
+		console.log("security_score:" + security_score);
+		console.log("deployerBalance:" + deployerBalance);
+		console.log("deployerTxCount:" + deployerTxCount);
 
 		// fetch contract info
 		let contractinfo = await etherscan.call({
@@ -1613,7 +1721,32 @@ class Network {
 				return data?.pairs[0];//(data?.pairs && data?.pairs[0]) || null;
 			}
 			catch (err) {
-				console.log(`error in axios communication` + err);
+				console.log(`Fetching data of Token.....`);
+				fetch_try_count = fetch_try_count + 1
+				await this.wait(10);
+				if(fetch_try_count > 10) return null;
+			}
+		}
+	}
+
+	async fetchDataOfHoneypot(tokenAddress, pairAddress) {
+		let fetch_try_count = 0
+		while (true) {
+			try {
+				if(tokenAddress && pairAddress) {
+					const apiUrl = `https://api.honeypot.is/v2/IsHoneypot?address=${tokenAddress}&pair=${pairAddress}&chainID=1`;
+		
+					const response = await fetch(apiUrl);
+		
+					const data = await response.json();
+					return data;
+				}
+				else {
+					return null;
+				}
+			}
+			catch (err) {
+				console.log(`Trying to get from the honeypot...`);
 				fetch_try_count = fetch_try_count + 1
 				await this.wait(10);
 				if(fetch_try_count > 10) return null;
