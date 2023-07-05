@@ -854,7 +854,7 @@ class Network {
 						)
 						.addFields(
 							{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
-							{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax + '% | ' + sellTax + '%')), inline: true },
+							{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
 						)
 						.addFields(
 							{
@@ -1033,7 +1033,7 @@ class Network {
 					)
 					.addFields(
 						{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
-						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax + '% | ' + sellTax + '%')), inline: true },
+						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
 					)
 					.addFields(
 						{
@@ -1245,7 +1245,7 @@ class Network {
 					)
 					.addFields(
 						{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
-						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax + '% | ' + sellTax + '%')), inline: true },
+						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
 						{
 							name: 'Liquidity',
 							// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
@@ -1445,7 +1445,7 @@ class Network {
 					.addFields(
 						{ name: 'Buys | Sells', value: '`N/A`', inline: true },
 						{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
-						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax + '% | ' + sellTax + '%')), inline: true },
+						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
 					)
 					.addFields(
 						{ name: 'Holder', value: holderString, inline: true },
