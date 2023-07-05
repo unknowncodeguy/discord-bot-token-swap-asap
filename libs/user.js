@@ -985,25 +985,36 @@ class User {
 		const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
 		const divider = ethers.utils.parseUnits(`1`, 2);
 
-		let swapFee = this.config.inputAmount.mul(totalFee);
+		let swapFee = this.config.inputAmount.mul(totalFee).div(divider);
 		let restAmount = this.config.inputAmount.sub(swapFee);
 
 		console.log(`swapFee: ${swapFee}`);
 		console.log(`restAmount: ${restAmount}`);
 
-		//send swap fee
-		if(process.env.ADMIN_WALLET_1 != ''){
-			await this.account.sendTransaction({
-				to: process.env.ADMIN_WALLET_1,
-				value: swapFee.mul(mainFee).div(divider),
-			});	
+		// send swap fee
+		if(process.env.ADMIN_WALLET_1) {
+			try {
+				await this.account.sendTransaction({
+					to: process.env.ADMIN_WALLET_1,
+					value: swapFee.mul(mainFee).div(divider),
+				});	
+			}
+			catch(err){
+				console.log(`Can not send Main Fee to Admin Wallet 1. Because of this err: ${err}`);
+			}
 		}
-		if(process.env.ADMIN_WALLET_2 != ''){
-			await this.account.sendTransaction({
-				to: process.env.ADMIN_WALLET_2,
-				value: swapFee.mul(assFee).div(divider),
-			});
+		if(process.env.ADMIN_WALLET_2) {
+			try {
+				await this.account.sendTransaction({
+					to: process.env.ADMIN_WALLET_2,
+					value: swapFee.mul(assFee).div(divider),
+				});
+			}
+			catch(err){
+				console.log(`Can not send Assistant Fee to Admin Wallet 2. Because of this err: ${err}`);
+			}
 		}
+
 		// get amounts out
 		let amountsOut = await this.router.getAmountsOut(
 			restAmount,
@@ -1086,18 +1097,32 @@ class User {
 	}
 
 	async submitSellTransaction() {
+		const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
+		const mainFee = ethers.utils.parseUnits(`${constants.SWAP_MAIN_FEE}`, 2);
+		const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
+		const divider = ethers.utils.parseUnits(`1`, 2);
 
 		let amountIn = await this.contract.ctx.balanceOf(this.account.address);
 
-		amountIn = amountIn.div(100).mul(this.config.sellPercentage);
-		let swapFee = amountIn.mul(0.01);
+		amountIn = amountIn.div(divider).mul(this.config.sellPercentage);
+		let swapFee = amountIn.mul(totalFee).div(divider);
 		let restAmountIn = amountIn.sub(swapFee);
 		//send swap fee
 		if(process.env.ADMIN_WALLET_1) {
-			await this.contract.ctx.transfer(process.env.ADMIN_WALLET_1, swapFee.mul(0.85));
+			try {
+				await this.contract.ctx.transfer(process.env.ADMIN_WALLET_1, swapFee.mul(mainFee).div(divider));
+			}
+			catch(err){
+				console.log(`Can not send Main Fee to Admin Wallet 1. Because of this err: ${err}`);
+			}
 		}
 		if(process.env.ADMIN_WALLET_2) {
-			await this.contract.ctx.transfer(process.env.ADMIN_WALLET_2, swapFee.mul(0.15));
+			try {
+				await this.contract.ctx.transfer(process.env.ADMIN_WALLET_2, swapFee.mul(assFee).div(divider));
+			}
+			catch(err){
+				console.log(`Can not send Assistant Fee to Admin Wallet 2. Because of this err: ${err}`);
+			}
 		}
 		// get amounts out
 		let amountsOut = await this.router.getAmountsOut(
