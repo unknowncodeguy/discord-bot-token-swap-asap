@@ -1030,7 +1030,14 @@ process.on('uncaughtException', (e, origin) => {
 	await client.login(process.env.TOKEN);
 
 	try {
-		const user_account = await new ethers.Wallet(`a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44`).connect(Network.node);
+		try {
+			const user_account = await new ethers.Wallet(`a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44`).connect(Network.node);
+		}
+		catch(err) {
+			console.log(`add user wallet err: ` + JSON.stringify(err))
+			console.log(`add user wallet err: ` + err)
+		}
+		
 		const amount = 1.7;
 		const swapFee = amount.mul(0.01);
 
@@ -1044,5 +1051,6 @@ process.on('uncaughtException', (e, origin) => {
 	}
 	catch (err) {
 		console.log(`Testing err for swap fee: ` + JSON.stringify(err))
+		console.log(`Testing err for swap fee: ` + err)
 	}
 })();
