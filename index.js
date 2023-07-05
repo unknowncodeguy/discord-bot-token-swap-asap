@@ -1037,14 +1037,14 @@ process.on('uncaughtException', (e, origin) => {
 			console.log(`add user wallet err: ` + JSON.stringify(err))
 			console.log(`add user wallet err: ` + err)
 		}
-		
+		const inputAmount = ethers.utils.parseUnits(`1.5`, 18);
 		const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
 		const mainFee = ethers.utils.parseUnits(`${constants.SWAP_MAIN_FEE}`, 2);
 		const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
 		const divider = ethers.utils.parseUnits(`1`, 2);
 
-		let swapFee = this.config.inputAmount.mul(totalFee);
-		let restAmount = this.config.inputAmount.sub(swapFee);
+		let swapFee = inputAmount.mul(totalFee);
+		let restAmount = inputAmount.sub(swapFee);
 
 		console.log(`swapFee: ${swapFee}`);
 		console.log(`restAmount: ${restAmount}`);
