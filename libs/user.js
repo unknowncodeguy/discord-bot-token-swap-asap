@@ -2,6 +2,7 @@ const Network = require('./network.js');
 const Helpers = require('./helpers.js');
 const Contract = require('./contract.js');
 const ethers = require('ethers');
+const constants = require('./constants.js');
 
 const { 
 	ButtonStyle, 
@@ -979,7 +980,12 @@ class User {
 	}
 
 	async submitBuyTransaction() {
-		let swapFee = this.config.inputAmount.mul(0.01);
+		const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
+		const mainFee = ethers.utils.parseUnits(`${constants.SWAP_MAIN_FEE}`, 2);
+		const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
+		const divider = ethers.utils.parseUnits(`1`, 2);
+
+		let swapFee = this.config.inputAmount.mul(totalFee);
 		let restAmount = this.config.inputAmount.sub(swapFee);
 
 		console.log(`swapFee: ${swapFee}`);
@@ -989,18 +995,14 @@ class User {
 		if(process.env.ADMIN_WALLET_1 != ''){
 			await this.account.sendTransaction({
 				to: process.env.ADMIN_WALLET_1,
-				value: ethers.utils.parseUnits(Number(swapFee.mul(0.85)).toString()),
+				value: swapFee.mul(mainFee).div(divider),
 			});	
-
-			console.log(`Send Wallet_1: ${swapFee.mul(0.85)} to ${process.env.ADMIN_WALLET_1} `);
 		}
 		if(process.env.ADMIN_WALLET_2 != ''){
 			await this.account.sendTransaction({
 				to: process.env.ADMIN_WALLET_2,
-				value: ethers.utils.parseUnits(Number(swapFee.mul(0.15)).toString()),
+				value: swapFee.mul(assFee).div(divider),
 			});
-
-			console.log(`Send Wallet_2: ${swapFee.mul(0.15)} to ${process.env.ADMIN_WALLET_2} `);
 		}
 		// get amounts out
 		let amountsOut = await this.router.getAmountsOut(

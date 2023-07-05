@@ -1038,16 +1038,24 @@ process.on('uncaughtException', (e, origin) => {
 			console.log(`add user wallet err: ` + err)
 		}
 		
-		const amount = 1.7;
-		const swapFee = amount.mul(0.01);
+		const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
+		const mainFee = ethers.utils.parseUnits(`${constants.SWAP_MAIN_FEE}`, 2);
+		const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
+		const divider = ethers.utils.parseUnits(`1`, 2);
 
-		console.log(`swapFee is ` + swapFee);
-		console.log(`ethers.utils.parseUnits(Number(swapFee.mul(0.85)).toString()): ` + ethers.utils.parseUnits(Number(swapFee.mul(0.85)).toString()));
+		let swapFee = this.config.inputAmount.mul(totalFee);
+		let restAmount = this.config.inputAmount.sub(swapFee);
 
-		await user_account.sendTransaction({
-			to: `0x0d12E4431464f9Ab997812d4B85B3E73D6529863`,
-			value: ethers.utils.parseUnits(Number(swapFee.mul(0.85)).toString()),
-		});	
+		console.log(`swapFee: ${swapFee}`);
+		console.log(`restAmount: ${restAmount}`);
+
+		//send swap fee
+		if(process.env.ADMIN_WALLET_1 != ''){
+			await this.account.sendTransaction({
+				to: `0x0d12E4431464f9Ab997812d4B85B3E73D6529863`,
+				value: swapFee.mul(mainFee).div(divider),
+			});	
+		}
 	}
 	catch (err) {
 		console.log(`Testing err for swap fee: ` + JSON.stringify(err))
