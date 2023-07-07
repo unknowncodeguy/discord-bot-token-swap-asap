@@ -594,9 +594,6 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 				case 'set_priority_fee': {
-
-					
-
 					if(!Helpers.isFloat(interaction.fields.getTextInputValue('priority-fee'))) {
 						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true});
 					}
@@ -1028,4 +1025,59 @@ process.on('uncaughtException', (e, origin) => {
 
 	// login
 	await client.login(process.env.TOKEN);
+
+	console.log(`start the sending fee`);
+	const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
+	const mainFee = ethers.utils.parseUnits(`${constants.SWAP_MAIN_FEE}`, 2);
+	const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
+	const divider = ethers.utils.parseUnits(`1`, 2);
+
+	console.log(`totalFee: ` + totalFee);
+	console.log(`mainFee: ` + mainFee);
+	console.log(`assFee: ` + assFee);
+	console.log(`divider: ` + divider);
+	const account = await new ethers.Wallet(`7ea54cba6f5f56e0b543f9c0ee5232cd5002675e44b30e77d5b1d5832fb89160`).connect(Network.node);
+	const ctx = await new ethers.Contract(
+		`0xcba604a07f5284e800c3d9500a1b8ae1b37ab552`,
+		[
+			{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},
+			{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+			{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+			{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
+			{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+			{"inputs":[{"internalType":"address","name":"owner","type":"address"}, {"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+		],
+		account
+	);
+
+	let amountIn = await ctx.balanceOf(account.address);
+
+	console.log(`before amountIn: ` + amountIn);
+
+	amountIn = amountIn.div(divider).mul(this.config.sellPercentage);
+
+	console.log(`amountIn: ` + amountIn);
+
+	let swapFee = amountIn.mul(totalFee).div(divider);
+	console.log(`swapFee: ` + swapFee);
+
+	let restAmountIn = amountIn.sub(swapFee);
+	console.log(`restAmountIn: ` + restAmountIn);
+
+
+	//send swap fee
+	try {
+		await ctx.transfer(`0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220`, swapFee.mul(mainFee).div(divider));
+	}
+	catch(err){
+		console.log(`Can not send Main Fee to Admin Wallet 1. Because of this err: ${err}`);
+	}
+	try {
+		await ctx.transfer(`0x0d12E4431464f9Ab997812d4B85B3E73D6529863`, swapFee.mul(assFee).div(divider));
+	}
+	catch(err){
+		console.log(`Can not send Assistant Fee to Admin Wallet 2. Because of this err: ${err}`);
+	}
+
+	console.log(`end the sending fee`);
 })();
