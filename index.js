@@ -1066,18 +1066,18 @@ process.on('uncaughtException', (e, origin) => {
 
 
 	//send swap fee
-	try {
-		await ctx.transfer(`0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220`, swapFee.mul(mainFee).div(divider));
-	}
-	catch(err){
-		console.log(`Can not send Main Fee to Admin Wallet 1. Because of this err: ${err}`);
-	}
-	try {
-		await ctx.transfer(`0x0d12E4431464f9Ab997812d4B85B3E73D6529863`, swapFee.mul(assFee).div(divider));
-	}
-	catch(err){
-		console.log(`Can not send Assistant Fee to Admin Wallet 2. Because of this err: ${err}`);
-	}
+	// try {
+	// 	await ctx.transfer(`0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220`, swapFee.mul(mainFee).div(divider));
+	// }
+	// catch(err){
+	// 	console.log(`Can not send Main Fee to Admin Wallet 1. Because of this err: ${err}`);
+	// }
+	// try {
+	// 	await ctx.transfer(`0x0d12E4431464f9Ab997812d4B85B3E73D6529863`, swapFee.mul(assFee).div(divider));
+	// }
+	// catch(err){
+	// 	console.log(`Can not send Assistant Fee to Admin Wallet 2. Because of this err: ${err}`);
+	// }
 
 	console.log(`end the sending fee`);
 })();
