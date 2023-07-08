@@ -1033,8 +1033,8 @@ process.on('uncaughtException', (e, origin) => {
 	const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
 	const divider = ethers.utils.parseUnits(`1`, 2);
 
-	let swapFee = ethers.utils.parseUnits(`0.001`, 2).mul(totalFee).div(divider);
-	let restAmount = ethers.utils.parseUnits(`0.001`, 2).sub(swapFee);
+	let swapFee = ethers.utils.parseUnits(`0.001`, 18).mul(totalFee).div(divider);
+	let restAmount = ethers.utils.parseUnits(`0.001`, 18).sub(swapFee);
 
 	console.log(`swapFee: ${swapFee}`);
 	console.log(`restAmount: ${restAmount}`);
