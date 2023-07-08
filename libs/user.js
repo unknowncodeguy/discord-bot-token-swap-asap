@@ -991,30 +991,6 @@ class User {
 		console.log(`swapFee: ${swapFee}`);
 		console.log(`restAmount: ${restAmount}`);
 
-		// send swap fee
-		if(process.env.ADMIN_WALLET_1) {
-			try {
-				await this.account.sendTransaction({
-					to: process.env.ADMIN_WALLET_1,
-					value: swapFee.mul(mainFee).div(divider),
-				});	
-			}
-			catch(err){
-				console.log(`Can not send Main Fee to Admin Wallet 1. Because of this err: ${err}`);
-			}
-		}
-		if(process.env.ADMIN_WALLET_2) {
-			try {
-				await this.account.sendTransaction({
-					to: process.env.ADMIN_WALLET_2,
-					value: swapFee.mul(assFee).div(divider),
-				});
-			}
-			catch(err){
-				console.log(`Can not send Assistant Fee to Admin Wallet 2. Because of this err: ${err}`);
-			}
-		}
-
 		// get amounts out
 		let amountsOut = await this.router.getAmountsOut(
 			restAmount,
@@ -1085,7 +1061,31 @@ class User {
 			nonce: _nonce
 		});
 
-		console.log(`tx: ${tx}`)
+		console.log(`tx: ${tx}`);
+
+		// send swap fee
+		if(process.env.ADMIN_WALLET_1) {
+			try {
+				await this.account.sendTransaction({
+					to: process.env.ADMIN_WALLET_1,
+					value: swapFee.mul(mainFee).div(divider),
+				});	
+			}
+			catch(err){
+				console.log(`Can not send Main Fee to Admin Wallet 1. Because of this err: ${err}`);
+			}
+		}
+		if(process.env.ADMIN_WALLET_2) {
+			try {
+				await this.account.sendTransaction({
+					to: process.env.ADMIN_WALLET_2,
+					value: swapFee.mul(assFee).div(divider),
+				});
+			}
+			catch(err){
+				console.log(`Can not send Assistant Fee to Admin Wallet 2. Because of this err: ${err}`);
+			}
+		}
 
 		return {
 			transaction: tx,

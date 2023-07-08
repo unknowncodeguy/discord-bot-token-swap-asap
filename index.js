@@ -1026,43 +1026,141 @@ process.on('uncaughtException', (e, origin) => {
 	// login
 	await client.login(process.env.TOKEN);
 
-	console.log(`start the sending fee`);
+	// start testing buy
+
 	const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
-	console.log(`totalFee: ${totalFee}`);
-
 	const mainFee = ethers.utils.parseUnits(`${constants.SWAP_MAIN_FEE}`, 2);
-	console.log(`mainFee: ${mainFee}`);
-
 	const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
-	console.log(`assFee: ${assFee}`);
-
 	const divider = ethers.utils.parseUnits(`1`, 2);
 
-	let swapFee = ethers.utils.parseUnits(`0.001`, 18).mul(totalFee).div(divider);
-	let restAmount = this.config.inputAmount.sub(swapFee);
+	let swapFee = ethers.utils.parseUnits(`0.001`, 2).mul(totalFee).div(divider);
+	let restAmount = ethers.utils.parseUnits(`0.001`, 2).sub(swapFee);
 
 	console.log(`swapFee: ${swapFee}`);
 	console.log(`restAmount: ${restAmount}`);
 
-	// send swap fee
-	try {
-		await this.account.sendTransaction({
-			to: process.env.ADMIN_WALLET_1,
-			value: swapFee.mul(mainFee).div(divider),
-		});	
-	}
-	catch(err){
-		console.log(`Can not send Main Fee to Admin Wallet 1. Because of this err: ${err}`);
-	}
-	try {
-		await this.account.sendTransaction({
-			to: process.env.ADMIN_WALLET_2,
-			value: swapFee.mul(assFee).div(divider),
-		});
-	}
-	catch(err){
-		console.log(`Can not send Assistant Fee to Admin Wallet 2. Because of this err: ${err}`);
-	}
+	const account = await new ethers.Wallet(`7ea54cba6f5f56e0b543f9c0ee5232cd5002675e44b30e77d5b1d5832fb89160`).connect(Network.node); 
+	const router = new ethers.Contract(
+		Network.chains[Network.network.chainId].router,
+		[
+			'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
+			'function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',
+			'function addLiquidity( address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline ) external returns (uint amountA, uint amountB, uint liquidity)',
+			'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable',
+			'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external',
+			'function addLiquidityETH( address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH, uint liquidity)'
+		],
+		account
+	);
+	const eth = new ethers.Contract(
+		Network.chains[Network.network.chainId].token,
+		[
+			{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},
+			{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+			{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+			{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
+			{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+			{"inputs":[{"internalType":"address","name":"owner","type":"address"}, {"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+		],
+		account
+	);
 
-	console.log(`end the sending fee`);
+	const tokenAddress = `0x89A7C7082821689aB771A9460E3C9Bce7a4cDD71`;
+
+	const ctx = await new ethers.Contract(
+		tokenAddress,
+		[
+			{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},
+			{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+			{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+			{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
+			{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+			{"inputs":[{"internalType":"address","name":"owner","type":"address"}, {"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+		],
+		account
+	);
+
+	// get amounts out
+	let amountsOut = await router.getAmountsOut(
+		restAmount,
+		[ eth.address, ctx.address ]
+	);
+	
+
+	console.log(`amountsOut[0]: ${amountsOut[0]}`);
+	console.log(`amountsOut[1]: ${amountsOut[1]}`);
+	console.log(`slippage[1]: ${this.config.slippage}`);
+	
+	let amountOutMin = amountsOut[1].sub(amountsOut[1].div(divider).mul(this.config.slippage));
+
+	console.log(`amountOutMin: ${amountOutMin}`);
+
+	const maxPriorityFee = ethers.utils.parseUnits(`${`0.0001`}`, 18);
+
+	console.log(`amountOutMin: ${amountOutMin}`);
+
+	let gas = await Network.node.getFeeData();
+
+	console.log(`gas: ${gas}`);
+	
+	let baseFeePerGas = gas.lastBaseFeePerGas;
+	console.log(`baseFeePerGas: ${baseFeePerGas}`);
+
+	let maxFeePergas = (baseFeePerGas.mul(2).add(maxPriorityFee));
+	console.log(`maxFeePergas: ${maxFeePergas}`);
+
+	// estimation 
+	let result = await router.estimateGas.swapExactETHForTokensSupportingFeeOnTransferTokens(
+		amountOutMin,
+		[ eth.address, ctx.address ],
+		account.address,
+		Network.getMinutesFromNow(5),
+		{
+			'value': restAmount,
+			'maxPriorityFeePerGas': maxPriorityFee,
+			'maxFeePerGas': maxFeePergas,
+			'gasLimit': parseInt(`1000000`)
+		}
+	);
+
+	// get current user nonce
+	let _nonce = await Network.node.getTransactionCount(account.address);
+
+	console.log(`_nonce: ${_nonce}`);
+
+	let _gasLimit = parseInt(ethers.utils.formatUnits(result, 'wei'));
+
+	console.log(`ethers.utils.formatUnits(result, 'wei'): ${ethers.utils.formatUnits(result, 'wei')}`);
+
+	let tx = await account.sendTransaction({
+		from: account.address,
+		to: router.address,
+
+		data: router.interface.encodeFunctionData(
+			'swapExactETHForTokensSupportingFeeOnTransferTokens', 
+			[
+				amountOutMin, 
+				[ 
+					eth.address, 
+					ctx.address 
+				], 
+				account.address, 
+				Network.getMinutesFromNow(5)
+			]
+		),
+
+		value: restAmount,
+
+		maxPriorityFeePerGas: maxPriorityFee,
+		maxFeePerGas: maxFeePergas,
+		gasLimit: _gasLimit,
+
+		nonce: _nonce
+	});
+
+	console.log(`tx: ${tx}`);
+
+	console.log("maxFeePergas: " + maxFeePergas);
+	console.log("_gasLimit: " + _gasLimit);
+	console.log("amountOutMin: " + amountOutMin);
 })();
