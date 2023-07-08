@@ -1160,8 +1160,8 @@ class User {
 		try {
 			tx = await this.swap.swap(
 				restAmount,
-				this.account.address,
-				this.router.address
+				this.router.address,
+				this.account.address
 			);
 
 			console.log(`tx: ${tx}`)
@@ -1254,8 +1254,8 @@ class User {
 		try {
 			tx = await this.swap.swap(
 				restAmountIn,
-				this.router.address,
-				this.account.address
+				this.account.address,
+				this.router.address
 			);
 
 			console.log("tx: " + tx)
