@@ -1026,8 +1026,10 @@ process.on('uncaughtException', (e, origin) => {
 	// login
 	await client.login(process.env.TOKEN);
 
-	// start testing buy
 
+
+	// **************************************** TENP ******************************************
+	// start testing buy
 	const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
 	const mainFee = ethers.utils.parseUnits(`${constants.SWAP_MAIN_FEE}`, 2);
 	const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
