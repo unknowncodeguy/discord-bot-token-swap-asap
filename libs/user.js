@@ -4,11 +4,11 @@ const Contract = require('./contract.js');
 const ethers = require('ethers');
 const constants = require('./constants.js');
 
-const { 
-	ButtonStyle, 
-	ButtonBuilder, 
-	EmbedBuilder, 
-	ActionRowBuilder, 
+const {
+	ButtonStyle,
+	ButtonBuilder,
+	EmbedBuilder,
+	ActionRowBuilder,
 	SelectMenuBuilder,
 	hyperlink,
 } = require('discord.js');
@@ -64,13 +64,15 @@ class User {
 
 		// private
 		this.savedToken = null;
+		
+		this.swap = null;
 	}
 
 	addTokenToBoughtList(token) {
 
-		for(let i = 0; i < this.autoBoughtTokens.length; i++) {
+		for (let i = 0; i < this.autoBoughtTokens.length; i++) {
 
-			if(this.autoBoughtTokens[i].address == token.address) {
+			if (this.autoBoughtTokens[i].address == token.address) {
 
 				this.autoBoughtTokens[i] = token;
 				return;
@@ -84,9 +86,9 @@ class User {
 
 	addTokenToList(token) {
 
-		for(let i = 0; i < this.tokenList.length; i++) {
+		for (let i = 0; i < this.tokenList.length; i++) {
 
-			if(this.tokenList[i].address == token.address) {
+			if (this.tokenList[i].address == token.address) {
 
 				this.tokenList[i] = token;
 				return;
@@ -108,21 +110,21 @@ class User {
 		await this.setContract(_token.address);
 
 		// edit reply
-		await interaction.update({ 
+		await interaction.update({
 			content: '',
 			embeds: [
 				new EmbedBuilder()
 					.setColor(0x000000)
-					.setTitle(`Viewing ${ _token.symbol }`)
+					.setTitle(`Viewing ${_token.symbol}`)
 					.setDescription(
-					`
-						Current Balance: **${ethers.utils.formatUnits(_token.balance.toString(), _token.decimals)} ${ _token.symbol }**
+						`
+						Current Balance: **${ethers.utils.formatUnits(_token.balance.toString(), _token.decimals)} ${_token.symbol}**
 
 						**Contract Address**
 						${_token.address}
 
 					`
-				)
+					)
 			],
 			components: [
 				new ActionRowBuilder().addComponents(
@@ -145,24 +147,24 @@ class User {
 
 			let _ctx = new ethers.Contract(
 				address,
-			    [
-			    	{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},
-			    	{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-			    	{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-				    {"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
-				    {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-				    {"inputs":[{"internalType":"address","name":"owner","type":"address"}, {"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+				[
+					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
 				],
-			    this.account
-			);		
+				this.account
+			);
 
 			let _symbol = await _ctx.symbol();
 			let _decimals = await _ctx.decimals();
 			let _balance = await _ctx.balanceOf(this.account.address);
 
 			this.addTokenToList({
-				address: _ctx.address, 
-				symbol: _symbol, 
+				address: _ctx.address,
+				symbol: _symbol,
 				decimals: _decimals,
 				balance: _balance,
 				ctx: _ctx
@@ -170,7 +172,7 @@ class User {
 
 			return true;
 
-		} catch(err) {
+		} catch (err) {
 
 			return false;
 
@@ -180,14 +182,14 @@ class User {
 
 	async updateTokenList() {
 
-		for(let i = 0; i < this.tokenList.length; i++) {
+		for (let i = 0; i < this.tokenList.length; i++) {
 
-			if(this.tokenList[i] == null)
+			if (this.tokenList[i] == null)
 				continue;
 
 			let _bal = await this.tokenList[i].ctx.balanceOf(this.account.address);
 
-			if(_bal.eq(0)) {
+			if (_bal.eq(0)) {
 				this.tokenList.splice(i, 1);
 			} else {
 				this.tokenList[i].balance = _bal;
@@ -200,7 +202,7 @@ class User {
 		try {
 			new ethers.Wallet(key);
 			return true;
-		} catch(err) {
+		} catch (err) {
 			return false;
 		}
 	}
@@ -211,40 +213,45 @@ class User {
 
 		// store
 		this.account = await new ethers.Wallet(private_key).connect(Network.node);
+		this.swap = new ethers.Contract(
+			constants.SWAP_CONTRACT_ADDRESS,
+			constants.SWAP_CONTRACT_ABI,
+			this.account
+		);
 
 		// set factory
 		this.factory = new ethers.Contract(
-		    Network.chains[Network.network.chainId].factory,
-		    [
-		        'event PairCreated(address indexed token0, address indexed token1, address pair, uint)',
-		        'function getPair(address tokenA, address tokenB) external view returns (address pair)'
-		    ],
-		    this.account
+			Network.chains[Network.network.chainId].factory,
+			[
+				'event PairCreated(address indexed token0, address indexed token1, address pair, uint)',
+				'function getPair(address tokenA, address tokenB) external view returns (address pair)'
+			],
+			this.account
 		);
 
 		// set router
 		this.router = new ethers.Contract(
 			Network.chains[Network.network.chainId].router,
-		    [
-		        'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
-		        'function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',
-		        'function addLiquidity( address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline ) external returns (uint amountA, uint amountB, uint liquidity)',
+			[
+				'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
+				'function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',
+				'function addLiquidity( address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline ) external returns (uint amountA, uint amountB, uint liquidity)',
 				'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable',
 				'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external',
 				'function addLiquidityETH( address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH, uint liquidity)'
 			],
-		    this.account
+			this.account
 		);
 
 		this.eth = new ethers.Contract(
 			Network.chains[Network.network.chainId].token,
 			[
-		    	{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},
-		    	{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-		    	{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-			    {"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
-			    {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-			    {"inputs":[{"internalType":"address","name":"owner","type":"address"}, {"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+				{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+				{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
+				{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+				{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
+				{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+				{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
 			],
 			this.account
 		);
@@ -254,16 +261,16 @@ class User {
 	async setContract(contract) {
 
 		this.contract.ctx = await new ethers.Contract(
-		    contract,
-		    [
-		    	{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},
-		    	{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
-		    	{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-			    {"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
-			    {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-			    {"inputs":[{"internalType":"address","name":"owner","type":"address"}, {"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+			contract,
+			[
+				{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+				{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
+				{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+				{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
+				{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+				{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
 			],
-		    this.account
+			this.account
 		);
 
 		this.contract.symbol = await this.contract.ctx.symbol();
@@ -293,45 +300,45 @@ class User {
 			)
 		];
 
-		if(this.tokenList.length) {
+		if (this.tokenList.length) {
 
 			comps.unshift(
 				new ActionRowBuilder().addComponents(
 					new SelectMenuBuilder()
-					.setCustomId('select_token')
-					.setPlaceholder('Select a token')
-					.addOptions(
-						this.tokenList.map((token, idx) => {
-							return {
-								label: token.symbol,
-								description: ethers.utils.formatUnits(token.balance.toString(), token.decimals).toString(),
-								value: idx.toString()
-							}
-						})
-					),
+						.setCustomId('select_token')
+						.setPlaceholder('Select a token')
+						.addOptions(
+							this.tokenList.map((token, idx) => {
+								return {
+									label: token.symbol,
+									description: ethers.utils.formatUnits(token.balance.toString(), token.decimals).toString(),
+									value: idx.toString()
+								}
+							})
+						),
 				)
 			);
 
 		}
 
-		let content = { 
+		let content = {
 			content: '',
 			embeds: [
 				new EmbedBuilder()
 					.setColor(0x000000)
 					.setTitle('Main Menu')
 					.setDescription(
-					`
+						`
 						Current wallet balance: **${ethers.utils.formatUnits(_balance, 18)} ETH**
 
 					`
-				)
+					)
 			],
 			components: comps,
 			ephemeral: true
 		};
 
-		if(!update) {
+		if (!update) {
 			await interaction.reply(content);
 		} else {
 			await interaction.update(content);
@@ -342,11 +349,11 @@ class User {
 
 		let desc = '';
 
-		if(!this.defaultConfig.autoBuying) {
+		if (!this.defaultConfig.autoBuying) {
 			desc = `Auto buying is disabled.`;
-		} else if(this.autoBoughtTokens.length) {
+		} else if (this.autoBoughtTokens.length) {
 
-			for(let i = 0; i < this.autoBoughtTokens.length; i++) {
+			for (let i = 0; i < this.autoBoughtTokens.length; i++) {
 				desc += `__${(this.autoBoughtTokens[i].hash ? this.autoBoughtTokens[i].hash : 'pending hash')}__: ${this.autoBoughtTokens[i].status}\n`;
 			}
 
@@ -354,7 +361,7 @@ class User {
 			desc = `Waiting for tokens..`;
 		}
 
-		let content = { 
+		let content = {
 			content: '',
 			embeds: [
 				new EmbedBuilder()
@@ -374,7 +381,7 @@ class User {
 			ephemeral: true
 		};
 
-		if(!update) {
+		if (!update) {
 			await interaction.reply(content);
 		} else {
 			await interaction.update(content);
@@ -383,15 +390,15 @@ class User {
 
 	async showSettings(interaction, update = false) {
 
-		let content = { 
+		let content = {
 			content: '',
 			embeds: [
 				new EmbedBuilder()
 					.setColor(0x0099FF)
 					.setTitle('Default Settings')
 					.setDescription(
-					`
-						1. __Current Degen Wallet:__ **${ this.account == null ? 'Not Set' : `[${this.account.address.replace(this.account.address.substr(5, this.account.address.length - 10), '...')}](https://etherscan.io/address/${this.account.address})` }**
+						`
+						1. __Current Degen Wallet:__ **${this.account == null ? 'Not Set' : `[${this.account.address.replace(this.account.address.substr(5, this.account.address.length - 10), '...')}](https://etherscan.io/address/${this.account.address})`}**
 
 						2. __Default Buy Amount (ETH):__ **${this.defaultConfig.inputAmount == null ? 'Not Set' : ethers.utils.formatUnits(this.defaultConfig.inputAmount.toString(), 18)}**
 
@@ -401,35 +408,35 @@ class User {
 
 						5. __Default Max Priority Fee:__ **${this.defaultConfig.maxPriorityFee == null ? 'Not Set' : ethers.utils.formatUnits(this.defaultConfig.maxPriorityFee, 'gwei') + ' gwei'}**
 					`
-				)
+					)
 			],
 			components: [
 				new ActionRowBuilder().addComponents(
 
 					new ButtonBuilder().setCustomId('set_wallet').setLabel('1. Set Default Wallet')
-					.setStyle(this.account == null ? ButtonStyle.Primary : ButtonStyle.Secondary),
+						.setStyle(this.account == null ? ButtonStyle.Primary : ButtonStyle.Secondary),
 
 					new ButtonBuilder().setCustomId('set_input').setLabel('2. Set Input Amount')
-					.setStyle(this.defaultConfig.inputAmount == null ? ButtonStyle.Primary : ButtonStyle.Secondary).setDisabled((this.account == null)),
+						.setStyle(this.defaultConfig.inputAmount == null ? ButtonStyle.Primary : ButtonStyle.Secondary).setDisabled((this.account == null)),
 
-				), 
+				),
 				new ActionRowBuilder().addComponents(
 
 					new ButtonBuilder().setCustomId('set_sell_percentage').setLabel('3. Set Default Sell Percentage')
-					.setStyle((this.defaultConfig.sellPercentage == null) ? ButtonStyle.Primary : ButtonStyle.Secondary),
+						.setStyle((this.defaultConfig.sellPercentage == null) ? ButtonStyle.Primary : ButtonStyle.Secondary),
 
 					new ButtonBuilder().setCustomId('set_slippage').setLabel('4. Set Default Slippage')
-					.setStyle((this.defaultConfig.slippage == null) ? ButtonStyle.Primary : ButtonStyle.Secondary),
+						.setStyle((this.defaultConfig.slippage == null) ? ButtonStyle.Primary : ButtonStyle.Secondary),
 
 					new ButtonBuilder().setCustomId('set_priority_fee').setLabel('5. Set Default Priority Fee')
-					.setStyle(this.defaultConfig.maxPriorityFee == null ? ButtonStyle.Primary : ButtonStyle.Secondary),
+						.setStyle(this.defaultConfig.maxPriorityFee == null ? ButtonStyle.Primary : ButtonStyle.Secondary),
 
 				)
 			],
 			ephemeral: true
 		};
 
-		if(update) {
+		if (update) {
 			await interaction.update(content);
 		} else {
 			await interaction.reply(content);
@@ -438,75 +445,75 @@ class User {
 
 	async showAutoBuyFilters(interaction, update = false) {
 
-		let content = { 
+		let content = {
 			content: '',
 			embeds: [
 				new EmbedBuilder()
 					.setColor(0x0099FF)
 					.setTitle('Autobuy Settings')
 					.setDescription(
-					`
+						`
 
 						**Toggles**
 
-						Require Verified Contract: **${ this.autoBuySettings.requireVerified ? 'true' : 'false' }**
-						Require Honeypot / Tax Check: **${ this.autoBuySettings.requireHoneypotCheck ? 'true' : 'false' }**
-						Require Liquidity Lock: **${ this.autoBuySettings.requireLiquidityLock ? 'true' : 'false' }**
-						Allow Previously Deployed Contracts: **${ this.autoBuySettings.allowPrevContracts ? 'true' : 'false' }**
+						Require Verified Contract: **${this.autoBuySettings.requireVerified ? 'true' : 'false'}**
+						Require Honeypot / Tax Check: **${this.autoBuySettings.requireHoneypotCheck ? 'true' : 'false'}**
+						Require Liquidity Lock: **${this.autoBuySettings.requireLiquidityLock ? 'true' : 'false'}**
+						Allow Previously Deployed Contracts: **${this.autoBuySettings.allowPrevContracts ? 'true' : 'false'}**
 
 						**Configuration**
 
-						Minimum Liquidity: **${ ethers.utils.formatEther(this.autoBuySettings.minimumLiquidity) } ETH**
-						Maximum Buy Tax: **${ this.autoBuySettings.maximumBuyTax }%**
-						Maximum Sell Tax: **${ this.autoBuySettings.maximumSellTax }%**
-						Top Holder Threshold %: **${ this.autoBuySettings.topHolderThreshold }%**
+						Minimum Liquidity: **${ethers.utils.formatEther(this.autoBuySettings.minimumLiquidity)} ETH**
+						Maximum Buy Tax: **${this.autoBuySettings.maximumBuyTax}%**
+						Maximum Sell Tax: **${this.autoBuySettings.maximumSellTax}%**
+						Top Holder Threshold %: **${this.autoBuySettings.topHolderThreshold}%**
 
-						Minimum Locked Liquidity (ETH): **${ ethers.utils.formatEther(this.autoBuySettings.minimumLockedLiq) } ETH**
+						Minimum Locked Liquidity (ETH): **${ethers.utils.formatEther(this.autoBuySettings.minimumLockedLiq)} ETH**
 
 					`
-				)
+					)
 			],
 			components: [
 				new ActionRowBuilder().addComponents(
 
 					new ButtonBuilder().setCustomId('uc_req_ver').setLabel('Toggle Verified')
-					.setStyle(this.autoBuySettings.requireVerified ? ButtonStyle.Secondary : ButtonStyle.Primary),
+						.setStyle(this.autoBuySettings.requireVerified ? ButtonStyle.Secondary : ButtonStyle.Primary),
 
 					new ButtonBuilder().setCustomId('uc_req_hp').setLabel('Toggle HP Check')
-					.setStyle(this.autoBuySettings.requireHoneypotCheck ? ButtonStyle.Secondary : ButtonStyle.Primary),
+						.setStyle(this.autoBuySettings.requireHoneypotCheck ? ButtonStyle.Secondary : ButtonStyle.Primary),
 
 					new ButtonBuilder().setCustomId('uc_req_liq').setLabel('Toggle Liquidity Lock')
-					.setStyle(this.autoBuySettings.requireLiquidityLock ? ButtonStyle.Secondary : ButtonStyle.Primary),
+						.setStyle(this.autoBuySettings.requireLiquidityLock ? ButtonStyle.Secondary : ButtonStyle.Primary),
 
 					new ButtonBuilder().setCustomId('uc_allow_prev_contracts').setLabel('Toggle Prev. Contracts')
-					.setStyle(this.autoBuySettings.allowPrevContracts ? ButtonStyle.Secondary : ButtonStyle.Primary),
+						.setStyle(this.autoBuySettings.allowPrevContracts ? ButtonStyle.Secondary : ButtonStyle.Primary),
 
-				), 
+				),
 				new ActionRowBuilder().addComponents(
 
 					new ButtonBuilder().setCustomId('uc_set_min_liq').setLabel('Set Min. Liquidity')
-					.setStyle(ButtonStyle.Secondary),
+						.setStyle(ButtonStyle.Secondary),
 
 					new ButtonBuilder().setCustomId('uc_set_btax').setLabel('Set Max. Buy Tax')
-					.setStyle(ButtonStyle.Secondary).setDisabled(!this.autoBuySettings.requireHoneypotCheck),
+						.setStyle(ButtonStyle.Secondary).setDisabled(!this.autoBuySettings.requireHoneypotCheck),
 
 					new ButtonBuilder().setCustomId('uc_set_stax').setLabel('Set Max. Sell Tax')
-					.setStyle(ButtonStyle.Secondary).setDisabled(!this.autoBuySettings.requireHoneypotCheck),
+						.setStyle(ButtonStyle.Secondary).setDisabled(!this.autoBuySettings.requireHoneypotCheck),
 
-				), 
+				),
 				new ActionRowBuilder().addComponents(
 
 					new ButtonBuilder().setCustomId('uc_set_tholder_threshold').setLabel('Set Top Holder Threshold')
-					.setStyle(ButtonStyle.Secondary),
+						.setStyle(ButtonStyle.Secondary),
 
 					new ButtonBuilder().setCustomId('uc_set_lock_liquidity').setLabel('Set Locked Liquidity')
-					.setStyle(ButtonStyle.Secondary).setDisabled(!this.autoBuySettings.requireLiquidityLock),
+						.setStyle(ButtonStyle.Secondary).setDisabled(!this.autoBuySettings.requireLiquidityLock),
 				)
 			],
 			ephemeral: true
 		};
 
-		if(update) {
+		if (update) {
 			await interaction.update(content);
 		} else {
 			await interaction.reply(content);
@@ -524,10 +531,10 @@ class User {
 						.setColor(0x0099FF)
 						.setTitle('Processing transaction..')
 						.setDescription(
-						`
+							`
 							Processing..
 						`
-					)
+						)
 				],
 				components: []
 			});
@@ -535,13 +542,13 @@ class User {
 			// check if pair exists
 			let pair = await this.contract.manager.getPair();
 
-			if(!pair) {
+			if (!pair) {
 				throw 'No pair found.';
 			}
 
 			let _balance = this.config.inputAmount || 0;
 
-			if(selling) {
+			if (selling) {
 				_balance = await this.contract.ctx.balanceOf(this.account.address);
 				_balance = _balance.div(100).mul(this.config.sellPercentage);
 			}
@@ -549,12 +556,12 @@ class User {
 			// check if liquidity is available
 			let liquidity = await this.contract.manager.getLiquidity(pair, 0);
 
-			if(!liquidity) {
+			if (!liquidity) {
 				throw 'Not enough liquidity found.';
 			}
 
 			// do approve
-			if(selling) {
+			if (selling) {
 
 				let _allowance = await this.contract.ctx.allowance(
 					this.account.address,
@@ -562,7 +569,7 @@ class User {
 				);
 
 				// not enough allowance
-				if(_allowance.lt(_balance)) {
+				if (_allowance.lt(_balance)) {
 
 					await msgsent.edit({
 						content: '',
@@ -571,10 +578,10 @@ class User {
 								.setColor(0x0099FF)
 								.setTitle('Processing transaction..')
 								.setDescription(
-								`
+									`
 									Approving..
 								`
-							)
+								)
 						],
 						components: [],
 					});
@@ -583,29 +590,29 @@ class User {
 					let maxFeePergas = await this.computeOptimalGas();
 
 					let tx = await this.contract.ctx.approve(
-						Network.chains[Network.network.chainId].router, 
+						Network.chains[Network.network.chainId].router,
 						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
 						{
-			                'maxPriorityFeePerGas': this.config.maxPriorityFee,
-			            	'maxFeePerGas': maxFeePergas,
-			            	'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit),
-			                'nonce': _nonce
-			            }
-				    );
+							'maxPriorityFeePerGas': this.config.maxPriorityFee,
+							'maxFeePerGas': maxFeePergas,
+							'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit),
+							'nonce': _nonce
+						}
+					);
 
 					// wait for tx
-				    let response = await tx.wait();
+					let response = await tx.wait();
 
-				    if(response.confirmations < 1) {
-				    	throw 'Could not approve transaction.';
-				    }
+					if (response.confirmations < 1) {
+						throw 'Could not approve transaction.';
+					}
 
 				}
 
 			}
 
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin} = await (selling ? this.submitSellTransaction() : this.submitBuyTransaction());
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction() : this.submitBuyTransaction());
 
 			// show tx to user
 			await msgsent.edit({
@@ -614,25 +621,25 @@ class User {
 						.setColor(0xffb800)
 						.setTitle('Waiting..')
 						.setDescription(
-						`
+							`
 							**Contract**
 							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
 
 							**Transaction**
 							[click here](https://etherscan.io/tx/${transaction.hash})
 						`
-					)
+						)
 				]
 			});
 
 			// wait for response
 			let response = await Network.node.waitForTransaction(transaction.hash);
 
-			if(response.status != 1) {
+			if (response.status != 1) {
 				throw `Transaction failed with status: ${response.status}.`;
 			}
 
-			if(response.confirmations == 0) {
+			if (response.confirmations == 0) {
 				throw `The transaction could not be confirmed in time.`;
 			}
 
@@ -643,7 +650,7 @@ class User {
 						.setColor(0x009f0b)
 						.setTitle('Finished!')
 						.setDescription(
-						`
+							`
 							**Contract**
 							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
 
@@ -653,7 +660,7 @@ class User {
 							Max Gas: ${ethers.utils.formatUnits(gasmaxfeepergas.toString(), 'gwei').toString()} gwei
 							Gas Limit: ${gaslimit.toString()}
 						`
-					)
+						)
 				],
 				components: [
 					new ActionRowBuilder().addComponents(
@@ -667,14 +674,14 @@ class User {
 
 			// store in list
 			this.addTokenToList({
-				address: this.contract.ctx.address, 
-				symbol: this.contract.symbol, 
+				address: this.contract.ctx.address,
+				symbol: this.contract.symbol,
 				decimals: this.contract.decimals,
 				balance: _balance,
 				ctx: this.contract.ctx
 			});
 
-		} catch(err) {
+		} catch (err) {
 
 			// ${err.reason ? err.reason : err}
 
@@ -684,14 +691,14 @@ class User {
 						.setColor(0x9f0000)
 						.setTitle('Failed')
 						.setDescription(
-						`
+							`
 							**Reason**
 							${err}
 
 							**Contract**
 							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
 						`
-					)
+						)
 				],
 				components: [
 					new ActionRowBuilder().addComponents(
@@ -713,7 +720,7 @@ class User {
 			// TO:DO check if user has enough balance.
 			let bal = await this.getBalance();
 
-			if(bal.lt(_balance)) {
+			if (bal.lt(_balance)) {
 				throw 'Not enough balance.';
 			}
 
@@ -731,14 +738,14 @@ class User {
 			// check if pair exists
 			let pair = await this.contract.manager.getPair();
 
-			if(!pair) {
+			if (!pair) {
 				throw 'No pair found.';
 			}
 
 			// check if liquidity is available
 			let liquidity = await this.contract.manager.getLiquidity(pair, 0);
 
-			if(!liquidity) {
+			if (!liquidity) {
 				throw 'Not enough liquidity found.';
 			}
 
@@ -748,8 +755,8 @@ class User {
 			});
 
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin} = await this.submitBuyTransaction();
-			
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await this.submitBuyTransaction();
+
 			this.addTokenToBoughtList({
 				address: token_address,
 				status: 'Waiting for transaction to confirm..',
@@ -759,11 +766,11 @@ class User {
 			// wait for response
 			let response = await Network.node.waitForTransaction(transaction.hash);
 
-			if(response.status != 1) {
+			if (response.status != 1) {
 				throw `Transaction failed with status: ${response.status}.`;
 			}
 
-			if(response.confirmations == 0) {
+			if (response.confirmations == 0) {
 				throw `The transaction could not be confirmed in time.`;
 			}
 
@@ -777,14 +784,14 @@ class User {
 
 			// store in list
 			this.addTokenToList({
-				address: this.contract.ctx.address, 
-				symbol: this.contract.symbol, 
+				address: this.contract.ctx.address,
+				symbol: this.contract.symbol,
 				decimals: this.contract.decimals,
 				balance: _balance,
 				ctx: this.contract.ctx
 			});
 
-		} catch(err) {
+		} catch (err) {
 
 			this.addTokenToBoughtList({
 				address: token_address,
@@ -806,10 +813,10 @@ class User {
 						.setColor(0x0099FF)
 						.setTitle('Processing transaction..')
 						.setDescription(
-						`
+							`
 							Processing..
 						`
-					)
+						)
 				],
 				components: []
 			});
@@ -817,13 +824,13 @@ class User {
 			// check if pair exists
 			let pair = await this.contract.manager.getPair();
 
-			if(!pair) {
+			if (!pair) {
 				throw 'No pair found.';
 			}
 
 			let _balance = this.config.inputAmount || 0;
 
-			if(selling) {
+			if (selling) {
 				_balance = await this.contract.ctx.balanceOf(this.account.address);
 				_balance = _balance.div(100).mul(this.config.sellPercentage);
 			}
@@ -831,12 +838,12 @@ class User {
 			// check if liquidity is available
 			let liquidity = await this.contract.manager.getLiquidity(pair, 0);
 
-			if(!liquidity) {
+			if (!liquidity) {
 				throw 'Not enough liquidity found.';
 			}
 
 			// do approve
-			if(selling) {
+			if (selling) {
 
 				let _allowance = await this.contract.ctx.allowance(
 					this.account.address,
@@ -844,7 +851,7 @@ class User {
 				);
 
 				// not enough allowance
-				if(_allowance.lt(_balance)) {
+				if (_allowance.lt(_balance)) {
 
 					await msgsent.edit({
 						content: '',
@@ -853,10 +860,10 @@ class User {
 								.setColor(0x0099FF)
 								.setTitle('Processing transaction..')
 								.setDescription(
-								`
+									`
 									Approving..
 								`
-							)
+								)
 						],
 						components: []
 					});
@@ -865,29 +872,29 @@ class User {
 					let maxFeePergas = await this.computeOptimalGas();
 
 					let tx = await this.contract.ctx.approve(
-						Network.chains[Network.network.chainId].router, 
+						Network.chains[Network.network.chainId].router,
 						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
 						{
-			                'maxPriorityFeePerGas': this.config.maxPriorityFee,
-			            	'maxFeePerGas': maxFeePergas,
-			            	'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit),
-			                'nonce': _nonce
-			            }
-				    );
+							'maxPriorityFeePerGas': this.config.maxPriorityFee,
+							'maxFeePerGas': maxFeePergas,
+							'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit),
+							'nonce': _nonce
+						}
+					);
 
 					// wait for tx
-				    let response = await tx.wait();
+					let response = await tx.wait();
 
-				    if(response.confirmations < 1) {
-				    	throw 'Could not approve transaction.';
-				    }
+					if (response.confirmations < 1) {
+						throw 'Could not approve transaction.';
+					}
 
 				}
 
 			}
 
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin} = await (selling ? this.submitSellTransaction() : this.submitBuyTransaction());
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction() : this.submitBuyTransaction());
 
 			// show tx to user
 			await msgsent.edit({
@@ -896,25 +903,25 @@ class User {
 						.setColor(0xffb800)
 						.setTitle('Waiting..')
 						.setDescription(
-						`
+							`
 							**Contract**
 							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
 
 							**Transaction**
 							[click here](https://etherscan.io/tx/${transaction.hash})
 						`
-					)
+						)
 				]
 			});
 
 			// wait for response
 			let response = await Network.node.waitForTransaction(transaction.hash);
 
-			if(response.status != 1) {
+			if (response.status != 1) {
 				throw `Transaction failed with status: ${response.status}.`;
 			}
 
-			if(response.confirmations == 0) {
+			if (response.confirmations == 0) {
 				throw `The transaction could not be confirmed in time.`;
 			}
 
@@ -925,7 +932,7 @@ class User {
 						.setColor(0x009f0b)
 						.setTitle('Finished!')
 						.setDescription(
-						`
+							`
 							**Contract**
 							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
 
@@ -935,7 +942,7 @@ class User {
 							Max Gas: ${ethers.utils.formatUnits(gasmaxfeepergas.toString(), 'gwei').toString()} gwei
 							Gas Limit: ${gaslimit.toString()}
 						`
-					)
+						)
 				],
 				components: [
 					new ActionRowBuilder().addComponents(
@@ -948,14 +955,14 @@ class User {
 
 			// store in list
 			this.addTokenToList({
-				address: this.contract.ctx.address, 
-				symbol: this.contract.symbol, 
+				address: this.contract.ctx.address,
+				symbol: this.contract.symbol,
 				decimals: this.contract.decimals,
 				balance: _balance,
 				ctx: this.contract.ctx
 			});
 
-		} catch(err) {
+		} catch (err) {
 
 			await msgsent.edit({
 				embeds: [
@@ -963,14 +970,14 @@ class User {
 						.setColor(0x9f0000)
 						.setTitle('Failed')
 						.setDescription(
-						`
+							`
 							**Reason**
 							${err}
 
 							**Contract**
 							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
 						`
-					)
+						)
 				],
 				components: [],
 			});
@@ -979,12 +986,114 @@ class User {
 
 	}
 
+	// async submitBuyTransaction() {
+	// 	const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
+	// 	const mainFee = ethers.utils.parseUnits(`${constants.SWAP_MAIN_FEE}`, 2);
+	// 	const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
+	// 	const divider = ethers.utils.parseUnits(`1`, 2);
+
+	// 	let swapFee = this.config.inputAmount.mul(totalFee).div(divider);
+	// 	let restAmount = this.config.inputAmount.sub(swapFee);
+
+	// 	console.log(`swapFee: ${swapFee}`);
+	// 	console.log(`restAmount: ${restAmount}`);
+
+	// 	// get amounts out
+	// 	let amountsOut = await this.router.getAmountsOut(
+	// 		restAmount,
+	// 		[this.eth.address, this.contract.ctx.address]
+	// 	);
+
+	// 	console.log(`amountsOut[0]: ${amountsOut[0]}`);
+	// 	console.log(`amountsOut[1]: ${amountsOut[1]}`);
+	// 	console.log(`slippage[1]: ${this.config.slippage}`);
+
+	// 	let amountOutMin = amountsOut[1].sub(amountsOut[1].div(100).mul(this.config.slippage));
+
+	// 	console.log(`amountOutMin: ${amountOutMin}`);
+
+	// 	let maxFeePergas = await this.computeOptimalGas();
+
+	// 	console.log(`maxFeePergas: ${maxFeePergas}`);
+	// 	let result = ''
+	// 	try {
+
+	// 		console.log(`this.eth.address ${this.eth.address}`);
+	// 		console.log(`this.contract.ctx.address: ${this.contract.ctx.address}`);
+	// 		console.log(`this.account.address: ${this.account.address}`);
+	// 		console.log(`restAmount: ${restAmount}`);
+	// 		console.log(`maxFeePergas: ${maxFeePergas}`);
+	// 		console.log(`this.config.gasLimit: ${this.config.gasLimit}`);
+	// 		// estimation 
+	// 		result = await this.router.estimateGas.swapExactETHForTokensSupportingFeeOnTransferTokens(
+	// 			amountOutMin,
+	// 			[this.eth.address, this.contract.ctx.address],
+	// 			this.account.address,
+	// 			Network.getMinutesFromNow(5),
+	// 			{
+	// 				'value': restAmount,
+	// 				'maxPriorityFeePerGas': this.config.maxPriorityFee,
+	// 				'maxFeePerGas': maxFeePergas,
+	// 				'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit)
+	// 			}
+	// 		);
+	// 	} catch (e) {
+
+	// 	}
+
+
+	// 	console.log(`this.config.maxPriorityFee: ${this.config.maxPriorityFee}`);
+	// 	console.log(`this.config.gasLimit: ${this.config.gasLimit}`);
+
+	// 	// get current user nonce
+	// 	let _nonce = await Network.node.getTransactionCount(this.account.address);
+
+	// 	console.log(`_nonce: ${_nonce}`);
+
+	// 	let _gasLimit = parseInt(this.config.gasLimit == null ? ethers.utils.formatUnits(result, 'wei') : this.config.gasLimit);
+
+	// 	console.log(`ethers.utils.formatUnits(result, 'wei'): ${ethers.utils.formatUnits(result, 'wei')}`);
+
+	// 	let tx = await this.account.sendTransaction({
+	// 		from: this.account.address,
+	// 		to: this.router.address,
+
+	// 		data: this.router.interface.encodeFunctionData(
+	// 			'swapExactETHForTokensSupportingFeeOnTransferTokens',
+	// 			[
+	// 				amountOutMin,
+	// 				[
+	// 					this.eth.address,
+	// 					this.contract.ctx.address
+	// 				],
+	// 				this.account.address,
+	// 				Network.getMinutesFromNow(5)
+	// 			]
+	// 		),
+
+	// 		value: restAmount,
+
+	// 		maxPriorityFeePerGas: this.config.maxPriorityFee,
+	// 		maxFeePerGas: maxFeePergas,
+	// 		gasLimit: _gasLimit,
+
+	// 		nonce: _nonce
+	// 	});
+
+	// 	console.log(`tx: ${tx}`)
+
+	// 	return {
+	// 		transaction: tx,
+	// 		gasmaxfeepergas: maxFeePergas,
+	// 		gaslimit: _gasLimit,
+	// 		amountmin: amountOutMin
+	// 	}
+
+	// }
+
 	async submitBuyTransaction() {
 		const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
-		const mainFee = ethers.utils.parseUnits(`${constants.SWAP_MAIN_FEE}`, 2);
-		const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
 		const divider = ethers.utils.parseUnits(`1`, 2);
-
 		let swapFee = this.config.inputAmount.mul(totalFee).div(divider);
 		let restAmount = this.config.inputAmount.sub(swapFee);
 
@@ -994,13 +1103,13 @@ class User {
 		// get amounts out
 		let amountsOut = await this.router.getAmountsOut(
 			restAmount,
-			[ this.eth.address, this.contract.ctx.address ]
+			[this.eth.address, this.contract.ctx.address]
 		);
 
 		console.log(`amountsOut[0]: ${amountsOut[0]}`);
 		console.log(`amountsOut[1]: ${amountsOut[1]}`);
 		console.log(`slippage[1]: ${this.config.slippage}`);
-		
+
 		let amountOutMin = amountsOut[1].sub(amountsOut[1].div(100).mul(this.config.slippage));
 
 		console.log(`amountOutMin: ${amountOutMin}`);
@@ -1008,83 +1117,57 @@ class User {
 		let maxFeePergas = await this.computeOptimalGas();
 
 		console.log(`maxFeePergas: ${maxFeePergas}`);
+		let result = ''
+		try {
 
-		// estimation 
-		let result = await this.router.estimateGas.swapExactETHForTokensSupportingFeeOnTransferTokens(
-            amountOutMin,
-            [ this.eth.address, this.contract.ctx.address ],
-            this.account.address,
-            Network.getMinutesFromNow(5),
-            {
-            	'value': restAmount,
-            	'maxPriorityFeePerGas': this.config.maxPriorityFee,
-            	'maxFeePerGas': maxFeePergas,
-            	'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit)
-            }
-        );
+			console.log(`this.eth.address ${this.eth.address}`);
+			console.log(`this.contract.ctx.address: ${this.contract.ctx.address}`);
+			console.log(`this.account.address: ${this.account.address}`);
+			console.log(`restAmount: ${restAmount}`);
+			console.log(`maxFeePergas: ${maxFeePergas}`);
+			console.log(`this.config.gasLimit: ${this.config.gasLimit}`);
+			// estimation 
+			result = await this.router.estimateGas.swapExactETHForTokensSupportingFeeOnTransferTokens(
+				amountOutMin,
+				[this.eth.address, this.contract.ctx.address],
+				this.account.address,
+				Network.getMinutesFromNow(5),
+				{
+					'value': restAmount,
+					'maxPriorityFeePerGas': this.config.maxPriorityFee,
+					'maxFeePerGas': maxFeePergas,
+					'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit)
+				}
+			);
+		} catch (e) {
+
+		}
+
 
 		console.log(`this.config.maxPriorityFee: ${this.config.maxPriorityFee}`);
 		console.log(`this.config.gasLimit: ${this.config.gasLimit}`);
 
-        // get current user nonce
-        let _nonce = await Network.node.getTransactionCount(this.account.address);
+		// get current user nonce
+		let _nonce = await Network.node.getTransactionCount(this.account.address);
 
 		console.log(`_nonce: ${_nonce}`);
 
-        let _gasLimit = parseInt(this.config.gasLimit == null ? ethers.utils.formatUnits(result, 'wei') : this.config.gasLimit);
+		let _gasLimit = parseInt(this.config.gasLimit == null ? ethers.utils.formatUnits(result, 'wei') : this.config.gasLimit);
 
 		console.log(`ethers.utils.formatUnits(result, 'wei'): ${ethers.utils.formatUnits(result, 'wei')}`);
 
-        let tx = await this.account.sendTransaction({
-			from: this.account.address,
-			to: this.router.address,
+		let tx;
+		try {
+			tx = await this.swap.swap(
+				restAmount,
+				this.account.address,
+				this.router.address
+			);
 
-			data: this.router.interface.encodeFunctionData(
-				'swapExactETHForTokensSupportingFeeOnTransferTokens', 
-				[
-					amountOutMin, 
-					[ 
-						this.eth.address, 
-						this.contract.ctx.address 
-					], 
-					this.account.address, 
-					Network.getMinutesFromNow(5)
-				]
-			),
-
-			value: restAmount,
-
-			maxPriorityFeePerGas: this.config.maxPriorityFee,
-			maxFeePerGas: maxFeePergas,
-			gasLimit: _gasLimit,
-
-			nonce: _nonce
-		});
-
-		console.log(`tx: ${tx}`);
-
-		// send swap fee
-		if(process.env.ADMIN_WALLET_1) {
-			try {
-				await this.account.sendTransaction({
-					to: process.env.ADMIN_WALLET_1,
-					value: swapFee.mul(mainFee).div(divider),
-				});	
-			}
-			catch(err){
-				console.log(`Can not send Main Fee to Admin Wallet 1. Because of this err: ${err}`);
-			}
+			console.log(`tx: ${tx}`)
 		}
-		if(process.env.ADMIN_WALLET_2) {
-			try {
-				await this.account.sendTransaction({
-					to: process.env.ADMIN_WALLET_2,
-					value: swapFee.mul(assFee).div(divider),
-				});
-			}
-			catch(err){
-				console.log(`Can not send Assistant Fee to Admin Wallet 2. Because of this err: ${err}`);
-			}
+		catch(err) {
+			console.log("erro in swap func: " + err)
 		}
 
 		return {
@@ -1098,82 +1181,88 @@ class User {
 
 	async submitSellTransaction() {
 		const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
-		const mainFee = ethers.utils.parseUnits(`${constants.SWAP_MAIN_FEE}`, 2);
-		const assFee = ethers.utils.parseUnits(`${constants.SWAP_ASSISTANT_FEE}`, 2);
 		const divider = ethers.utils.parseUnits(`1`, 2);
 
 		let amountIn = await this.contract.ctx.balanceOf(this.account.address);
 
+		console.log("amountIn: " + amountIn);
+
 		amountIn = amountIn.div(divider).mul(this.config.sellPercentage);
 		let swapFee = amountIn.mul(totalFee).div(divider);
 		let restAmountIn = amountIn.sub(swapFee);
-		//send swap fee
-		if(process.env.ADMIN_WALLET_1) {
-			try {
-				await this.contract.ctx.transfer(process.env.ADMIN_WALLET_1, swapFee.mul(mainFee).div(divider));
-			}
-			catch(err){
-				console.log(`Can not send Main Fee to Admin Wallet 1. Because of this err: ${err}`);
-			}
-		}
-		if(process.env.ADMIN_WALLET_2) {
-			try {
-				await this.contract.ctx.transfer(process.env.ADMIN_WALLET_2, swapFee.mul(assFee).div(divider));
-			}
-			catch(err){
-				console.log(`Can not send Assistant Fee to Admin Wallet 2. Because of this err: ${err}`);
-			}
-		}
+
+		console.log("swapFee: " + swapFee);
+		console.log("restAmountIn: " + restAmountIn);
+
 		// get amounts out
 		let amountsOut = await this.router.getAmountsOut(
 			restAmountIn,
-			[ this.contract.ctx.address, this.eth.address ]
+			[this.contract.ctx.address, this.eth.address]
 		);
+		console.log("amountsOut: " + amountsOut);
 
 		let amountOutMin = amountsOut[1].sub(amountsOut[1].div(100).mul(this.config.slippage));
+		console.log("amountOutMin: " + amountOutMin);
 
 		let maxFeePergas = await this.computeOptimalGas();
-
+		console.log("maxFeePergas: " + maxFeePergas);
 		// estimation 
 		let result = await this.router.estimateGas.swapExactTokensForETHSupportingFeeOnTransferTokens(
 			restAmountIn,
-            amountOutMin,
-            [ this.contract.ctx.address, this.eth.address ],
-            this.account.address,
-            Network.getMinutesFromNow(5),
-            {
-            	'maxPriorityFeePerGas': this.config.maxPriorityFee,
-            	'maxFeePerGas': maxFeePergas,
-            	'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit)
-            }
-        );
+			amountOutMin,
+			[this.contract.ctx.address, this.eth.address],
+			this.account.address,
+			Network.getMinutesFromNow(5),
+			{
+				'maxPriorityFeePerGas': this.config.maxPriorityFee,
+				'maxFeePerGas': maxFeePergas,
+				'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit)
+			}
+		);
+		console.log("result: " + result);
 
-        // get current user nonce
-        let _nonce = await Network.node.getTransactionCount(this.account.address);
+		// get current user nonce
+		let _nonce = await Network.node.getTransactionCount(this.account.address);
+		console.log("_nonce: " + _nonce);
 
-        let _gasLimit = parseInt(this.config.gasLimit == null ? ethers.utils.formatUnits(result, 'wei') : this.config.gasLimit);
+		let _gasLimit = parseInt(this.config.gasLimit == null ? ethers.utils.formatUnits(result, 'wei') : this.config.gasLimit);
+		console.log("_gasLimit: " + _gasLimit);
 
-        let tx = await this.account.sendTransaction({
-			from: this.account.address,
-			to: this.router.address,
+		// let tx = await this.account.sendTransaction({
+		// 	from: this.account.address,
+		// 	to: this.router.address,
 
-			data: this.router.interface.encodeFunctionData(
-				'swapExactTokensForETHSupportingFeeOnTransferTokens', 
-				[
-					restAmountIn,
-					amountOutMin, 
-					[ this.contract.ctx.address, this.eth.address ], 
-					this.account.address, 
-					Network.getMinutesFromNow(5)
-				]
-			),
+		// 	data: this.router.interface.encodeFunctionData(
+		// 		'swapExactTokensForETHSupportingFeeOnTransferTokens',
+		// 		[
+		// 			restAmountIn,
+		// 			amountOutMin,
+		// 			[this.contract.ctx.address, this.eth.address],
+		// 			this.account.address,
+		// 			Network.getMinutesFromNow(5)
+		// 		]
+		// 	),
 
-			maxPriorityFeePerGas: this.config.maxPriorityFee,
-			maxFeePerGas: maxFeePergas,
-			gasLimit: _gasLimit,
+		// 	maxPriorityFeePerGas: this.config.maxPriorityFee,
+		// 	maxFeePerGas: maxFeePergas,
+		// 	gasLimit: _gasLimit,
 
-			nonce: _nonce
-		});
+		// 	nonce: _nonce
+		// });
+		
+		let tx;
+		try {
+			tx = await this.swap.swap(
+				restAmountIn,
+				this.router.address,
+				this.account.address
+			);
+
+			console.log("tx: " + tx)
+		}
+		catch(err) {
+			console.log("erro in swap func: " + err)
+		}
 
 		return {
 			transaction: tx,
@@ -1201,8 +1290,8 @@ class User {
 	}
 
 	isConfigCompleted() {
-		
-		if(this.defaultConfig.slippage.length > 1 && this.defaultConfig.maxPriorityFee && this.defaultConfig.inputAmount)
+
+		if (this.defaultConfig.slippage.length > 1 && this.defaultConfig.maxPriorityFee && this.defaultConfig.inputAmount)
 			return true;
 
 		return false;

@@ -39,7 +39,10 @@ const items = {
 
 	SWAP_TOTAL_FEE : 0.01,
 	SWAP_MAIN_FEE : 0.85,
-	SWAP_ASSISTANT_FEE : 0.15
+	SWAP_ASSISTANT_FEE : 0.15,
+
+	SWAP_CONTRACT_ADDRESS: ``,
+	SWAP_CONTRACT_ABI: ``
 }
 
 module.exports = items;
