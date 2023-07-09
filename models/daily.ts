@@ -1,11 +1,11 @@
 import mongoose from 'mongoose'
 
 const DailySchema = new mongoose.Schema({
-  address: {
+  discordId: {
     type: String,
     required: true,
   },
-  discordId: {
+  address: {
     type: String,
     required: true,
   },

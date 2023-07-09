@@ -777,17 +777,11 @@ class Network {
 			let verified = this.isContractVerified(tokenAddress) ? 'true' : 'false';
 
 			// fetch hp / tax info
-			let simulation = await this.simulateTransaction(tokenAddress);
-			// let honeypot = simulation.error ? true : false;
 
-			let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : (simulation.error ? true : false);
+			let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
 
-			
-			// let buyTax = honeypot ? 'N/A' : simulation.buyTax;
-			// let sellTax = honeypot ? 'N/A' : simulation.sellTax;
-
-			let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : simulation.buyTax);
-			let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : simulation.sellTax);
+			let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : `N/A`);
+			let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : `N/A`);
 
 			console.log("honeyData?.honeypotResult?.isHoneypot:" + honeyData?.honeypotResult?.isHoneypot);
 			console.log("honeyData?.simulationResult?.buyTax:" + honeyData?.simulationResult?.buyTax);
@@ -952,16 +946,11 @@ class Network {
 		const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
 		console.log("liquidity:" + liquidity);
 		//tax
-		let simulation = await this.simulateTransaction(tokenAddress);
-		// let honeypot = simulation.error ? true : false;
 
-		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : (simulation.error ? true : false);
+		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
 
-		// let buyTax = honeypot ? 'N/A' : simulation.buyTax;
-		// let sellTax = honeypot ? 'N/A' : simulation.sellTax;
-
-		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : simulation.buyTax);
-		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : simulation.sellTax);
+		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : 'N/A');
+		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : 'N/A');
 
 		console.log("honeyData?.honeypotResult?.isHoneypot:" + honeyData?.honeypotResult?.isHoneypot);
 		console.log("honeyData?.simulationResult?.buyTax:" + honeyData?.simulationResult?.buyTax);
@@ -1133,16 +1122,10 @@ class Network {
 		console.log("liquidity:" + liquidity);
 
 		// fetch hp / tax info
-		let simulation = await this.simulateTransaction(tokenAddress);
-		// let honeypot = simulation.error ? true : false;
+		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
 
-		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : (simulation.error ? true : false);
-
-		// let buyTax = honeypot ? 'N/A' : simulation.buyTax;
-		// let sellTax = honeypot ? 'N/A' : simulation.sellTax;
-
-		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : simulation.buyTax);
-		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : simulation.sellTax);
+		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : 'N/A');
+		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : 'N/A');
 
 		console.log("honeyData?.honeypotResult?.isHoneypot:" + honeyData?.honeypotResult?.isHoneypot);
 		console.log("honeyData?.simulationResult?.buyTax:" + honeyData?.simulationResult?.buyTax);
@@ -1331,16 +1314,11 @@ class Network {
 		console.log(`honeyData: ` + honeyData);
 
 		//tax
-		let simulation = await this.simulateTransaction(tokenAddress);
-		// let honeypot = simulation.error ? true : false;
 
-		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : (simulation.error ? true : false);
+		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
 
-		// let buyTax = honeypot ? 'N/A' : simulation.buyTax;
-		// let sellTax = honeypot ? 'N/A' : simulation.sellTax;
-
-		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : simulation.buyTax);
-		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : simulation.sellTax);
+		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax === 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : `N/A`);
+		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax === 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : `N/A`);
 
 		console.log("honeyData?.honeypotResult?.isHoneypot:" + honeyData?.honeypotResult?.isHoneypot);
 		console.log("honeyData?.simulationResult?.buyTax:" + honeyData?.simulationResult?.buyTax);

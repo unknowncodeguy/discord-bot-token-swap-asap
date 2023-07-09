@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-const BotStatusSchema = new mongoose.Schema({
+const StatisticSchema = new mongoose.Schema({
     volumes: {
         type: Number,
         required: true
@@ -11,4 +11,4 @@ const BotStatusSchema = new mongoose.Schema({
     }
 })
 
-module.exports = mongoose?.model('BotStatus', BotStatusSchema);
+module.exports = mongoose?.model('Statistic', StatisticSchema);
