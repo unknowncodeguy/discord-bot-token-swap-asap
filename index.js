@@ -1,6 +1,9 @@
 const ethers = require('ethers');
 const fs = require('node:fs');
 const path = require('node:path');
+
+import mongoose from 'mongoose';
+
 const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
 require('dotenv').config()
@@ -80,6 +83,13 @@ process.on('uncaughtException', (e, origin) => {
 
 // main wrapper
 (async () => {
+
+	mongoose.Promise = Promise
+	const mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap?authSource=admin`;
+	mongoose?.connect(mongoUri)
+	mongoose?.connection.on('error', () => {
+		console.log(`unable to connect to database: ${mongoUri}`)
+	})
 
 	// initialize client
 	const client = new Client({ intents: [ GatewayIntentBits.Guilds ] });
@@ -602,6 +612,17 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+				case 'set_limit_order': {
+					if(!Helpers.isFloat(interaction.fields.getTextInputValue('limit-order'))) {
+						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true});
+					}
+
+					_user.defaultConfig.limitOrder = ethers.utils.parseUnits(interaction.fields.getTextInputValue('limit-order'), 'gwei');
+
+					await _user.showSettings(interaction, true);
+
+					break;
+				}
 				case 'set_input_amount': {
 					if(!Helpers.isFloat(interaction.fields.getTextInputValue('input-amount'))) {
 						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true});
@@ -915,6 +936,25 @@ process.on('uncaughtException', (e, origin) => {
 				              	.setCustomId('priority-fee').setLabel('Enter the max priority fee in gwei')
 				              	.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(3)
 				              	.setValue(ethers.utils.formatUnits(_user.defaultConfig.maxPriorityFee.toString(), 'gwei')).setPlaceholder('10')
+				              	.setRequired(true),
+				            )
+				        ]);
+
+				    await interaction.showModal(modal);
+
+				    break;
+				}
+				case 'set_limit_order': {
+
+					const modal = new ModalBuilder()
+				        .setCustomId('set_limit_order')
+				        .setTitle('Set Limit Order')
+				        .addComponents([
+				          	new ActionRowBuilder().addComponents(
+				            	new TextInputBuilder()
+				              	.setCustomId('limit-order').setLabel('Enter the limit order price in gwei')
+				              	.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(3)
+				              	.setValue(ethers.utils.formatUnits(_user.defaultConfig.limitOrder.toString(), 'gwei')).setPlaceholder('10')
 				              	.setRequired(true),
 				            )
 				        ]);

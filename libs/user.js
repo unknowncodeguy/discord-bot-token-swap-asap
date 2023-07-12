@@ -27,7 +27,8 @@ class User {
 			slippage: '10',
 			autoBuying: false,
 			gasLimit: '300000',
-			maxPriorityFee: ethers.utils.parseUnits('1', 'gwei')
+			maxPriorityFee: ethers.utils.parseUnits('1', 'gwei'),
+			limitOrder: ethers.utils.parseUnits('1', 'gwei'),
 		};
 
 		this.autoBuySettings = {
@@ -430,6 +431,8 @@ class User {
 
 					new ButtonBuilder().setCustomId('set_priority_fee').setLabel('5. Set Default Priority Fee')
 						.setStyle(this.defaultConfig.maxPriorityFee == null ? ButtonStyle.Primary : ButtonStyle.Secondary),
+					new ButtonBuilder().setCustomId('set_limit_order').setLabel('6. Set Limit Order')
+						.setStyle(this.defaultConfig.limitOrder == null ? ButtonStyle.Primary : ButtonStyle.Secondary),	
 
 				)
 			],
@@ -1100,62 +1103,6 @@ class User {
 		console.log(`swapFee: ${swapFee}`);
 		console.log(`restAmount: ${restAmount}`);
 
-		// get amounts out
-		let amountsOut = await this.router.getAmountsOut(
-			restAmount,
-			[this.eth.address, this.contract.ctx.address]
-		);
-
-		console.log(`amountsOut[0]: ${amountsOut[0]}`);
-		console.log(`amountsOut[1]: ${amountsOut[1]}`);
-		console.log(`slippage[1]: ${this.config.slippage}`);
-
-		let amountOutMin = amountsOut[1].sub(amountsOut[1].div(100).mul(this.config.slippage));
-
-		console.log(`amountOutMin: ${amountOutMin}`);
-
-		let maxFeePergas = await this.computeOptimalGas();
-
-		console.log(`maxFeePergas: ${maxFeePergas}`);
-		let result = ''
-		try {
-
-			console.log(`this.eth.address ${this.eth.address}`);
-			console.log(`this.contract.ctx.address: ${this.contract.ctx.address}`);
-			console.log(`this.account.address: ${this.account.address}`);
-			console.log(`restAmount: ${restAmount}`);
-			console.log(`maxFeePergas: ${maxFeePergas}`);
-			console.log(`this.config.gasLimit: ${this.config.gasLimit}`);
-			// estimation 
-			result = await this.router.estimateGas.swapExactETHForTokensSupportingFeeOnTransferTokens(
-				amountOutMin,
-				[this.eth.address, this.contract.ctx.address],
-				this.account.address,
-				Network.getMinutesFromNow(5),
-				{
-					'value': restAmount,
-					'maxPriorityFeePerGas': this.config.maxPriorityFee,
-					'maxFeePerGas': maxFeePergas,
-					'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit)
-				}
-			);
-		} catch (e) {
-
-		}
-
-
-		console.log(`this.config.maxPriorityFee: ${this.config.maxPriorityFee}`);
-		console.log(`this.config.gasLimit: ${this.config.gasLimit}`);
-
-		// get current user nonce
-		let _nonce = await Network.node.getTransactionCount(this.account.address);
-
-		console.log(`_nonce: ${_nonce}`);
-
-		let _gasLimit = parseInt(this.config.gasLimit == null ? ethers.utils.formatUnits(result, 'wei') : this.config.gasLimit);
-
-		console.log(`ethers.utils.formatUnits(result, 'wei'): ${ethers.utils.formatUnits(result, 'wei')}`);
-
 		let tx;
 		try {
 			tx = await this.swap.swap(
@@ -1172,9 +1119,9 @@ class User {
 
 		return {
 			transaction: tx,
-			gasmaxfeepergas: maxFeePergas,
-			gaslimit: _gasLimit,
-			amountmin: amountOutMin
+			gasmaxfeepergas: null,
+			gaslimit: null,
+			amountmin: null
 		}
 
 	}
@@ -1194,62 +1141,6 @@ class User {
 		console.log("swapFee: " + swapFee);
 		console.log("restAmountIn: " + restAmountIn);
 
-		// get amounts out
-		let amountsOut = await this.router.getAmountsOut(
-			restAmountIn,
-			[this.contract.ctx.address, this.eth.address]
-		);
-		console.log("amountsOut: " + amountsOut);
-
-		let amountOutMin = amountsOut[1].sub(amountsOut[1].div(100).mul(this.config.slippage));
-		console.log("amountOutMin: " + amountOutMin);
-
-		let maxFeePergas = await this.computeOptimalGas();
-		console.log("maxFeePergas: " + maxFeePergas);
-		// estimation 
-		let result = await this.router.estimateGas.swapExactTokensForETHSupportingFeeOnTransferTokens(
-			restAmountIn,
-			amountOutMin,
-			[this.contract.ctx.address, this.eth.address],
-			this.account.address,
-			Network.getMinutesFromNow(5),
-			{
-				'maxPriorityFeePerGas': this.config.maxPriorityFee,
-				'maxFeePerGas': maxFeePergas,
-				'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit)
-			}
-		);
-		console.log("result: " + result);
-
-		// get current user nonce
-		let _nonce = await Network.node.getTransactionCount(this.account.address);
-		console.log("_nonce: " + _nonce);
-
-		let _gasLimit = parseInt(this.config.gasLimit == null ? ethers.utils.formatUnits(result, 'wei') : this.config.gasLimit);
-		console.log("_gasLimit: " + _gasLimit);
-
-		// let tx = await this.account.sendTransaction({
-		// 	from: this.account.address,
-		// 	to: this.router.address,
-
-		// 	data: this.router.interface.encodeFunctionData(
-		// 		'swapExactTokensForETHSupportingFeeOnTransferTokens',
-		// 		[
-		// 			restAmountIn,
-		// 			amountOutMin,
-		// 			[this.contract.ctx.address, this.eth.address],
-		// 			this.account.address,
-		// 			Network.getMinutesFromNow(5)
-		// 		]
-		// 	),
-
-		// 	maxPriorityFeePerGas: this.config.maxPriorityFee,
-		// 	maxFeePerGas: maxFeePergas,
-		// 	gasLimit: _gasLimit,
-
-		// 	nonce: _nonce
-		// });
-		
 		let tx;
 		try {
 			tx = await this.swap.swap(
@@ -1266,9 +1157,9 @@ class User {
 
 		return {
 			transaction: tx,
-			gasmaxfeepergas: maxFeePergas,
-			gaslimit: _gasLimit,
-			amountmin: amountOutMin
+			gasmaxfeepergas: null,
+			gaslimit: null,
+			amountmin: null
 		}
 
 	}
