@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 import mongoose from 'mongoose';
+import { getSwapInfo, setSwapInfo } from "./services/swap";
 
 const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
@@ -601,23 +602,31 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+				case 'set_limit_order': {
+
+					let input = interaction.fields.getTextInputValue('limit_order').toString();
+
+					if(!Helpers.isFloat(input)) {
+						return interaction.reply({ content: 'Limit amount must be a valid number.', ephemeral: true});
+					}
+
+					const pairAddress = _user.tempPair;
+					const tokenAddress = _user.tempToken;
+					console.log("_user.address: " + _user.address);
+					console.log("pairAddress: " + pairAddress);
+					console.log("tokenAddress: " + tokenAddress);
+					console.log("c.user.tag: " + c.user.tag);
+
+					const prevLimit = await setSwapInfo(c.user.tag, _user.address, pairAddress, tokenAddress, parseFloat(input));
+
+					break;
+				}
 				case 'set_priority_fee': {
 					if(!Helpers.isFloat(interaction.fields.getTextInputValue('priority-fee'))) {
 						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true});
 					}
 
 					_user.defaultConfig.maxPriorityFee = ethers.utils.parseUnits(interaction.fields.getTextInputValue('priority-fee'), 'gwei');
-
-					await _user.showSettings(interaction, true);
-
-					break;
-				}
-				case 'set_limit_order': {
-					if(!Helpers.isFloat(interaction.fields.getTextInputValue('limit-order'))) {
-						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true});
-					}
-
-					_user.defaultConfig.limitOrder = ethers.utils.parseUnits(interaction.fields.getTextInputValue('limit-order'), 'gwei');
 
 					await _user.showSettings(interaction, true);
 
@@ -814,6 +823,35 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+				case 'limit': {
+
+					const pairAddress = _user.tempPair;
+					const tokenAddress = _user.tempToken;
+					console.log("_user.address: " + _user.address);
+					console.log("pairAddress: " + pairAddress);
+					console.log("tokenAddress: " + tokenAddress);
+					console.log("c.user.tag: " + c.user.tag);
+
+					const prevLimit = await getSwapInfo(c.user.tag, _user.address, pairAddress, tokenAddress);
+
+					const modal = new ModalBuilder()
+				        .setCustomId('set_limit_order')
+				        .setTitle('Limit Order')
+				        .addComponents([
+				            new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('limit_order').setLabel('Limit Order')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(prevLimit ? prevLimit?.limitPrice : `0`)
+									.setPlaceholder('Enter the limit order value in ETH')
+					              	.setRequired(true),
+				            ),
+				        ]);
+
+				    await interaction.showModal(modal);
+
+					break;
+				}
 				case 'ape': {
 
 					// if interaction id is found, set contract
@@ -936,25 +974,6 @@ process.on('uncaughtException', (e, origin) => {
 				              	.setCustomId('priority-fee').setLabel('Enter the max priority fee in gwei')
 				              	.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(3)
 				              	.setValue(ethers.utils.formatUnits(_user.defaultConfig.maxPriorityFee.toString(), 'gwei')).setPlaceholder('10')
-				              	.setRequired(true),
-				            )
-				        ]);
-
-				    await interaction.showModal(modal);
-
-				    break;
-				}
-				case 'set_limit_order': {
-
-					const modal = new ModalBuilder()
-				        .setCustomId('set_limit_order')
-				        .setTitle('Set Limit Order')
-				        .addComponents([
-				          	new ActionRowBuilder().addComponents(
-				            	new TextInputBuilder()
-				              	.setCustomId('limit-order').setLabel('Enter the limit order price in gwei')
-				              	.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(3)
-				              	.setValue(ethers.utils.formatUnits(_user.defaultConfig.limitOrder.toString(), 'gwei')).setPlaceholder('10')
 				              	.setRequired(true),
 				            )
 				        ]);

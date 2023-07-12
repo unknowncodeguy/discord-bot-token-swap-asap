@@ -878,9 +878,14 @@ class Network {
 						new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+						new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary),
 					),
 				]
 			});
+
+			let _user = UserCollection.get(interaction.user.id);
+			_user.tempPair = pair;
+			_user.tempToken = tokenAddress;
 
 			// if doesn't exist
 			if (!this.isTokenAvailable(tokenAddress)) {
@@ -911,6 +916,7 @@ class Network {
 
 		// output token
 		let tokenAddress = data[0];
+		let pair = await this.getPair(tokenAddress);
 
 		console.log("Token Address is " + tokenAddress);
 
@@ -1048,9 +1054,14 @@ class Network {
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+					new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary),
 				),
 			]
 		});
+
+		let _user = UserCollection.get(interaction.user.id);
+		_user.tempPair = pair;
+		_user.tempToken = tokenAddress;
 
 		// if doesn't exist
 		if (!this.isTokenAvailable(tokenAddress)) {
@@ -1259,9 +1270,14 @@ class Network {
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+					new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary),
 				),
 			]
 		});
+
+		let _user = UserCollection.get(interaction.user.id);
+		_user.tempPair = pair;
+		_user.tempToken = tokenAddress;
 
 		// if doesn't exist
 		if (!this.isTokenAvailable(tokenAddress)) {
@@ -1456,9 +1472,14 @@ class Network {
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+					new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary),
 				),
 			]
 		});
+
+		let _user = UserCollection.get(interaction.user.id);
+		_user.tempPair = pair;
+		_user.tempToken = tokenAddress;
 
 		// add even if already exists
 		this.availableTokens.push({

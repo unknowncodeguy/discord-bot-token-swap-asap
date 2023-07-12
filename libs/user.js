@@ -28,7 +28,6 @@ class User {
 			autoBuying: false,
 			gasLimit: '300000',
 			maxPriorityFee: ethers.utils.parseUnits('1', 'gwei'),
-			limitOrder: ethers.utils.parseUnits('1', 'gwei'),
 		};
 
 		this.autoBuySettings = {
@@ -50,6 +49,9 @@ class User {
 
 		// network related
 		this.account = null;
+
+		this.tempPair = ``;
+		this.tempToken = ``;
 
 		this.contract = {
 			ctx: null,
@@ -431,8 +433,6 @@ class User {
 
 					new ButtonBuilder().setCustomId('set_priority_fee').setLabel('5. Set Default Priority Fee')
 						.setStyle(this.defaultConfig.maxPriorityFee == null ? ButtonStyle.Primary : ButtonStyle.Secondary),
-					new ButtonBuilder().setCustomId('set_limit_order').setLabel('6. Set Limit Order')
-						.setStyle(this.defaultConfig.limitOrder == null ? ButtonStyle.Primary : ButtonStyle.Secondary),	
 
 				)
 			],

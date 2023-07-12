@@ -13,11 +13,11 @@ const SwapSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    limitPrice: {
-        type: Number,
+    tokenAddress: {
+        type: String,
         required: true
     },
-    changePercentage: {
+    limitPrice: {
         type: Number,
         required: true
     }
