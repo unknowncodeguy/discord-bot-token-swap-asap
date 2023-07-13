@@ -1022,6 +1022,8 @@ process.on('uncaughtException', (e, origin) => {
 
 		}
 		
+		console.log(`tempPair: ` + _user.tempPair)
+		console.log(`tempAdd: ` + _user.tempToken)
 	});
 
 	// console log
