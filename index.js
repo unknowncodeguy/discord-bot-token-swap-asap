@@ -2,8 +2,8 @@ const ethers = require('ethers');
 const fs = require('node:fs');
 const path = require('node:path');
 
-import mongoose from 'mongoose';
-import { getSwapInfo, setSwapInfo } from "./services/swap";
+const mongoose = require('mongoose');
+const { getSwapInfo, setSwapInfo } = require("./services/swap");
 
 const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
