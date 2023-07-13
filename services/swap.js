@@ -23,7 +23,7 @@ module.exports = {
                 await SwapModel.updateOne(filter, update);
             }
             else {
-                const newData = new SwapModel({...update, limitPrice: limitPrice});
+                const newData = new SwapModel({...filter, limitPrice: limitPrice});
                 await newData.save();
             }
     
