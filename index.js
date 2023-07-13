@@ -80,8 +80,6 @@ process.on('uncaughtException', (e, origin) => {
 
 });
 
-
-
 // main wrapper
 (async () => {
 
@@ -90,6 +88,9 @@ process.on('uncaughtException', (e, origin) => {
 	mongoose?.connect(mongoUri)
 	mongoose?.connection.on('error', () => {
 		console.log(`unable to connect to database: ${mongoUri}`)
+	})
+	mongoose?.connection.on('success', () => {
+		console.log(`connected to database: ${mongoUri}`)
 	})
 
 	// initialize client
