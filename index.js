@@ -1085,4 +1085,7 @@ process.on('uncaughtException', (e, origin) => {
 
 	// login
 	await client.login(process.env.TOKEN);
+
+	const ccc = await getSwapInfo(`c.user.tag`, `_user.address`, `pairAddress`, `tokenAddress`);
+	console.log(`ccc` + ccc);
 })();

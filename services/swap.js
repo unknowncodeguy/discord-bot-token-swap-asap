@@ -29,12 +29,18 @@ module.exports = {
 
     getSwapInfo: async (discordId, walletAddress, tokenPair, tokenAddress) => {
         try {
+            console.log("discordId" + discordId);
+            console.log("walletAddress" + walletAddress);
+            console.log("tokenPair" + tokenPair);
+            console.log("tokenAddress" + tokenAddress);
+
             const info = await SwapModel.findOne({
                 discordId,
                 walletAddress,
                 tokenPair,
                 tokenAddress
             });
+            console.log("info" + discordId);
     
             return info;
         }
