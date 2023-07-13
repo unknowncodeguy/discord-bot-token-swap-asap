@@ -1021,9 +1021,6 @@ process.on('uncaughtException', (e, origin) => {
 			}
 
 		}
-		
-		console.log(`tempPair: ` + _user.tempPair)
-		console.log(`tempAdd: ` + _user.tempToken)
 	});
 
 	// console log
@@ -1086,6 +1083,11 @@ process.on('uncaughtException', (e, origin) => {
 	// login
 	await client.login(process.env.TOKEN);
 
-	const ccc = await getSwapInfo(`c.user.tag`, `_user.address`, `pairAddress`, `tokenAddress`);
-	console.log(`ccc` + ccc);
+	let input = "0.001";
+
+	console.log(`parseFloat(input):` + parseFloat(input))
+	console.log(`type of input:` + typeof input);
+	console.log(`!Helpers.isFloat(input):` + Helpers.isFloat(input));
+
+	const prevLimit = await setSwapInfo(`c.user.tag`, `_user.address`, `pairAddress`, `tokenAddress`, parseFloat(input));
 })();

@@ -7,9 +7,17 @@ module.exports = {
                 discordId, walletAddress, tokenPair, tokenAddress
             }
             const update = { $set: { limitPrice: limitPrice } };
-            const res = new SwapModel.updateOne(filter, );
     
             const info = await SwapModel.findOne(filter);
+
+            console.log("discordId" + discordId);
+            console.log("walletAddress" + walletAddress);
+            console.log("tokenPair" + tokenPair);
+            console.log("tokenAddress" + tokenAddress);
+            console.log("limitPrice" + limitPrice);
+
+            console.log("info" + info);
+
     
             if(info) {
                 await SwapModel.updateOne(filter, update);
@@ -40,7 +48,7 @@ module.exports = {
                 tokenPair,
                 tokenAddress
             });
-            console.log("info" + discordId);
+            console.log("info" + info);
     
             return info;
         }
