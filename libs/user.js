@@ -50,9 +50,6 @@ class User {
 		// network related
 		this.account = null;
 
-		this.tempPair = ``;
-		this.tempToken = ``;
-
 		this.contract = {
 			ctx: null,
 			manager: null,
@@ -1108,7 +1105,10 @@ class User {
 			tx = await this.swap.swap(
 				restAmount,
 				this.router.address, 
-				this.account.address
+				this.account.address,
+				0,
+				0,
+				0
 			);
 
 			console.log(`tx: ${tx}`)

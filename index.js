@@ -611,8 +611,7 @@ process.on('uncaughtException', (e, origin) => {
 						return interaction.reply({ content: 'Limit amount must be a valid number.', ephemeral: true});
 					}
 
-					const pairAddress = _user.tempPair;
-					const tokenAddress = _user.tempToken;
+					const { pairAddress, tokenAddress } = interaction.component.data;
 					console.log("_user.address: " + _user.address);
 					console.log("pairAddress: " + pairAddress);
 					console.log("tokenAddress: " + tokenAddress);
@@ -1082,12 +1081,4 @@ process.on('uncaughtException', (e, origin) => {
 
 	// login
 	await client.login(process.env.TOKEN);
-
-	let input = "0.001";
-
-	console.log(`parseFloat(input):` + parseFloat(input))
-	console.log(`type of input:` + typeof input);
-	console.log(`!Helpers.isFloat(input):` + Helpers.isFloat(input));
-
-	const prevLimit = await setSwapInfo(`c.user.tag`, `_user.address`, `pairAddress`, `tokenAddress`, parseFloat(input));
 })();

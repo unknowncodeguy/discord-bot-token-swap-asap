@@ -829,6 +829,12 @@ class Network {
 				else
 					holderAmountString += `0 ETH\n`;
 			}
+
+			let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+			limitButton.data = {
+				tempPair: pair,
+				tempToken: tokenAddress
+			}
 			
 			let interaction = await this.channel_new_liquidity.send({
 				content: `<@&${process.env.LIQUIDITY_ALERT_ROLE}> ${ticker}/WETH`,
@@ -878,14 +884,10 @@ class Network {
 						new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-						new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary),
+						limitButton
 					),
 				]
 			});
-
-			let _user = UserCollection.get(interaction.user.id);
-			_user.tempPair = pair;
-			_user.tempToken = tokenAddress;
 
 			// if doesn't exist
 			if (!this.isTokenAvailable(tokenAddress)) {
@@ -1014,6 +1016,12 @@ class Network {
 		console.log("deployerBalance:" + deployerBalance);
 		console.log("deployerTxCount:" + deployerTxCount);
 
+		let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+		limitButton.data = {
+			tempPair: pair,
+			tempToken: tokenAddress
+		}
+
 		let interaction = await this.channel_new_liquidity.send({
 			content: `<@&${process.env.LOCKED_ALERT_ROLE}> ${ticker}/WETH`,
 			embeds: [
@@ -1054,14 +1062,10 @@ class Network {
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary),
+					limitButton
 				),
 			]
 		});
-
-		let _user = UserCollection.get(interaction.user.id);
-		_user.tempPair = pair;
-		_user.tempToken = tokenAddress;
 
 		// if doesn't exist
 		if (!this.isTokenAvailable(tokenAddress)) {
@@ -1221,6 +1225,12 @@ class Network {
 				holderAmountString += `0 ETH\n`;
 		}
 
+		let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+		limitButton.data = {
+			tempPair: pair,
+			tempToken: tokenAddress
+		}
+
 		let interaction = await this.channel_locked_liquidity.send({
 			content: `<@&${process.env.LOCKED_ALERT_ROLE}> ${ticker}/WETH`,
 			embeds: [
@@ -1270,14 +1280,10 @@ class Network {
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary),
+					limitButton
 				),
 			]
 		});
-
-		let _user = UserCollection.get(interaction.user.id);
-		_user.tempPair = pair;
-		_user.tempToken = tokenAddress;
 
 		// if doesn't exist
 		if (!this.isTokenAvailable(tokenAddress)) {
@@ -1424,6 +1430,12 @@ class Network {
 				holderAmountString += `0 ETH\n`;
 		}
 
+		let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+		limitButton.data = {
+			tempPair: pair,
+			tempToken: tokenAddress
+		}
+
 		let interaction = await this.channel_open_trading.send({
 			content: `<@&${process.env.TRADING_OPEN_ROLE}> ${ticker}/WETH`,
 			embeds: [
@@ -1472,14 +1484,10 @@ class Network {
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary),
+					limitButton
 				),
 			]
 		});
-
-		let _user = UserCollection.get(interaction.user.id);
-		_user.tempPair = pair;
-		_user.tempToken = tokenAddress;
 
 		// add even if already exists
 		this.availableTokens.push({
