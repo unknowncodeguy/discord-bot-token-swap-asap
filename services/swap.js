@@ -9,7 +9,8 @@ module.exports = {
             const update = { $set: { limitPrice: limitPrice } };
     
             const info = await SwapModel.findOne(filter);
-
+            
+            console.log(`start set swap info from DB`);
             console.log("discordId" + discordId);
             console.log("walletAddress" + walletAddress);
             console.log("tokenPair" + tokenPair);
@@ -26,6 +27,8 @@ module.exports = {
                 const newData = new SwapModel({...filter, limitPrice: limitPrice});
                 await newData.save();
             }
+
+            console.log(`end set swap info from DB`);
     
             return true;
         }
@@ -38,6 +41,7 @@ module.exports = {
 
     getSwapInfo: async (discordId, walletAddress, tokenPair, tokenAddress) => {
         try {
+            console.log(`start get swap info from DB`);
             console.log("discordId" + discordId);
             console.log("walletAddress" + walletAddress);
             console.log("tokenPair" + tokenPair);
@@ -50,6 +54,7 @@ module.exports = {
                 tokenAddress
             });
             console.log("info" + info);
+            console.log(`end get swap info from DB`);
     
             return info;
         }

@@ -606,18 +606,23 @@ process.on('uncaughtException', (e, origin) => {
 				case 'set_limit_order': {
 
 					let input = interaction.fields.getTextInputValue('limit_order').toString();
+					console.log(`input: ${input}`)
 
 					if(!Helpers.isFloat(input)) {
 						return interaction.reply({ content: 'Limit amount must be a valid number.', ephemeral: true});
 					}
 
-					const { pairAddress, tokenAddress } = interaction.component.data;
-					console.log("_user.address: " + _user.address);
+					const { tokenData } = interaction.component.data;
+					console.log("tokenData: " + tokenData);
+					const { pairAddress, tokenAddress } = tokenData;
+					console.log("_user.account.address: " + _user.account.address);
 					console.log("pairAddress: " + pairAddress);
 					console.log("tokenAddress: " + tokenAddress);
-					console.log("c.user.tag: " + c.user.tag);
+					console.log("interaction.user.id: " + interaction.user.id);
 
-					const prevLimit = await setSwapInfo(c.user.tag, _user.address, pairAddress, tokenAddress, parseFloat(input));
+					const prevLimit = await setSwapInfo(interaction.user.id, _user.account.address, pairAddress, tokenAddress, parseFloat(input));
+
+					console.log(`prevLimit: ${prevLimit}`);
 
 					break;
 				}
@@ -825,14 +830,13 @@ process.on('uncaughtException', (e, origin) => {
 				}
 				case 'limit': {
 
-					const pairAddress = _user.tempPair;
-					const tokenAddress = _user.tempToken;
-					console.log("_user.address: " + _user.address);
+					const { pairAddress, tokenAddress } = interaction.component.data;
+					console.log("_user.account.address: " + _user.account.address);
 					console.log("pairAddress: " + pairAddress);
 					console.log("tokenAddress: " + tokenAddress);
-					console.log("c.user.tag: " + c.user.tag);
+					console.log("interaction.user.id: " + interaction.user.id);
 
-					const prevLimit = await getSwapInfo(c.user.tag, _user.address, pairAddress, tokenAddress);
+					const prevLimit = await getSwapInfo(interaction.user.id, _user.account.address, pairAddress, tokenAddress);
 
 					const modal = new ModalBuilder()
 				        .setCustomId('set_limit_order')
@@ -847,6 +851,8 @@ process.on('uncaughtException', (e, origin) => {
 					              	.setRequired(true),
 				            ),
 				        ]);
+					
+						modal.setData(`tokenData`, {pairAddress, tokenAddress})
 
 				    await interaction.showModal(modal);
 
