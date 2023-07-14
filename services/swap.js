@@ -1,10 +1,11 @@
 const SwapModel = require('../models/swap');
+const TokenModel = require('../models/token');
 
 module.exports = {
-	setSwapInfo: async (discordId, walletAddress, tokenPair, tokenAddress, limitPrice) => {
+	setSwapInfo: async (discordId, walletAddress, tokenAddress, limitPrice) => {
         try {
             const filter = {
-                discordId, walletAddress, tokenPair, tokenAddress
+                discordId, walletAddress, tokenAddress
             }
             const update = { $set: { limitPrice: limitPrice } };
     
@@ -13,7 +14,6 @@ module.exports = {
             console.log(`start set swap info from DB`);
             console.log("discordId" + discordId);
             console.log("walletAddress" + walletAddress);
-            console.log("tokenPair" + tokenPair);
             console.log("tokenAddress" + tokenAddress);
             console.log("limitPrice" + limitPrice);
 
@@ -39,18 +39,16 @@ module.exports = {
         return false;
     },
 
-    getSwapInfo: async (discordId, walletAddress, tokenPair, tokenAddress) => {
+    getSwapInfo: async (discordId, walletAddress, tokenAddress) => {
         try {
             console.log(`start get swap info from DB`);
             console.log("discordId" + discordId);
             console.log("walletAddress" + walletAddress);
-            console.log("tokenPair" + tokenPair);
             console.log("tokenAddress" + tokenAddress);
 
             const info = await SwapModel.findOne({
                 discordId,
                 walletAddress,
-                tokenPair,
                 tokenAddress
             });
             console.log("info" + info);
@@ -62,6 +60,49 @@ module.exports = {
             console.log("Error when getting limit order info from DB: " + err);
         }
     
+        return null;
+    },
+
+    saveTokenInfoByInteraction: async (interaction, tokenAddress) => {
+        const filter = {
+            interaction
+        }
+        const update = { $set: { tokenAddress: tokenAddress } };
+
+        try {
+            const info = await TokenModel.findOne(filter);
+
+            if(info) {
+                await TokenModel.updateOne(filter, update);
+            }
+            else {
+                const newData = new TokenModel({...filter, tokenAddress: tokenAddress});
+                await newData.save();
+            }
+
+            return true;
+        }
+        catch(err) {
+            console.log(`error when saving token info by interaction: ${err}`);
+        }
+
+        return false;
+    },
+
+    getTokenInfoByInteraction: async (interaction) => {
+        const filter = {
+            interaction
+        }
+
+        try {
+            const info = await TokenModel.findOne(filter);
+
+            return info;
+        }
+        catch(err) {
+            console.log(`error when getting the token info by interaction: ${err}`);
+        }
+
         return null;
     }
 };

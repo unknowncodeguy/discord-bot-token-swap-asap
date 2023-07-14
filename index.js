@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const mongoose = require('mongoose');
-const { getSwapInfo, setSwapInfo } = require("./services/swap");
+const { getSwapInfo, setSwapInfo, getTokenInfoByInteraction } = require("./services/swap");
 
 const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
@@ -83,9 +83,9 @@ process.on('uncaughtException', (e, origin) => {
 // main wrapper
 (async () => {
 
-	mongoose.Promise = Promise
+	mongoose.Promise = Promise;
 	const mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap?authSource=admin`;
-	mongoose?.connect(mongoUri)
+	mongoose?.connect(mongoUri);
 	mongoose?.connection.on('error', () => {
 		console.log(`unable to connect to database: ${mongoUri}`)
 	})
@@ -606,23 +606,20 @@ process.on('uncaughtException', (e, origin) => {
 				case 'set_limit_order': {
 
 					let input = interaction.fields.getTextInputValue('limit_order').toString();
-					console.log(`input: ${input}`)
+					console.log(`inputed limit order: ${input}`)
 
 					if(!Helpers.isFloat(input)) {
 						return interaction.reply({ content: 'Limit amount must be a valid number.', ephemeral: true});
 					}
 
-					const { tokenData } = interaction.component.data;
-					console.log("tokenData: " + tokenData);
-					const { pairAddress, tokenAddress } = tokenData;
+					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
+					const { tokenAddress } = tokenDataByInteraction;
+					console.log("tokenDataByInteraction: " + tokenDataByInteraction);
 					console.log("_user.account.address: " + _user.account.address);
-					console.log("pairAddress: " + pairAddress);
 					console.log("tokenAddress: " + tokenAddress);
 					console.log("interaction.user.id: " + interaction.user.id);
 
-					const prevLimit = await setSwapInfo(interaction.user.id, _user.account.address, pairAddress, tokenAddress, parseFloat(input));
-
-					console.log(`prevLimit: ${prevLimit}`);
+					await setSwapInfo(interaction.user.id, _user.account.address, tokenAddress, parseFloat(input));
 
 					break;
 				}
@@ -828,15 +825,15 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
-				case 'limit': {
+				case 'limit': {					
 
-					const { pairAddress, tokenAddress } = interaction.component.data;
+					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
+					const { tokenAddress } = tokenDataByInteraction;
 					console.log("_user.account.address: " + _user.account.address);
-					console.log("pairAddress: " + pairAddress);
 					console.log("tokenAddress: " + tokenAddress);
 					console.log("interaction.user.id: " + interaction.user.id);
 
-					const prevLimit = await getSwapInfo(interaction.user.id, _user.account.address, pairAddress, tokenAddress);
+					const prevLimit = await getSwapInfo(interaction.user.id, _user.account.address, tokenAddress);
 
 					const modal = new ModalBuilder()
 				        .setCustomId('set_limit_order')
@@ -851,8 +848,6 @@ process.on('uncaughtException', (e, origin) => {
 					              	.setRequired(true),
 				            ),
 				        ]);
-					
-						modal.setData(`tokenData`, {pairAddress, tokenAddress})
 
 				    await interaction.showModal(modal);
 

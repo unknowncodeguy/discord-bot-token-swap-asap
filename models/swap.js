@@ -9,10 +9,6 @@ const SwapSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    tokenPair: {
-        type: String,
-        required: true
-    },
     tokenAddress: {
         type: String,
         required: true

@@ -4,6 +4,7 @@ const UserCollection = require('./usercollection');
 const Helpers = require('./helpers');
 
 const axios = require("axios");
+const { getSwapInfo, setSwapInfo, saveTokenInfoByInteraction } = require("./../services/swap");
 
 const etherscan = new (require('./etherscan'))(constants.EHTERSCAN_API_KEY);
 
@@ -831,10 +832,6 @@ class Network {
 			}
 
 			let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-			limitButton.data = {
-				tempPair: pair,
-				tempToken: tokenAddress
-			}
 			
 			let interaction = await this.channel_new_liquidity.send({
 				content: `<@&${process.env.LIQUIDITY_ALERT_ROLE}> ${ticker}/WETH`,
@@ -888,6 +885,8 @@ class Network {
 					),
 				]
 			});
+
+			await saveTokenInfoByInteraction(interaction.id, tokenAddress);
 
 			// if doesn't exist
 			if (!this.isTokenAvailable(tokenAddress)) {
@@ -1017,10 +1016,6 @@ class Network {
 		console.log("deployerTxCount:" + deployerTxCount);
 
 		let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-		limitButton.data = {
-			tempPair: pair,
-			tempToken: tokenAddress
-		}
 
 		let interaction = await this.channel_new_liquidity.send({
 			content: `<@&${process.env.LOCKED_ALERT_ROLE}> ${ticker}/WETH`,
@@ -1066,6 +1061,8 @@ class Network {
 				),
 			]
 		});
+
+		await saveTokenInfoByInteraction(interaction.id, tokenAddress);
 
 		// if doesn't exist
 		if (!this.isTokenAvailable(tokenAddress)) {
@@ -1226,10 +1223,6 @@ class Network {
 		}
 
 		let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-		limitButton.data = {
-			tempPair: pair,
-			tempToken: tokenAddress
-		}
 
 		let interaction = await this.channel_locked_liquidity.send({
 			content: `<@&${process.env.LOCKED_ALERT_ROLE}> ${ticker}/WETH`,
@@ -1284,6 +1277,8 @@ class Network {
 				),
 			]
 		});
+
+		await saveTokenInfoByInteraction(interaction.id, tokenAddress);
 
 		// if doesn't exist
 		if (!this.isTokenAvailable(tokenAddress)) {
@@ -1431,10 +1426,6 @@ class Network {
 		}
 
 		let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-		limitButton.data = {
-			tempPair: pair,
-			tempToken: tokenAddress
-		}
 
 		let interaction = await this.channel_open_trading.send({
 			content: `<@&${process.env.TRADING_OPEN_ROLE}> ${ticker}/WETH`,
@@ -1488,6 +1479,8 @@ class Network {
 				),
 			]
 		});
+
+		await saveTokenInfoByInteraction(interaction.id, tokenAddress);
 
 		// add even if already exists
 		this.availableTokens.push({
