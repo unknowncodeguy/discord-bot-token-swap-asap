@@ -5,10 +5,6 @@ const SwapSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
-    walletAddress: {
-        type: String,
-        required: true
-    },
     tokenAddress: {
         type: String,
         required: true

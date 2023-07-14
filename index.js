@@ -627,7 +627,7 @@ process.on('uncaughtException', (e, origin) => {
 					console.log("interaction.user.id: " + interaction.user.id);
 
 					try {
-						await setSwapInfo(interaction.user.id, _user.account.address, tokenAddress, parseFloat(input), parseInt(limitSlippage));
+						await setSwapInfo(interaction.user.id, tokenAddress, parseFloat(input), parseInt(limitSlippage));
 					}
 					catch(err) {
 						console.log(`err on DB ${err}`)
@@ -847,7 +847,7 @@ process.on('uncaughtException', (e, origin) => {
 					console.log("tokenAddress: " + tokenAddress);
 					console.log("interaction.user.id: " + interaction.user.id);
 
-					const prevLimit = await getSwapInfo(interaction.user.id, _user.account.address, tokenAddress);
+					const prevLimit = await getSwapInfo(interaction.user.id, tokenAddress);
 
 					const modal = new ModalBuilder()
 				        .setCustomId('set_limit_order')
