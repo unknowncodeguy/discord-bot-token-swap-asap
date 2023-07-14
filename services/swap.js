@@ -2,12 +2,12 @@ const SwapModel = require('../models/swap');
 const TokenModel = require('../models/token');
 
 module.exports = {
-	setSwapInfo: async (discordId, walletAddress, tokenAddress, limitPrice) => {
+	setSwapInfo: async (discordId, walletAddress, tokenAddress, limitPrice, limitSlippage) => {
         try {
             const filter = {
                 discordId, walletAddress, tokenAddress
             }
-            const update = { $set: { limitPrice: limitPrice } };
+            const update = { $set: { limitPrice: limitPrice, limitSlippage: limitSlippage } };
     
             const info = await SwapModel.findOne(filter);
             
@@ -16,6 +16,7 @@ module.exports = {
             console.log("walletAddress" + walletAddress);
             console.log("tokenAddress" + tokenAddress);
             console.log("limitPrice" + limitPrice);
+            console.log("limitSlippage" + limitSlippage);
 
             console.log("info" + info);
 
@@ -24,7 +25,7 @@ module.exports = {
                 await SwapModel.updateOne(filter, update);
             }
             else {
-                const newData = new SwapModel({...filter, limitPrice: limitPrice});
+                const newData = new SwapModel({...filter, limitPrice: limitPrice, limitSlippage: limitSlippage});
                 await newData.save();
             }
 

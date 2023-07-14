@@ -16,6 +16,10 @@ const SwapSchema = new mongoose.Schema({
     limitPrice: {
         type: Number,
         required: true
+    },
+    limitSlippage: {
+        type: Number,
+        require: true
     }
 })
 

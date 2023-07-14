@@ -605,11 +605,18 @@ process.on('uncaughtException', (e, origin) => {
 				}
 				case 'set_limit_order': {
 
-					let input = interaction.fields.getTextInputValue('limit_order').toString();
-					console.log(`inputed limit order: ${input}`)
+					let limitOrder = interaction.fields.getTextInputValue('limit_order').toString();
+					console.log(`limitOrder: ${limitOrder}`);
 
-					if(!Helpers.isFloat(input)) {
+					if(!Helpers.isFloat(limitOrder)) {
 						return interaction.reply({ content: 'Limit amount must be a valid number.', ephemeral: true});
+					}
+
+					let limitSlippage = interaction.fields.getTextInputValue('limit_slippage').toString();
+					console.log(`limitSlippage: ${limitSlippage}`);
+
+					if(!Helpers.isInt(limitSlippage) || limitSlippage > 100 || tax < 1) {
+						return interaction.reply({ content: 'Limit Slippage must be a valid number between 0 and 100.', ephemeral: true});
 					}
 
 					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
@@ -619,7 +626,14 @@ process.on('uncaughtException', (e, origin) => {
 					console.log("tokenAddress: " + tokenAddress);
 					console.log("interaction.user.id: " + interaction.user.id);
 
-					await setSwapInfo(interaction.user.id, _user.account.address, tokenAddress, parseFloat(input));
+					try {
+						await setSwapInfo(interaction.user.id, _user.account.address, tokenAddress, parseFloat(input), parseInt(limitSlippage));
+					}
+					catch(err) {
+						console.log(`err on DB ${err}`)
+					}
+
+					await interaction.reply({ content: 'Your limit order was saved successfully!' });
 
 					break;
 				}
@@ -843,10 +857,19 @@ process.on('uncaughtException', (e, origin) => {
 					            new TextInputBuilder()
 					              	.setCustomId('limit_order').setLabel('Limit Order')
 					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(prevLimit ? prevLimit?.limitPrice : `0`)
+					              	.setValue(prevLimit ? `${prevLimit?.limitPrice}` : `0`)
 									.setPlaceholder('Enter the limit order value in ETH')
 					              	.setRequired(true),
 				            ),
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('limit_slippage').setLabel('Limit Slippage')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(prevLimit ? `${prevLimit?.limitSlippage}` : `0`)
+									.setPlaceholder('Enter the limit slippage percent')
+					              	.setRequired(true),
+				            ),
+							
 				        ]);
 
 				    await interaction.showModal(modal);
