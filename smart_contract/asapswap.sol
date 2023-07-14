@@ -1,3 +1,9 @@
+  /**
+   * @title AsapSwap
+   * @dev ContractDescription
+   * @custom:dev-run-script browser/scripts/asap_swap.ts
+   */
+
 pragma solidity 0.6.2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
@@ -10,7 +16,6 @@ import "@uniswap/lib/contracts/libraries/TransferHelper.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 
 import "./IUniswapV2Router02.sol";
-
 
 import "./IWETH.sol";
 
@@ -85,7 +90,7 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     address payable private _feesAssistWallet;
 
     /// swap id, trader
-    event DoSwap(uint256  id, address indexed trader);
+    event DoSwap(uint256 id, address indexed trader);
     event AdminWalletChanged(address indexed wallet);
     event AssistWalletChanged(address indexed wallet);
     event UserFeeChanged(address user, uint256 fee);
@@ -107,10 +112,10 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     /**
      * @dev initialize
      */
-    function initialize (
+    function initialize(
         address payable adminWallet,
         address payable assistWallet
-    ) public{
+    ) public {
         __AsapSwap_init(adminWallet, assistWallet);
     }
 
@@ -193,9 +198,8 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
 
     function getFee(uint256 amount) public view returns (uint256) {
         uint256 _feePercentage = DEFAULT_FEE_PERCENTAGE;
-        
-        if (_userFees[msg.sender]>0)
-            _feePercentage = _userFees[msg.sender];
+
+        if (_userFees[msg.sender] > 0) _feePercentage = _userFees[msg.sender];
 
         //_ethFeePercentage is a percentage expressed in 1/10 (a tenth) of a percent hence we divide by 1000
         return amount.mul(_feePercentage).div(1000); // 1%
@@ -302,29 +306,23 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
                 tokenContract.allowance(msg.sender, address(this)),
             "[Validation] Allowance is not enough "
         );
-// send eth to pair contract
-            IWETH(ETH_ADDRESS).deposit{value: buyAmount}();
-            assert(
-                IWETH(ETH_ADDRESS).transfer(
-                    pairFor(
-                        ETH_ADDRESS,
-                        toTokenContract
-                    ),
-                    buyAmount
-                )
-            );
+        // send eth to pair contract
+        IWETH(ETH_ADDRESS).deposit{value: buyAmount}();
+        assert(
+            IWETH(ETH_ADDRESS).transfer(
+                pairFor(ETH_ADDRESS, toTokenContract),
+                buyAmount
+            )
+        );
 
-            // token balance before swap
-            uint balanceBefore = IERC20(toTokenContract).balanceOf(msg.sender);
+        // token balance before swap
+        uint balanceBefore = IERC20(toTokenContract).balanceOf(msg.sender);
 
         /// swap
         {
-            
             (address input, address output) = (ETH_ADDRESS, toTokenContract);
             (address token0, ) = sortTokens(input, output);
-            IUniswapV2Pair pair = IUniswapV2Pair(
-                pairFor( input, output)
-            );
+            IUniswapV2Pair pair = IUniswapV2Pair(pairFor(input, output));
             uint amountInput;
             uint amountOutput;
             {
@@ -347,14 +345,11 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
                 : (amountOutput, uint(0));
 
             pair.swap(amount0Out, amount1Out, msg.sender, new bytes(0));
-
         }
-            require(
-                tokenContract.balanceOf(msg.sender).sub(
-                    balanceBefore
-                ) >= minOutput,
-                "INSUFFICIENT_OUTPUT_AMOUNT"
-            );
+        require(
+            tokenContract.balanceOf(msg.sender).sub(balanceBefore) >= minOutput,
+            "INSUFFICIENT_OUTPUT_AMOUNT"
+        );
         _distributeFees(msg.sender, totalfeeInSwap);
 
         _swapId = _swapId.add(1);
@@ -400,15 +395,13 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
             TransferHelper.safeTransferFrom(
                 fromTokenContract,
                 msg.sender,
-                pairFor( ETH_ADDRESS, fromTokenContract),
+                pairFor(ETH_ADDRESS, fromTokenContract),
                 tokenAmount
             );
 
             (address input, address output) = (fromTokenContract, ETH_ADDRESS);
             (address token0, ) = sortTokens(input, output);
-            IUniswapV2Pair pair = IUniswapV2Pair(
-                pairFor( input, output)
-            );
+            IUniswapV2Pair pair = IUniswapV2Pair(pairFor(input, output));
             uint amountInput;
             uint amountOutput;
             {
@@ -480,7 +473,6 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         );
     }
 
-
     function getAmountIn(
         uint amountOut,
         uint reserveIn,
@@ -520,10 +512,8 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         require(path.length >= 2, "ASAP BOT: INVALID_PATH");
         amounts = new uint[](path.length);
         amounts[amounts.length - 1] = amountOut;
-        
-            IUniswapV2Pair pair = IUniswapV2Pair(
-                pairFor( path[0], path[1])
-            );
+
+        IUniswapV2Pair pair = IUniswapV2Pair(pairFor(path[0], path[1]));
         (uint reserve0, uint reserve1, ) = pair.getReserves();
         amounts[0] = getAmountIn(amounts[0], reserve0, reserve1);
     }
@@ -560,43 +550,35 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         require(token0 != address(0), "ASAP BOT: ZERO_ADDRESS");
     }
 
+    function getEstimatedETHforERC20(
+        uint256 erc20Amount,
+        address tokenAddress
+    ) public view returns (uint256) {
+        return getAmountsIn(erc20Amount, getPathForETHtoERC20(tokenAddress))[0];
+    }
 
+    function getPathForETHtoERC20(
+        address tokenAddress
+    ) internal pure returns (address[] memory) {
+        address[] memory path = new address[](2);
+        path[0] = ETH_ADDRESS;
+        path[1] = tokenAddress;
+        return path;
+    }
 
-  function getEstimatedETHforERC20(uint256 erc20Amount, address tokenAddress)
-  public
-  view
-  returns (uint256 )
-  {
-    return getAmountsIn(erc20Amount, getPathForETHtoERC20(tokenAddress))[0];
-  }
+    function getEstimatedERC20forETH(
+        uint256 etherAmount,
+        address tokenAddress
+    ) public view returns (uint256) {
+        return getAmountsIn(etherAmount, getPathForERC20toETH(tokenAddress))[0];
+    }
 
-  function getPathForETHtoERC20(address tokenAddress)
-  internal
-  pure
-  returns (address[] memory)
-  {
-    address[] memory path = new address[](2);
-    path[0] = ETH_ADDRESS;
-    path[1] = tokenAddress;
-    return path;
-  }
-
-  function getEstimatedERC20forETH(uint256 etherAmount, address tokenAddress)
-  public
-  view
-  returns (uint256 )
-  {
-    return getAmountsIn(etherAmount, getPathForERC20toETH(tokenAddress))[0];
-  }
-
-  function getPathForERC20toETH(address tokenAddress)
-  internal
-  pure
-  returns (address[] memory)
-  {
-    address[] memory path = new address[](2);
-    path[0] = tokenAddress;
-    path[1] = ETH_ADDRESS;
-    return path;
-  }
+    function getPathForERC20toETH(
+        address tokenAddress
+    ) internal pure returns (address[] memory) {
+        address[] memory path = new address[](2);
+        path[0] = tokenAddress;
+        path[1] = ETH_ADDRESS;
+        return path;
+    }
 }
