@@ -615,7 +615,7 @@ process.on('uncaughtException', (e, origin) => {
 					let limitSlippage = interaction.fields.getTextInputValue('limit_slippage').toString();
 					console.log(`limitSlippage: ${limitSlippage}`);
 
-					if(!Helpers.isInt(limitSlippage) || limitSlippage > 100 || tax < 1) {
+					if(!Helpers.isInt(limitSlippage) || limitSlippage > 100 || limitSlippage < 1) {
 						return interaction.reply({ content: 'Limit Slippage must be a valid number between 0 and 100.', ephemeral: true});
 					}
 
