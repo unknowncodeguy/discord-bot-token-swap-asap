@@ -935,7 +935,7 @@ process.on('uncaughtException', (e, origin) => {
 					            new TextInputBuilder()
 					              	.setCustomId('limit_sell_percentage').setLabel('Limit percentage when selling')
 					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(prevLimit ? `${prevLimit?.limitSlippage}` : `0`)
+					              	.setValue(prevLimit ? `${prevLimit?.limitSellPercentage}` : `0`)
 									.setPlaceholder('Enter the limit percentage between 0 and -100')
 					              	.setRequired(true),
 				            )
