@@ -84,7 +84,8 @@ process.on('uncaughtException', (e, origin) => {
 (async () => {
 
 	mongoose.Promise = Promise;
-	const mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap?authSource=admin`;
+	// const mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap?authSource=admin`;
+	const mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap-test?authSource=admin`;
 	mongoose?.connect(mongoUri);
 	mongoose?.connection.on('error', () => {
 		console.log(`unable to connect to database: ${mongoUri}`)
@@ -678,7 +679,6 @@ process.on('uncaughtException', (e, origin) => {
 						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
 					}
 
-					console.log("tokenDataByInteraction: " + tokenDataByInteraction);
 					console.log("tokenAddress: " + tokenAddress);
 					console.log("interaction.user.id: " + interaction.user.id);
 
@@ -1230,63 +1230,4 @@ process.on('uncaughtException', (e, origin) => {
 
 	// login
 	await client.login(process.env.TOKEN);
-
-	/******** Testing for sell ********/
-
-	const token_address = "";
-	if(!ethers.utils.isAddress(token_address)) {
-		conosle.log("Invalid token address specified");
-		return;
-	}
-
-	const slippage = `20`;
-
-	if(!Helpers.isInt(slippage) || parseInt(slippage) < 1 || parseInt(slippage) > 100) {
-		conosle.log("Slippage percentage must be a valid number (1-100)");
-		return;
-	}
-
-	let gaslimit = interaction.fields.getTextInputValue('gas-limit');
-
-	if(gaslimit.length != 0 && !Helpers.isInt(gaslimit)) {
-		return interaction.reply({ content: 'Gas limit must be a valid number.', ephemeral: true })
-	}
-
-	let percentage = interaction.fields.getTextInputValue('sell-percentage');
-
-	if(!Helpers.isInt(percentage) || parseInt(percentage) < 1 || parseInt(percentage) > 100) {
-		return interaction.reply({ content: 'Sell percentage must be a valid number (1-100).', ephemeral: true});
-	}
-
-	await interaction.reply({
-		content: 'Transaction has been sent.',
-		embeds: [],
-		ephemeral: true
-	});
-
-	// overwrite with defaultConfig
-	_user.config = _user.defaultConfig;
-
-	// store gaslimit
-	_user.config.gasLimit = !gaslimit ? null : gaslimit;
-
-	// set contract
-	await _user.setContract(interaction.fields.getTextInputValue('token-address'));
-
-	// check if balance is enough
-	let _balance = await _user.contract.ctx.balanceOf(_user.account.address);
-
-	// not enough
-	if(_balance.lt(_balance.div(100).mul(_user.config.sellPercentage)) || _balance.eq(0)) {
-		return interaction.reply({ content: 'You don\'t have enough tokens.', ephemeral: true});
-	}
-
-	// set values from form
-	_user.config.sellPercentage = percentage;
-
-	// set slippage
-	_user.config.slippage = slippage;
-
-	// do selling action
-	await _user.sendNormalTransaction(interaction, true);
 })();

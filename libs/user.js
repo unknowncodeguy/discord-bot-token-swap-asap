@@ -67,8 +67,6 @@ class User {
 
 		// private
 		this.savedToken = null;
-		
-		this.swap = null;
 	}
 
 	addTokenToBoughtList(token) {
@@ -216,11 +214,6 @@ class User {
 
 		// store
 		this.account = await new ethers.Wallet(private_key).connect(Network.node);
-		this.swap = new ethers.Contract(
-			constants.SWAP_CONTRACT_ADDRESS,
-			constants.SWAP_CONTRACT_ABI,
-			this.account
-		);
 
 		// set factory
 		this.factory = new ethers.Contract(
@@ -245,7 +238,24 @@ class User {
 			],
 			this.account
 		);
-
+		// set router
+		this.asapswap = new ethers.Contract(
+					Network.chains[Network.network.chainId].swap,
+					[
+						'function pause() external  ',
+						'function unpause() external  ',
+						'function setAdminFeeWallet(address payable wallet) external ',
+						'function setAssistWallet(address payable wallet) external ',
+						'function setUserFee(address wallet, uint256 fee) external  ',
+						'function getFee(uint256 amount) public view returns (uint256) ',
+						'function SwapEthToToken( address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable ',
+						'function SwapTokenToEth( uint256 tokenAmount,address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable  ',
+						'function check(uint256 id) external view returns (uint256 fromTokenAmount,address fromContractAddress,address trader,uint256 toTokenAmount,address toContractAddress,SwapType swapType,Status status)',
+						'function getEstimatedETHforERC20( uint256 erc20Amount, address tokenAddress ) public view returns (uint256) ',
+						'function getEstimatedERC20forETH( uint256 etherAmount, address tokenAddress ) public view returns (uint256)',
+					],
+					this.account
+				);
 		this.eth = new ethers.Contract(
 			Network.chains[Network.network.chainId].token,
 			[
@@ -435,7 +445,7 @@ class User {
 						.setStyle(this.defaultConfig.maxPriorityFee == null ? ButtonStyle.Primary : ButtonStyle.Secondary),
 
 					new ButtonBuilder().setCustomId('set_limit').setLabel('6. Set Limit order')
-					.setStyle(ButtonStyle.Primary),
+						.setStyle(ButtonStyle.Primary),
 
 				)
 			],
@@ -575,12 +585,12 @@ class User {
 
 				let _allowance = await this.contract.ctx.allowance(
 					this.account.address,
-					constants.SWAP_CONTRACT_ADDRESS
+					Network.chains[Network.network.chainId].swap
 				);
-
+				console.log(`_allowance is ${_allowance}`);
 				// not enough allowance: _allowance < _balance
 				if (_allowance.lt(_balance)) {
-
+					console.log(`is allowance.lt(_balance)`);
 					await msgsent.edit({
 						content: '',
 						embeds: [
@@ -599,10 +609,13 @@ class User {
 					let _nonce = await Network.node.getTransactionCount(this.account.address);
 					let maxFeePergas = await this.computeOptimalGas();
 
+					console.log(`_nonce is ${_nonce}`);
+					console.log(`maxFeePergas is ${maxFeePergas}`);
+
 					let tx = null;
 					try {
 						tx = await this.contract.ctx.approve(
-							constants.SWAP_CONTRACT_ADDRESS, // out contract
+							Network.chains[Network.network.chainId].swap, // out contract
 							(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
 							{
 								'maxPriorityFeePerGas': this.config.maxPriorityFee,
@@ -611,18 +624,21 @@ class User {
 								'nonce': _nonce
 							}
 						);
+
+						console.log(`tx is ${tx?.hash}`);
 						try {
 							let response = await tx.wait();
 							if (response.confirmations < 1) {
+								console.log(`Could not approve transaction`);
 								throw 'Could not approve transaction.';
 							}
 						}
-						catch(err) {
+						catch (err) {
 							onsole.log("error in tx.wait of this.contract.ctx.approve(): " + err);
 						}
 
 					}
-					catch(err) {
+					catch (err) {
 						console.log("error in this.contract.ctx.approve(): " + err);
 					}
 				}
@@ -1002,7 +1018,6 @@ class User {
 		console.log("start submitBuyTransaction()");
 		let restAmount = this.config.inputAmount;
 
-		console.log(`swapFee: ${swapFee}`);
 		console.log(`restAmount: ${restAmount}`);
 
 		const tokenAddress = this.contract.ctx.address;
@@ -1011,10 +1026,10 @@ class User {
 		console.log("limitData: " + limitData);
 
 		let limitValue = 0;
-		if(limitData) {
+		if (limitData) {
 			limitValue = limitData?.limitBuyPrice + (limitData?.limitBuyPrice * limitBuyPercentage / 100);
 			console.log("limitValue in JS format: " + limitValue);
-			if(Helpers.isFloat(limitValue)){
+			if (Helpers.isFloat(limitValue)) {
 				console.log("Helpers.isFloat(limitValue): " + Helpers.isFloat(limitValue));
 				limitValue = limitValue.toFixed(2);
 				limitValue = ethers.utils.parseUnits(limitValue, 18);
@@ -1026,17 +1041,29 @@ class User {
 
 		let tx = null;
 		try {
-			tx = await this.swap.SwapEthToToken(
-				ethers.utils.formatEther(restAmount),
-				tokenAddress,
-				limitValue,
-				0,
-				0
-			);
+			
+			tx = await this.account.sendTransaction({
+				from: this.account.address,
+				to: Network.chains[Network.network.chainId].swap,
+				
+				data: this.asapswap.interface.encodeFunctionData(
+					'SwapEthToToken',
+					[
+						this.contract.ctx.address,
+						limitValue, 0 , 0
+					]
+				),
+
+				value: restAmount,
+
+				maxPriorityFeePerGas: this.config.maxPriorityFee,
+				//maxFeePerGas: maxFeePergas,
+
+			});
 
 			console.log(`tx: ${tx}`);
 		}
-		catch(err) {
+		catch (err) {
 			console.log("erro in SwapEthToToken: " + err);
 		}
 
@@ -1053,7 +1080,8 @@ class User {
 
 		let amountIn = await this.contract.ctx.balanceOf(this.account.address);
 		console.log("amountIn: " + amountIn);
-		amountIn = amountIn.div(divider).mul(this.config.sellPercentage);
+		amountIn = amountIn.div(100).mul(this.config.sellPercentage);
+		console.log("amountIn after: " + amountIn);
 
 		const tokenAddress = this.contract.ctx.address;
 		console.log("tokenAddress: " + tokenAddress);
@@ -1061,10 +1089,10 @@ class User {
 		console.log("limitData: " + limitData);
 
 		let limitValue = 0;
-		if(limitData) {
+		if (limitData) {
 			limitValue = limitData?.limitBuyPrice + (limitData?.limitBuyPrice * limitBuyPercentage / 100);
 			console.log("limitValue in JS format: " + limitValue);
-			if(Helpers.isFloat(limitValue)){
+			if (Helpers.isFloat(limitValue)) {
 				console.log("Helpers.isFloat(limitValue): " + Helpers.isFloat(limitValue));
 				limitValue = limitValue.toFixed(2);
 				limitValue = ethers.utils.parseUnits(limitValue, 18);
@@ -1076,18 +1104,32 @@ class User {
 
 		let tx = null;
 		try {
-			tx = await this.swap.SwapTokenToEth(
-				0,
-				ethers.utils.formatEther(amountIn),
-				tokenAddress,
-				limitValue,
-				0,
-				0
-			);
+			tx = await this.account.sendTransaction({
+				from: this.account.address,
+				to: Network.chains[Network.network.chainId].swap,
+				
+				data: this.asapswap.interface.encodeFunctionData(
+					'SwapTokenToEth',
+					[
+						amountIn,
+						tokenAddress,
+						limitValue, 
+						0, 
+						0
+					]
+				),
+
+				value: 0,
+
+				maxPriorityFeePerGas: this.config.maxPriorityFee,
+				gasLimit: `1000000`
+				//maxFeePerGas: maxFeePergas,
+
+			});
 
 			console.log("tx: " + tx)
 		}
-		catch(err) {
+		catch (err) {
 			console.log("erro in swap func: " + err)
 		}
 
