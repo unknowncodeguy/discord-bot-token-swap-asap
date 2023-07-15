@@ -625,7 +625,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					let limitSellPercentage = interaction.fields.getTextInputValue('limit_sell_percentage').toString();
 					console.log(`limitSellPercentage: ${limitSellPercentage}`);
-					if(!Helpers.isInt(limitSellPercentage) || limitSellPercentage > -100 || limitSellPercentage < 0) {
+					if(!Helpers.isInt(limitSellPercentage) || limitSellPercentage < -100 || limitSellPercentage > -1) {
 						return interaction.reply({ content: 'Limit sell percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
@@ -668,7 +668,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					let limitSellPercentage = interaction.fields.getTextInputValue('limit_sell_percentage_token').toString();
 					console.log(`limitSellPercentage: ${limitSellPercentage}`);
-					if(!Helpers.isInt(limitSellPercentage) || limitSellPercentage > -100 || limitSellPercentage < 0) {
+					if(!Helpers.isInt(limitSellPercentage) || limitSellPercentage < -100 || limitSellPercentage > -1) {
 						return interaction.reply({ content: 'Limit sell percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
