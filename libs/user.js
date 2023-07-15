@@ -4,6 +4,8 @@ const Contract = require('./contract.js');
 const ethers = require('ethers');
 const constants = require('./constants.js');
 
+const { getSwapInfo } = require("./../services/swap");
+
 const {
 	ButtonStyle,
 	ButtonBuilder,
@@ -15,9 +17,10 @@ const {
 
 class User {
 
-	constructor(name) {
+	constructor(name, id) {
 
 		this.name = name;
+		this.discordId = id;
 
 		this.config = {};
 
@@ -552,8 +555,12 @@ class User {
 			let _balance = this.config.inputAmount || 0;
 
 			if (selling) {
+				console.log('this.contract.ctx when selling is ' + this.contract.ctx);
 				_balance = await this.contract.ctx.balanceOf(this.account.address);
+				console.log('_balance is ' + _balance);
 				_balance = _balance.div(100).mul(this.config.sellPercentage);
+				console.log('this.config.sellPercentage is ' + this.config.sellPercentage);
+				console.log('_balance after percentage is ' + _balance);
 			}
 
 			// check if liquidity is available
@@ -568,10 +575,10 @@ class User {
 
 				let _allowance = await this.contract.ctx.allowance(
 					this.account.address,
-					Network.chains[Network.network.chainId].router
+					constants.SWAP_CONTRACT_ADDRESS
 				);
 
-				// not enough allowance
+				// not enough allowance: _allowance < _balance
 				if (_allowance.lt(_balance)) {
 
 					await msgsent.edit({
@@ -592,24 +599,32 @@ class User {
 					let _nonce = await Network.node.getTransactionCount(this.account.address);
 					let maxFeePergas = await this.computeOptimalGas();
 
-					let tx = await this.contract.ctx.approve(
-						Network.chains[Network.network.chainId].router,
-						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
-						{
-							'maxPriorityFeePerGas': this.config.maxPriorityFee,
-							'maxFeePerGas': maxFeePergas,
-							'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit),
-							'nonce': _nonce
+					let tx = null;
+					try {
+						tx = await this.contract.ctx.approve(
+							constants.SWAP_CONTRACT_ADDRESS, // out contract
+							(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+							{
+								'maxPriorityFeePerGas': this.config.maxPriorityFee,
+								'maxFeePerGas': maxFeePergas,
+								'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit),
+								'nonce': _nonce
+							}
+						);
+						try {
+							let response = await tx.wait();
+							if (response.confirmations < 1) {
+								throw 'Could not approve transaction.';
+							}
 						}
-					);
+						catch(err) {
+							onsole.log("error in tx.wait of this.contract.ctx.approve(): " + err);
+						}
 
-					// wait for tx
-					let response = await tx.wait();
-
-					if (response.confirmations < 1) {
-						throw 'Could not approve transaction.';
 					}
-
+					catch(err) {
+						console.log("error in this.contract.ctx.approve(): " + err);
+					}
 				}
 
 			}
@@ -654,15 +669,9 @@ class User {
 						.setTitle('Finished!')
 						.setDescription(
 							`
-							**Contract**
-							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
-
-							**Summary**
-							Minimum ${selling ? `ETH` : this.contract.symbol} received: ${ethers.utils.formatUnits(amountmin.toString(), selling ? 18 : this.contract.decimals).toString()}
-							
-							Max Gas: ${ethers.utils.formatUnits(gasmaxfeepergas.toString(), 'gwei').toString()} gwei
-							Gas Limit: ${gaslimit.toString()}
-						`
+								**Contract**
+								[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
+							`
 						)
 				],
 				components: [
@@ -795,7 +804,7 @@ class User {
 			});
 
 		} catch (err) {
-
+			console.log(`error in sendAutoBuyTransaction(): ${err}`);
 			this.addTokenToBoughtList({
 				address: token_address,
 				status: err.error ? err.error : 'Could not process TX.'
@@ -990,29 +999,45 @@ class User {
 	}
 
 	async submitBuyTransaction() {
-		const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
-		const divider = ethers.utils.parseUnits(`1`, 2);
-		let swapFee = this.config.inputAmount.mul(totalFee).div(divider);
-		let restAmount = this.config.inputAmount.sub(swapFee);
+		console.log("start submitBuyTransaction()");
+		let restAmount = this.config.inputAmount;
 
 		console.log(`swapFee: ${swapFee}`);
 		console.log(`restAmount: ${restAmount}`);
 
-		let tx;
+		const tokenAddress = this.contract.ctx.address;
+		console.log("tokenAddress: " + tokenAddress);
+		const limitData = await getSwapInfo(this.discordId, tokenAddress);
+		console.log("limitData: " + limitData);
+
+		let limitValue = 0;
+		if(limitData) {
+			limitValue = limitData?.limitBuyPrice + (limitData?.limitBuyPrice * limitBuyPercentage / 100);
+			console.log("limitValue in JS format: " + limitValue);
+			if(Helpers.isFloat(limitValue)){
+				console.log("Helpers.isFloat(limitValue): " + Helpers.isFloat(limitValue));
+				limitValue = limitValue.toFixed(2);
+				limitValue = ethers.utils.parseUnits(limitValue, 18);
+			}
+			else {
+				limitValue = 0;
+			}
+		}
+
+		let tx = null;
 		try {
-			tx = await this.swap.swap(
-				restAmount,
-				this.router.address, 
-				this.account.address,
-				0,
+			tx = await this.swap.SwapEthToToken(
+				ethers.utils.formatEther(restAmount),
+				tokenAddress,
+				limitValue,
 				0,
 				0
 			);
 
-			console.log(`tx: ${tx}`)
+			console.log(`tx: ${tx}`);
 		}
 		catch(err) {
-			console.log("erro in swap func: " + err)
+			console.log("erro in SwapEthToToken: " + err);
 		}
 
 		return {
@@ -1021,30 +1046,43 @@ class User {
 			gaslimit: null,
 			amountmin: null
 		}
-
 	}
 
 	async submitSellTransaction() {
-		const totalFee = ethers.utils.parseUnits(`${constants.SWAP_TOTAL_FEE}`, 2);
-		const divider = ethers.utils.parseUnits(`1`, 2);
+		console.log("start submitSellTransaction()");
 
 		let amountIn = await this.contract.ctx.balanceOf(this.account.address);
-
 		console.log("amountIn: " + amountIn);
-
 		amountIn = amountIn.div(divider).mul(this.config.sellPercentage);
-		let swapFee = amountIn.mul(totalFee).div(divider);
-		let restAmountIn = amountIn.sub(swapFee);
 
-		console.log("swapFee: " + swapFee);
-		console.log("restAmountIn: " + restAmountIn);
+		const tokenAddress = this.contract.ctx.address;
+		console.log("tokenAddress: " + tokenAddress);
+		const limitData = await getSwapInfo(this.discordId, tokenAddress);
+		console.log("limitData: " + limitData);
 
-		let tx;
+		let limitValue = 0;
+		if(limitData) {
+			limitValue = limitData?.limitBuyPrice + (limitData?.limitBuyPrice * limitBuyPercentage / 100);
+			console.log("limitValue in JS format: " + limitValue);
+			if(Helpers.isFloat(limitValue)){
+				console.log("Helpers.isFloat(limitValue): " + Helpers.isFloat(limitValue));
+				limitValue = limitValue.toFixed(2);
+				limitValue = ethers.utils.parseUnits(limitValue, 18);
+			}
+			else {
+				limitValue = 0;
+			}
+		}
+
+		let tx = null;
 		try {
-			tx = await this.swap.swap(
-				restAmountIn,
-				this.account.address,
-				this.router.address
+			tx = await this.swap.SwapTokenToEth(
+				0,
+				ethers.utils.formatEther(amountIn),
+				tokenAddress,
+				limitValue,
+				0,
+				0
 			);
 
 			console.log("tx: " + tx)
@@ -1090,7 +1128,6 @@ class User {
 	getConfig() {
 		return this.config;
 	}
-
 }
 
 module.exports = User;

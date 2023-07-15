@@ -1,4 +1,4 @@
-  /**
+/**
    * @title AsapSwap
    * @dev ContractDescription
    * @custom:dev-run-script browser/scripts/asap_swap.ts
@@ -208,7 +208,15 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     function _distributeFees(address payer, uint256 fee) private {
         uint256 admin_fee = fee.mul(MAIN_WALLET_PERCENTAGE).div(100); //85%
         uint256 assit_fee = fee.mul(ASSIST_WALLET_PERCENTAGE).div(100); //15%
-        TransferHelper.safeTransferFrom(
+        TransferHelper.safeTransferETH(
+            _feesAdminWallet,
+            admin_fee
+        );
+        TransferHelper.safeTransferETH(
+            _feesAssistWallet,
+            assit_fee
+        );
+      /* TransferHelper.safeTransferFrom(
             ETH_ADDRESS,
             payer,
             _feesAdminWallet,
@@ -220,49 +228,46 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
             payer,
             _feesAssistWallet,
             assit_fee
-        );
+        );*/
     }
-
-    // fromTokenAmount : if fromTokenContract is weth , this value is ether amount. if not, this value should be token amount.
-    // fromTokenContract :
-    // toTokenContract
-    /// limitPrice : this value is token amount for 0.01 eth.
-    /// limitFee : maxFeePerGas in GWei
-    function swap(
-        uint256 fromTokenAmount,
-        address fromTokenContract,
-        address toTokenContract,
+    function SwapEthToToken(
+        address tokenContract,
         uint256 limitPrice,
         uint256 limitFee,
-        uint256 limitTax
-    ) external payable whenNotPaused {
-        require(
-            fromTokenAmount > 0,
+        uint256 limitTax) external payable whenNotPaused    {
+            require(
+            msg.value > 0,
             "[Validation] The trade amount has to be larger than 0"
         );
-        require(
-            ETH_ADDRESS == fromTokenContract || ETH_ADDRESS == toTokenContract,
-            "[Validation] only accept swap with weth."
-        );
-        if (ETH_ADDRESS == fromTokenContract) {
-            _swapEthToToken(
-                fromTokenAmount,
-                toTokenContract,
+        _swapEthToToken(
+                msg.value,
+                tokenContract,
                 limitPrice,
                 limitFee,
                 limitTax
             );
-        } else if (ETH_ADDRESS == toTokenContract) {
-            _swapTokenToEth(
-                fromTokenAmount,
-                fromTokenContract,
-                limitPrice,
-                limitFee,
-                limitTax
-            );
-        }
     }
-
+    
+    function SwapTokenToEth(
+        uint256 tokenAmount,
+        address tokenContract,
+        uint256 limitPrice,
+        uint256 limitFee,
+        uint256 limitTax) external payable whenNotPaused    {
+            require(
+            tokenAmount > 0,
+            "[Validation] The trade amount has to be larger than 0"
+        );
+         _swapTokenToEth(
+                tokenAmount,
+                tokenContract,
+                limitPrice,
+                limitFee,
+                limitTax
+            );
+    }
+    
+    
     function _swapEthToToken(
         uint256 ethAmount,
         address toTokenContract,
@@ -270,12 +275,7 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         uint256 limitFee,
         uint256 limitTax
     ) private whenNotPaused onlyContract(toTokenContract) {
-        require(msg.value >= ethAmount, "[Validation] Enough ETH not sent");
-        require(
-            ethAmount > 0,
-            "[Validation] The ETH amount has to be larger than 0"
-        );
-
+        
         uint256 totalfeeInSwap = getFee(ethAmount);
         if (limitFee > 0) // check limit fee
         {
@@ -284,7 +284,7 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
                 "[Validation] Swap fee is too high"
             );
         }
-        uint256 buyAmount = ethAmount - totalfeeInSwap;
+        uint256 buyAmount = ethAmount.sub(totalfeeInSwap);
         uint256 _estimatedTokenAmount = getEstimatedERC20forETH(
             buyAmount,
             toTokenContract
@@ -299,13 +299,13 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         // check tax
         if (limitTax > 0) {}
 
-        // Transfer the ERC20 funds from the ERC20 trader to the ETH trader.
+        
         IERC20 tokenContract = IERC20(toTokenContract);
-        require(
-            _estimatedTokenAmount <=
-                tokenContract.allowance(msg.sender, address(this)),
-            "[Validation] Allowance is not enough "
-        );
+        // require(
+        //     _estimatedTokenAmount <=
+        //         tokenContract.allowance(msg.sender, address(this)),
+        //     "[Validation] Allowance is not enough "
+        // );
         // send eth to pair contract
         IWETH(ETH_ADDRESS).deposit{value: buyAmount}();
         assert(
@@ -321,16 +321,15 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         /// swap
         {
             (address input, address output) = (ETH_ADDRESS, toTokenContract);
+            
             (address token0, ) = sortTokens(input, output);
+
             IUniswapV2Pair pair = IUniswapV2Pair(pairFor(input, output));
             uint amountInput;
             uint amountOutput;
             {
                 // scope to avoid stack too deep errors
-                (uint reserve0, uint reserve1, ) = pair.getReserves();
-                (uint reserveInput, uint reserveOutput) = input == token0
-                    ? (reserve0, reserve1)
-                    : (reserve1, reserve0);
+                (uint reserveInput, uint reserveOutput ) = getReserves(input, output);
                 amountInput = IERC20(input).balanceOf(address(pair)).sub(
                     reserveInput
                 );
@@ -340,7 +339,7 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
                     reserveOutput
                 );
             }
-            (uint amount0Out, uint amount1Out) = input == token0
+            (uint amount0Out, uint amount1Out) = ETH_ADDRESS == token0
                 ? (uint(0), amountOutput)
                 : (amountOutput, uint(0));
 
@@ -348,9 +347,9 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         }
         require(
             tokenContract.balanceOf(msg.sender).sub(balanceBefore) >= minOutput,
-            "INSUFFICIENT_OUTPUT_AMOUNT"
+            "ASAP BOT : swapped token amount is less that minimum expect"
         );
-        _distributeFees(msg.sender, totalfeeInSwap);
+       _distributeFees(msg.sender, totalfeeInSwap);
 
         _swapId = _swapId.add(1);
         _swaps[_swapId] = Swap({
@@ -376,7 +375,15 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
             tokenAmount > 0,
             "[Validation] The ERC-20 amount has to be larger than 0"
         );
+        if(limitFee > 0)
+        {
 
+        }
+
+        if( limitTax > 0)
+        {
+
+        }
         uint256 _estimateEthOut = getEstimatedETHforERC20(
             tokenAmount,
             fromTokenContract
@@ -406,10 +413,8 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
             uint amountOutput;
             {
                 // scope to avoid stack too deep errors
-                (uint reserve0, uint reserve1, ) = pair.getReserves();
-                (uint reserveInput, uint reserveOutput) = input == token0
-                    ? (reserve0, reserve1)
-                    : (reserve1, reserve0);
+                (uint reserveInput, uint reserveOutput ) = getReserves(input, output);
+               
                 amountInput = IERC20(input).balanceOf(address(pair)).sub(
                     reserveInput
                 );
@@ -425,7 +430,7 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
             pair.swap(amount0Out, amount1Out, address(this), new bytes(0));
 
             ethOut = IERC20(ETH_ADDRESS).balanceOf(address(this)) - beforeSwap;
-            require(ethOut >= minOutput, "INSUFFICIENT_OUTPUT_AMOUNT");
+            require(ethOut >= minOutput, "ASAP BOT: Swapped ether amount is less that minimum expect");
             IWETH(ETH_ADDRESS).withdraw(ethOut);
             totalfeeInSwap = getFee(ethOut);
             TransferHelper.safeTransferETH(msg.sender, ethOut - totalfeeInSwap);
@@ -474,17 +479,17 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     }
 
     function getAmountIn(
-        uint amountOut,
-        uint reserveIn,
-        uint reserveOut
-    ) internal pure returns (uint amountIn) {
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal pure returns (uint256 amountIn) {
         require(amountOut > 0, "ASAP BOT: INSUFFICIENT_OUTPUT_AMOUNT");
         require(
             reserveIn > 0 && reserveOut > 0,
             "ASAP BOT: INSUFFICIENT_LIQUIDITY"
         );
-        uint numerator = reserveIn.mul(amountOut).mul(1000);
-        uint denominator = reserveOut.sub(amountOut).mul(997);
+        uint256 numerator = reserveIn.mul(amountOut).mul(1000);
+        uint256 denominator = reserveOut.sub(amountOut).mul(997);
         amountIn = (numerator / denominator).add(1);
     }
 
@@ -506,16 +511,16 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     }
 
     function getAmountsIn(
-        uint amountOut,
+        uint256 amountOut,
         address[] memory path
-    ) internal view returns (uint[] memory amounts) {
+    ) internal view returns (uint256[] memory amounts) {
         require(path.length >= 2, "ASAP BOT: INVALID_PATH");
-        amounts = new uint[](path.length);
+        amounts = new uint256[](path.length);
         amounts[amounts.length - 1] = amountOut;
 
-        IUniswapV2Pair pair = IUniswapV2Pair(pairFor(path[0], path[1]));
-        (uint reserve0, uint reserve1, ) = pair.getReserves();
-        amounts[0] = getAmountIn(amounts[0], reserve0, reserve1);
+        //IUniswapV2Pair pair = IUniswapV2Pair(pairFor(path[0], path[1]));
+        (uint256 reserve0, uint256 reserve1) = getReserves(path[0], path[1]);
+        amounts[0] = getAmountIn(amounts[1], reserve0, reserve1);
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
@@ -554,7 +559,12 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         uint256 erc20Amount,
         address tokenAddress
     ) public view returns (uint256) {
-        return getAmountsIn(erc20Amount, getPathForETHtoERC20(tokenAddress))[0];
+        //return getAmountsIn(erc20Amount, getPathForETHtoERC20(tokenAddress))[0];
+
+        uint256 _estimatedEthAmountFor1000token = getAmountsIn(1000, getPathForETHtoERC20(tokenAddress))[0];
+               
+        uint256 _estimatedTokenAmount = _estimatedEthAmountFor1000token.mul(erc20Amount).div(1000);//.div(1 ether);
+        return _estimatedTokenAmount;
     }
 
     function getPathForETHtoERC20(
@@ -570,7 +580,10 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         uint256 etherAmount,
         address tokenAddress
     ) public view returns (uint256) {
-        return getAmountsIn(etherAmount, getPathForERC20toETH(tokenAddress))[0];
+        uint256 _estimatedTokenAmountFor1Eth = getAmountsIn(1, getPathForERC20toETH(tokenAddress))[0];
+               
+        uint256 _estimatedTokenAmount = _estimatedTokenAmountFor1Eth.mul(etherAmount);//.div(1 ether);
+        return _estimatedTokenAmount;
     }
 
     function getPathForERC20toETH(
@@ -580,5 +593,10 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         path[0] = tokenAddress;
         path[1] = ETH_ADDRESS;
         return path;
+    }
+    function getReserves(address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
+        (address token0,) = sortTokens(tokenA, tokenB);
+        (uint reserve0, uint reserve1,) = IUniswapV2Pair(pairFor(tokenA, tokenB)).getReserves();
+        (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 }
