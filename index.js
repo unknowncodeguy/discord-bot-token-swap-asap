@@ -605,35 +605,91 @@ process.on('uncaughtException', (e, origin) => {
 				}
 				case 'set_limit_order': {
 
-					let limitOrder = interaction.fields.getTextInputValue('limit_order').toString();
-					console.log(`limitOrder: ${limitOrder}`);
-
-					if(!Helpers.isFloat(limitOrder)) {
-						return interaction.reply({ content: 'Limit amount must be a valid number.', ephemeral: true});
+					let limitBuyPrice = interaction.fields.getTextInputValue('limit_buy_price').toString();
+					console.log(`limitBuyPrice: ${limitBuyPrice}`);
+					if(!Helpers.isFloat(limitBuyPrice)) {
+						return interaction.reply({ content: 'Limit price must be a valid number.', ephemeral: true});
 					}
 
-					let limitSlippage = interaction.fields.getTextInputValue('limit_slippage').toString();
-					console.log(`limitSlippage: ${limitSlippage}`);
+					let limitBuyPercentage = interaction.fields.getTextInputValue('limit_buy_percentage').toString();
+					console.log(`limitBuyPercentage: ${limitBuyPercentage}`);
+					if(!Helpers.isInt(limitBuyPercentage) || limitBuyPercentage > 100 || limitBuyPercentage < 1) {
+						return interaction.reply({ content: 'Limit buy percentage must be a valid number between 0 and 100.', ephemeral: true});
+					}
 
-					if(!Helpers.isInt(limitSlippage) || limitSlippage > 100 || limitSlippage < 1) {
-						return interaction.reply({ content: 'Limit Slippage must be a valid number between 0 and 100.', ephemeral: true});
+					let limitSellPrice = interaction.fields.getTextInputValue('limit_sell_price').toString();
+					console.log(`limitSellPrice: ${limitSellPrice}`);
+					if(!Helpers.isFloat(limitSellPrice)) {
+						return interaction.reply({ content: 'Limit price must be a valid number.', ephemeral: true});
+					}
+
+					let limitSellPercentage = interaction.fields.getTextInputValue('limit_sell_percentage').toString();
+					console.log(`limitSellPercentage: ${limitSellPercentage}`);
+					if(!Helpers.isInt(limitSellPercentage) || limitSellPercentage > -100 || limitSellPercentage < 0) {
+						return interaction.reply({ content: 'Limit sell percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
 					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
 					const { tokenAddress } = tokenDataByInteraction;
 					console.log("tokenDataByInteraction: " + tokenDataByInteraction);
-					console.log("_user.account.address: " + _user.account.address);
 					console.log("tokenAddress: " + tokenAddress);
 					console.log("interaction.user.id: " + interaction.user.id);
 
 					try {
-						await setSwapInfo(interaction.user.id, tokenAddress, parseFloat(input), parseInt(limitSlippage));
+						await setSwapInfo(interaction.user.id, tokenAddress, parseFloat(limitBuyPrice), parseInt(limitBuyPercentage), parseFloat(limitSellPrice), parseInt(limitSellPercentage));
 					}
 					catch(err) {
-						console.log(`err on DB ${err}`)
+						console.log(`error when saving limit values to DB: ${err}`)
 					}
 
-					await interaction.reply({ content: 'Your limit order was saved successfully!' });
+					await interaction.reply({ content: 'Your limit orders were saved successfully!' });
+
+					break;
+				}
+				case 'set_token_limit': {
+
+					let limitBuyPrice = interaction.fields.getTextInputValue('limit_buy_price_token').toString();
+					console.log(`limitBuyPrice: ${limitBuyPrice}`);
+					if(!Helpers.isFloat(limitBuyPrice)) {
+						return interaction.reply({ content: 'Limit price must be a valid number.', ephemeral: true});
+					}
+
+					let limitBuyPercentage = interaction.fields.getTextInputValue('limit_buy_percentage_token').toString();
+					console.log(`limitBuyPercentage: ${limitBuyPercentage}`);
+					if(!Helpers.isInt(limitBuyPercentage) || limitBuyPercentage > 100 || limitBuyPercentage < 1) {
+						return interaction.reply({ content: 'Limit buy percentage must be a valid number between 0 and 100.', ephemeral: true});
+					}
+
+					let limitSellPrice = interaction.fields.getTextInputValue('limit_sell_price_token').toString();
+					console.log(`limitSellPrice: ${limitSellPrice}`);
+					if(!Helpers.isFloat(limitSellPrice)) {
+						return interaction.reply({ content: 'Limit price must be a valid number.', ephemeral: true});
+					}
+
+					let limitSellPercentage = interaction.fields.getTextInputValue('limit_sell_percentage_token').toString();
+					console.log(`limitSellPercentage: ${limitSellPercentage}`);
+					if(!Helpers.isInt(limitSellPercentage) || limitSellPercentage > -100 || limitSellPercentage < 0) {
+						return interaction.reply({ content: 'Limit sell percentage must be a valid number between 0 and -100.', ephemeral: true});
+					}
+
+					let tokenAddress = interaction.fields.getTextInputValue('limit_token_address').toString();
+					console.log(`tokenAddress: ${tokenAddress}`);
+					if(!ethers.utils.isAddress(interaction.fields.getTextInputValue('limit_token_address'))) {
+						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
+					}
+
+					console.log("tokenDataByInteraction: " + tokenDataByInteraction);
+					console.log("tokenAddress: " + tokenAddress);
+					console.log("interaction.user.id: " + interaction.user.id);
+
+					try {
+						await setSwapInfo(interaction.user.id, tokenAddress, parseFloat(limitBuyPrice), parseInt(limitBuyPercentage), parseFloat(limitSellPrice), parseInt(limitSellPercentage));
+					}
+					catch(err) {
+						console.log(`error when saving limit values to DB: ${err}`)
+					}
+
+					await interaction.reply({ content: 'Your limit orders were saved successfully!' });
 
 					break;
 				}
@@ -840,10 +896,8 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 				case 'limit': {					
-
 					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
 					const { tokenAddress } = tokenDataByInteraction;
-					console.log("_user.account.address: " + _user.account.address);
 					console.log("tokenAddress: " + tokenAddress);
 					console.log("interaction.user.id: " + interaction.user.id);
 
@@ -855,21 +909,87 @@ process.on('uncaughtException', (e, origin) => {
 				        .addComponents([
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('limit_order').setLabel('Limit Order')
+					              	.setCustomId('limit_buy_price').setLabel('Limit price when buying')
 					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(prevLimit ? `${prevLimit?.limitPrice}` : `0`)
-									.setPlaceholder('Enter the limit order value in ETH')
+					              	.setValue(prevLimit ? `${prevLimit?.limitBuyPrice}` : `0`)
+									.setPlaceholder('Enter the limit price in ETH')
 					              	.setRequired(true),
 				            ),
 							new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('limit_slippage').setLabel('Limit Slippage')
+					              	.setCustomId('limit_buy_percentage').setLabel('Limit percentage when buying')
 					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(prevLimit ? `${prevLimit?.limitSlippage}` : `0`)
-									.setPlaceholder('Enter the limit slippage percent')
+					              	.setValue(prevLimit ? `${prevLimit?.limitBuyPercentage}` : `0`)
+									.setPlaceholder('Enter the limit percentage between 0 and 100')
 					              	.setRequired(true),
 				            ),
-							
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('limit_sell_price').setLabel('Limit price when selling')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(prevLimit ? `${prevLimit?.limitSellPrice}` : `0`)
+									.setPlaceholder('Enter the limit price in ETH')
+					              	.setRequired(true),
+				            ),
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('limit_sell_percentage').setLabel('Limit percentage when selling')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(prevLimit ? `${prevLimit?.limitSlippage}` : `0`)
+									.setPlaceholder('Enter the limit percentage between 0 and -100')
+					              	.setRequired(true),
+				            )
+				        ]);
+
+				    await interaction.showModal(modal);
+
+					break;
+				}
+				case `set_limit`: {
+					const modal = new ModalBuilder()
+				        .setCustomId('set_token_limit')
+				        .setTitle('Limit Order')
+				        .addComponents([
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('limit_token_address').setLabel('Token Address')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(``)
+									.setPlaceholder('Enter the Token Address')
+					              	.setRequired(true),
+				            ),
+				            new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('limit_buy_price_token').setLabel('Limit price when buying')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`0`)
+									.setPlaceholder('Enter the limit price in ETH')
+					              	.setRequired(true),
+				            ),
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('limit_buy_percentage_token').setLabel('Limit percentage when buying')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`0`)
+									.setPlaceholder('Enter the limit percentage between 0 and 100')
+					              	.setRequired(true),
+				            ),
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('limit_sell_price_token').setLabel('Limit price when selling')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`0`)
+									.setPlaceholder('Enter the limit price in ETH')
+					              	.setRequired(true),
+				            ),
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('limit_sell_percentage_token').setLabel('Limit percentage when selling')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`0`)
+									.setPlaceholder('Enter the limit percentage between 0 and -100')
+					              	.setRequired(true),
+				            )
 				        ]);
 
 				    await interaction.showModal(modal);

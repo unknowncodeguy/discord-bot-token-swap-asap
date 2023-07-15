@@ -9,11 +9,19 @@ const SwapSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    limitPrice: {
+    limitBuyPrice: {
         type: Number,
         required: true
     },
-    limitSlippage: {
+    limitBuyPercentage: {
+        type: Number,
+        require: true
+    },
+    limitSellPrice: {
+        type: Number,
+        required: true
+    },
+    limitSellPercentage: {
         type: Number,
         require: true
     }

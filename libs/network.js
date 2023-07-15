@@ -4,7 +4,7 @@ const UserCollection = require('./usercollection');
 const Helpers = require('./helpers');
 
 const axios = require("axios");
-const { getSwapInfo, setSwapInfo, saveTokenInfoByInteraction } = require("./../services/swap");
+const { saveTokenInfoByInteraction } = require("./../services/swap");
 
 const etherscan = new (require('./etherscan'))(constants.EHTERSCAN_API_KEY);
 

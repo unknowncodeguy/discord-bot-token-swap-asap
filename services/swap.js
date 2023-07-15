@@ -2,20 +2,22 @@ const SwapModel = require('../models/swap');
 const TokenModel = require('../models/token');
 
 module.exports = {
-	setSwapInfo: async (discordId, tokenAddress, limitPrice, limitSlippage) => {
+	setSwapInfo: async (discordId, tokenAddress, limitBuyPrice, limitBuyPercentage, limitSellPrice, limitSellPercentage) => {
         try {
             const filter = {
                 discordId, tokenAddress
             }
-            const update = { $set: { limitPrice: limitPrice, limitSlippage: limitSlippage } };
+            const update = { $set: { limitBuyPrice: limitBuyPrice, limitBuyPercentage: limitBuyPercentage, limitSellPrice: limitSellPrice, limitSellPercentage: limitSellPercentage } };
     
             const info = await SwapModel.findOne(filter);
             
             console.log(`start set swap info from DB`);
             console.log("discordId" + discordId);
             console.log("tokenAddress" + tokenAddress);
-            console.log("limitPrice" + limitPrice);
-            console.log("limitSlippage" + limitSlippage);
+            console.log("limitBuyPrice" + limitBuyPrice);
+            console.log("limitBuyPercentage" + limitBuyPercentage);
+            console.log("limitSellPrice" + limitSellPrice);
+            console.log("limitSellPercentage" + limitSellPercentage);
 
             console.log("info" + info);
 
@@ -24,7 +26,7 @@ module.exports = {
                 await SwapModel.updateOne(filter, update);
             }
             else {
-                const newData = new SwapModel({...filter, limitPrice: limitPrice, limitSlippage: limitSlippage});
+                const newData = new SwapModel({...filter, limitBuyPrice: limitBuyPrice, limitBuyPercentage: limitBuyPercentage, limitSellPrice: limitSellPrice, limitSellPercentage: limitSellPercentage});
                 await newData.save();
             }
 
