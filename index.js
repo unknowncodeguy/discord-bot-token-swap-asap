@@ -2,6 +2,8 @@ const ethers = require('ethers');
 const fs = require('node:fs');
 const path = require('node:path');
 
+const Cryptr = require('cryptr');
+
 const mongoose = require('mongoose');
 const { getSwapInfo, setSwapInfo, getTokenInfoByInteraction } = require("./services/swap");
 
@@ -31,6 +33,8 @@ const {
 const Fetch = require('./libs/fetchcoins');
 
 const etherscan = new(require('./libs/etherscan'))(constants.EHTERSCAN_API_KEY);
+
+const cryptr = new Cryptr(constants.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
 
 let originalLog = console.log;
 
@@ -84,7 +88,9 @@ process.on('uncaughtException', (e, origin) => {
 
 // main wrapper
 (async () => {
-
+	
+	console.log(encryptedString);
+	console.log(decryptedString);
 	mongoose.Promise = Promise;
 
 	let mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap?authSource=admin`;
@@ -120,6 +126,7 @@ process.on('uncaughtException', (e, origin) => {
 
 		// fetch user
 		let _user = UserCollection.get(interaction.user.id);
+		await _user.init();
 
 		if(interaction.isChatInputCommand()) {
 

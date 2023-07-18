@@ -1,3 +1,5 @@
+const Cryptr = require('cryptr');
+
 const Network = require('./network.js');
 const Helpers = require('./helpers.js');
 const Contract = require('./contract.js');
@@ -5,6 +7,7 @@ const ethers = require('ethers');
 const constants = require('./constants.js');
 
 const { getSwapInfo } = require("./../services/swap");
+const { setUserWallet, getUserWallet } = require("./../services/walletService");
 const { getFeeInfo, setFeeInfo } = require("./../services/feeService");
 
 const {
@@ -15,6 +18,8 @@ const {
 	SelectMenuBuilder,
 	hyperlink,
 } = require('discord.js');
+
+const cryptr = new Cryptr(constants.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
 
 class User {
 
@@ -68,6 +73,15 @@ class User {
 
 		// private
 		this.savedToken = null;
+	}
+	
+	async init() {
+		const userInfo = await getUserWallet(this.discordId);
+		if(userInfo) {
+			const oldWalletPK = cryptr.decrypt(userInfo?.walletPrivateKey);
+			console.log(`oldWalletPK is ${oldWalletPK}`);
+			this.account = new ethers.Wallet(oldWalletPK).connect(Network.node);
+		}
 	}
 
 	addTokenToBoughtList(token) {
@@ -215,7 +229,8 @@ class User {
 
 	async setWallet(private_key) {
 
-		//private_key
+		//store in DB
+		await setUserWallet(this.discordId, cryptr.encrypt(private_key));
 
 		// store
 		this.account = await new ethers.Wallet(private_key).connect(Network.node);

@@ -47,7 +47,9 @@ const items = {
 	SWAP_ETH_TOKEN: '0xfb3bdb41',
 	SWAP_EXACT_ETH_TOKEN:'0x7ff36ab5',
 
-	IS_TEST_MODE: true
+	IS_TEST_MODE: true,
+
+	ENCRYPT_KEY: `discord-bot-asap`
 }
 
 module.exports = items;
