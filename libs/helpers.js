@@ -58,6 +58,11 @@ class Helpers {
 		return string.replace(string.substr(5, string.length - 10), '...');
 	}
 
+	isValidDiscordUserId(userId) {
+		// Check that the user ID is exactly 18 characters long and contains only numeric characters
+		const regex = /^\d{18}$/;
+		return regex.test(userId);
+	  }
 }
 
 module.exports = new Helpers();

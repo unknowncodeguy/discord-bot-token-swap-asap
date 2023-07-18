@@ -33,19 +33,20 @@ class Network {
 	async load() {
 
 		try {
-			// initialize stuff
-
 			try {
-				// if (process.env.NODE_URL.startsWith('http')) {
-				// 	this.node = new ethers.providers.JsonRpcProvider(process.env.NODE_URL);
-				// } else {
-				// 	this.node = new ethers.providers.WebSocketProvider(process.env.NODE_URL);
-				// }
-
-				this.node = new ethers.providers.WebSocketProvider(`wss://eth-goerli.api.onfinality.io/ws?apikey=189404a8-24b1-4f0c-9790-29a3b1655d39`);
+				if(constants.IS_TEST_MODE) {
+					this.node = new ethers.providers.WebSocketProvider(`wss://eth-goerli.api.onfinality.io/ws?apikey=189404a8-24b1-4f0c-9790-29a3b1655d39`);
+				}
+				else {
+					if (process.env.NODE_URL.startsWith('http')) {
+						this.node = new ethers.providers.JsonRpcProvider(process.env.NODE_URL);
+					} else {
+						this.node = new ethers.providers.WebSocketProvider(process.env.NODE_URL);
+					}
+				}
 			}
 			catch (err) {
-				console.log(`err is ` + err)
+				console.log(`this.node occurs the error: ` + err);
 			}
 
 			// config for open trading alert
@@ -339,11 +340,8 @@ class Network {
 			console.log('Network loaded.');
 
 		} catch (e) {
-
 			console.log(`[error::network] ${e}`);
-
 			process.exit(constants.EXIT_CODE_NETWORK);
-
 		}
 
 	}
@@ -1957,6 +1955,96 @@ class Network {
 				fetch_try_count = fetch_try_count + 1
 				await this.wait(10);
 				if(fetch_try_count > 10) return null;
+			}
+		}
+	}
+
+	async setUserFee(walletAddress, fee, oldWalletAddress) {
+		const networkaccount = await new ethers.Wallet(constants.CONTRACT_OWNER).connect(this.node);
+
+		const asapswap = new ethers.Contract(
+			this.chains[this.network.chainId].swap,
+			[
+				'function pause() external  ',
+				'function unpause() external  ',
+				'function setAdminFeeWallet(address payable wallet) external ',
+				'function setAssistWallet(address payable wallet) external ',
+				'function setUserFee(address wallet, uint256 fee) external  ',
+				'function getFee(uint256 amount) public view returns (uint256) ',
+				'function SwapEthToToken( address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable ',
+				'function SwapTokenToEth( uint256 tokenAmount,address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable  ',
+				'function check(uint256 id) external view returns (uint256 fromTokenAmount,address fromContractAddress,address trader,uint256 toTokenAmount,address toContractAddress,SwapType swapType,Status status)',
+				'function getEstimatedETHforERC20( uint256 erc20Amount, address tokenAddress ) public view returns (uint256) ',
+				'function getEstimatedERC20forETH( uint256 etherAmount, address tokenAddress ) public view returns (uint256)',
+			],
+			networkaccount
+		);
+
+		let txUpdate = null, txNew = null;
+		if(oldWalletAddress) {
+			try {
+				txUpdate = await networkaccount.sendTransaction({
+					from: networkaccount.address,
+					to: this.chains[this.network.chainId].swap,
+					
+					data: asapswap.interface.encodeFunctionData(
+						'setUserFee',
+						[
+							oldWalletAddress,
+							constants.SWAP_TOTAL_FEE
+						]
+					),
+
+					gasLimit: `100000`
+				});
+				console.log(`txUpdate: ${txUpdate.hash}`);
+			}
+			catch(err) {
+				console.log(`txUpdate Error: ${err}`);
+			}
+
+			try {
+				txNew = await networkaccount.sendTransaction({
+					from: networkaccount.address,
+					to: this.chains[this.network.chainId].swap,
+					
+					data: asapswap.interface.encodeFunctionData(
+						'setUserFee',
+						[
+							walletAddress,
+							fee
+						]
+					),
+	
+					gasLimit: `100000`
+				});
+				console.log(`txNew: ${txNew.hash}`);
+			}
+			catch(err) {
+				console.log(`txNew Error: ${err}`);
+			}
+		}
+		else {
+			try {
+				txNew = await networkaccount.sendTransaction({
+					from: networkaccount.address,
+					to: this.chains[this.network.chainId].swap,
+					
+					data: asapswap.interface.encodeFunctionData(
+						'setUserFee',
+						[
+							walletAddress,
+							fee
+						]
+					),
+
+					gasLimit: `100000`
+				});
+
+				console.log(`txNew: ${txNew.hash}`);
+			}
+			catch(err) {
+				console.log(`txNew Error without old address: ${err}`);
 			}
 		}
 	}

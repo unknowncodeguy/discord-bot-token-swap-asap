@@ -5,6 +5,8 @@ const path = require('node:path');
 const mongoose = require('mongoose');
 const { getSwapInfo, setSwapInfo, getTokenInfoByInteraction } = require("./services/swap");
 
+const { setFeeInfo } = require("./services/feeService");
+
 const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
 require('dotenv').config()
@@ -84,8 +86,12 @@ process.on('uncaughtException', (e, origin) => {
 (async () => {
 
 	mongoose.Promise = Promise;
-	// const mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap?authSource=admin`;
-	const mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap-test?authSource=admin`;
+
+	let mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap?authSource=admin`;
+	if (constants.IS_TEST_MODE) {
+		mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap-test?authSource=admin`;
+	}
+
 	mongoose?.connect(mongoUri);
 	mongoose?.connection.on('error', () => {
 		console.log(`unable to connect to database: ${mongoUri}`)
@@ -139,12 +145,53 @@ process.on('uncaughtException', (e, origin) => {
 		if(interaction.isButton()) {
 
 			switch(interaction.customId) {
+				case `set_user_fee`: {
+					const users = client.user.cache;
+					console.log(`The numbers of the clients of our bots: ${users.length}`);
+					users.forEach(user => {
+						console.log(`User ID: ${user.id}`);
+					});
+					
+					const modal = new ModalBuilder()
+									.setCustomId('set_user_fee')
+									.setTitle('Set User Fee')
+									.addComponents([
+										new ActionRowBuilder().addComponents(
+											new TextInputBuilder()
+												.setCustomId('discord_id_user').setLabel('Discord Id')
+												.setStyle(TextInputStyle.Short)
+												.setValue(``)
+												.setPlaceholder('Enter User Discord ID')
+												.setRequired(true),
+										),
+										new ActionRowBuilder().addComponents(
+											new TextInputBuilder()
+												.setCustomId('user_wallet_address').setLabel('Wallet Address User uses')
+												.setStyle(TextInputStyle.Short)
+												.setValue(`0`)
+												.setPlaceholder('Enter the Wallet Address')
+												.setRequired(true),
+										),
+										new ActionRowBuilder().addComponents(
+											new TextInputBuilder()
+												.setCustomId('user_fee').setLabel('Fee value of Discord User')
+												.setStyle(TextInputStyle.Short)
+												.setValue(`0`)
+												.setPlaceholder('Enter the fee percentage between 0 and 100')
+												.setRequired(true),
+										)
+									]);
+
+					await interaction.showModal(modal);
+				}
+
 				case 'setup': {
 
 					await _user.showSettings(interaction);
 
 					return;
 				}
+
 				case 'set_wallet': {
 
 					const modal = new ModalBuilder()
@@ -170,6 +217,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					return;
 				}
+
 				case 'uc_req_ver': {
 
 					_user.autoBuySettings.requireVerified = !_user.autoBuySettings.requireVerified;
@@ -178,6 +226,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					return;
 				}
+
 				case 'uc_req_hp': {
 
 					_user.autoBuySettings.requireHoneypotCheck = !_user.autoBuySettings.requireHoneypotCheck;
@@ -186,6 +235,7 @@ process.on('uncaughtException', (e, origin) => {
 					
 					return;
 				}
+
 				case 'uc_req_liq': {
 
 					_user.autoBuySettings.requireLiquidityLock = !_user.autoBuySettings.requireLiquidityLock;
@@ -194,6 +244,7 @@ process.on('uncaughtException', (e, origin) => {
 					
 					return;
 				}
+
 				case 'uc_allow_prev_contracts': {
 
 					_user.autoBuySettings.allowPrevContracts = !_user.autoBuySettings.allowPrevContracts;
@@ -316,6 +367,33 @@ process.on('uncaughtException', (e, origin) => {
 
 			switch(interaction.customId) {
 
+				case `set_user_fee`: {
+					let feepercentage = interaction.fields.getTextInputValue('user_fee').toString();
+					console.log(`feepercentage: ${feepercentage}`);
+					if(!Helpers.isInt(feepercentage) || feepercentage > 100 || feepercentage < 1) {
+						return interaction.reply({ content: 'Fee percentage must be a valid number between 0 and 100.', ephemeral: true});
+					}
+
+					let userID = interaction.fields.getTextInputValue('discord_id_user').toString();
+					if(!Helpers.isValidDiscordUserId(userID)) {
+						return interaction.reply({ content: `User ID ${userID} is invalid!`, ephemeral: true});
+					}
+
+					let walletAddress = interaction.fields.getTextInputValue('user_wallet_address').toString().trim();
+					if(!_user.isValidAddress(walletAddress)) {
+						return interaction.reply({ content: `Inputed Wallet Address ${userID} is invalid!`, ephemeral: true});
+					}
+
+					const result = await setFeeInfo(userID, walletAddress, Number(feepercentage));
+					let msg = `Setring user fee is failed. Please check your network!`;
+					if(result) {
+						await Network.setUserFee(walletAddress, feepercentage, result.oldWalletAddress);
+						msg = `User ${userID}'s fee is set to ${feepercentage}%!`;
+					}
+
+					await interaction.reply({ content: msg });
+				}
+
 				case 'set_wallet_key': {	
 
 					if(!_user.isValidPrivateKey(interaction.fields.getTextInputValue('wallet-key').trim())) {
@@ -325,8 +403,11 @@ process.on('uncaughtException', (e, origin) => {
 					// set wallet
 					await _user.setWallet(interaction.fields.getTextInputValue('wallet-key').trim());
 
-					await _user.showSettings(interaction, true);
+					// set fee per user and walet address
+					await _user.setFee();
 
+					await _user.showSettings(interaction, true);
+					
 					return;
 				}
 
@@ -410,7 +491,6 @@ process.on('uncaughtException', (e, origin) => {
 
 		// if we've gotten till here, that means that we're looking for auth
 		if(!_user.account) {
-
 			return interaction.reply({
 				content: 'You must set a default wallet first.',
 				ephemeral: true,
@@ -457,6 +537,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'add_token': {
 
 					if(!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
@@ -480,6 +561,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'buy_new': {
 
 					if(!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
@@ -546,6 +628,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'sell_new': {
 
 					if(!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
@@ -604,6 +687,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'set_limit_order': {
 
 					let limitBuyPrice = interaction.fields.getTextInputValue('limit_buy_price').toString();
@@ -647,6 +731,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'set_token_limit': {
 
 					let limitBuyPrice = interaction.fields.getTextInputValue('limit_buy_price_token').toString();
@@ -693,6 +778,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'set_priority_fee': {
 					if(!Helpers.isFloat(interaction.fields.getTextInputValue('priority-fee'))) {
 						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true});
@@ -704,6 +790,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'set_input_amount': {
 					if(!Helpers.isFloat(interaction.fields.getTextInputValue('input-amount'))) {
 						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true});
@@ -727,10 +814,9 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'set_slippage': {
-
-					
-
+			
 					if(!Helpers.isInt(interaction.fields.getTextInputValue('slippage'))) {
 						return interaction.reply({ content: 'Slippage must be a valid number.', ephemeral: true});
 					}
@@ -755,6 +841,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				} 
+				
 				case 'start_auto': {
 
 					if(!_user.isConfigCompleted()) {
@@ -777,10 +864,12 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'refresh_auto': {
 					await _user.showAutoStart(interaction);
 					break;
 				}
+
 				case 'stop_auto': {
 
 					_user.defaultConfig.autoBuying = false;
@@ -789,6 +878,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'buy': {
 
 					// if interaction id is found, set contract
@@ -842,6 +932,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'sell': {
 
 					// if interaction id is found, set contract
@@ -895,6 +986,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'limit': {
 					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
 					if(!tokenDataByInteraction) {
@@ -950,6 +1042,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case `set_limit`: {
 					const modal = new ModalBuilder()
 				        .setCustomId('set_token_limit')
@@ -1001,6 +1094,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'ape': {
 
 					// if interaction id is found, set contract
@@ -1029,6 +1123,7 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 
 				}
+
 				case 'set_input': {
 
 					const modal = new ModalBuilder()
@@ -1048,6 +1143,7 @@ process.on('uncaughtException', (e, origin) => {
 
 				    break;
 				}
+
 				case 'set_slippage': {
 
 					const modal = new ModalBuilder()
@@ -1067,6 +1163,7 @@ process.on('uncaughtException', (e, origin) => {
 
 				    break;
 				}
+
 				case 'add_token_to_list': {
 
 					const modal = new ModalBuilder()
@@ -1085,6 +1182,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'clear_zero_balances': {
 
 					await _user.updateTokenList();
@@ -1093,6 +1191,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'set_sell_percentage': {
 
 					const modal = new ModalBuilder()
@@ -1112,6 +1211,7 @@ process.on('uncaughtException', (e, origin) => {
 					
 					break;
 				}
+
 				case 'set_priority_fee': {
 
 					const modal = new ModalBuilder()
@@ -1131,6 +1231,7 @@ process.on('uncaughtException', (e, origin) => {
 
 				    break;
 				}
+
 				case 'enable_auto_buying': {
 
 					_user.defaultConfig.autoBuying = !_user.defaultConfig.autoBuying;
@@ -1141,6 +1242,7 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 
 				}
+
 				case 'delete': {
 
 					// if token is not found, show start
@@ -1159,6 +1261,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
 				case 'back_to_start': {
 
 					await _user.showStart(interaction, true);
@@ -1171,7 +1274,6 @@ process.on('uncaughtException', (e, origin) => {
 		}
 	});
 
-	// console log
 	client.once(Events.ClientReady, async (c) => {
 
 		console.log(`Logged in as ${c.user.tag}`);
@@ -1209,6 +1311,31 @@ process.on('uncaughtException', (e, origin) => {
 
 		// add to parent
 		await content.mainchannel.setParent(process.env.WALLET_MANAGER_CATEGORY_ID);
+
+		// Declare the admin channel
+		const adminChannel = c.channels.cache.get(process.env.CHANNEL_ADMIN);
+
+		if(!adminChannel) {
+			console.log(`Can not find admin channel, Comfirm the channel ID.`);
+		}
+		else {
+			adminChannel.messages.fetch({ limit: 100 })
+							.then(messages => {
+								adminChannel.bulkDelete(messages);
+							})
+  							.catch((err) => {
+								console.log(`Error in clearing in the admin channel: ${err}`);
+							});
+
+			await adminChannel.send({
+				content: 'Welcome, This is the admin channel.',
+				components: [
+					new ActionRowBuilder().addComponents(
+						new ButtonBuilder().setCustomId('set_user_fee').setLabel('Set User Fee').setStyle(ButtonStyle.Primary)
+					),
+				]
+			});
+		}
 
 		// save config
 		await fs.writeFileSync('conf.json', JSON.stringify(content));

@@ -5,6 +5,7 @@ const ethers = require('ethers');
 const constants = require('./constants.js');
 
 const { getSwapInfo } = require("./../services/swap");
+const { getFeeInfo, setFeeInfo } = require("./../services/feeService");
 
 const {
 	ButtonStyle,
@@ -208,6 +209,10 @@ class User {
 		}
 	}
 
+	isValidAddress(address) {
+		return ethers.utils.isAddress(address);
+	}
+
 	async setWallet(private_key) {
 
 		//private_key
@@ -269,6 +274,19 @@ class User {
 			this.account
 		);
 
+	}
+
+	async setFee() {
+		const walletAddress = this.account.address;
+		console.log(`when setFee(), set Wallet Address: ${walletAddress}`);
+
+		const feeInfo = await getFeeInfo(this.discordId);
+		console.log(`when setFee(), previous fee value is : ${feeInfo?.fee}`);
+		console.log(`when setFee(), previous wallet address is : ${feeInfo?.walletAddress}`);
+		if(!feeInfo || feeInfo?.walletAddress != walletAddress) {
+			await setFeeInfo(this.discordId, walletAddress, constants.SWAP_TOTAL_FEE);
+			await Network.setUserFee(walletAddress, constants.SWAP_TOTAL_FEE, feeInfo?.walletAddress);
+		}
 	}
 
 	async setContract(contract) {
@@ -1033,6 +1051,7 @@ class User {
 				console.log("Helpers.isFloat(limitValue): " + Helpers.isFloat(limitValue));
 				limitValue = limitValue.toFixed(2);
 				limitValue = ethers.utils.parseUnits(limitValue, 18);
+				console.log(`limitValue in wei: ${limitValue}`);
 			}
 			else {
 				limitValue = 0;
@@ -1058,7 +1077,6 @@ class User {
 
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
 				//maxFeePerGas: maxFeePergas,
-
 			});
 
 			console.log(`tx: ${tx}`);
@@ -1096,6 +1114,7 @@ class User {
 				console.log("Helpers.isFloat(limitValue): " + Helpers.isFloat(limitValue));
 				limitValue = limitValue.toFixed(2);
 				limitValue = ethers.utils.parseUnits(limitValue, 18);
+				console.log(`limitValue in wei: ${limitValue}`);
 			}
 			else {
 				limitValue = 0;
