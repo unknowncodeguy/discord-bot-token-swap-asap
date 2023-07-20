@@ -1,20 +1,18 @@
 const mongoose = require('mongoose');
 
-const FeeSchema = new mongoose.Schema({
-    discordId: {
+const PriceSchema = new mongoose.Schema({
+    tokenAddress: {
         type: String,
         required: true,
       },
-    
-    walletAddress: {
-        type: String,
+    price: {
+        type: Number,
         required: true
     },
-
-    fee: {
+    updateAt: {
         type: Number,
         required: true
     }
 })
 
-module.exports = mongoose?.model('Fee', FeeSchema);
+module.exports = mongoose?.model('Price', PriceSchema);

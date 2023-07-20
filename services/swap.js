@@ -1,68 +1,6 @@
-const SwapModel = require('../models/swap');
 const TokenModel = require('../models/token');
 
 module.exports = {
-	setSwapInfo: async (discordId, tokenAddress, limitBuyPrice, limitBuyPercentage, limitSellPrice, limitSellPercentage) => {
-        try {
-            const filter = {
-                discordId, tokenAddress
-            }
-            const update = { $set: { limitBuyPrice: limitBuyPrice, limitBuyPercentage: limitBuyPercentage, limitSellPrice: limitSellPrice, limitSellPercentage: limitSellPercentage } };
-    
-            const info = await SwapModel.findOne(filter);
-            
-            console.log(`start set swap info from DB`);
-            console.log("discordId" + discordId);
-            console.log("tokenAddress" + tokenAddress);
-            console.log("limitBuyPrice" + limitBuyPrice);
-            console.log("limitBuyPercentage" + limitBuyPercentage);
-            console.log("limitSellPrice" + limitSellPrice);
-            console.log("limitSellPercentage" + limitSellPercentage);
-
-            console.log("info" + info);
-
-    
-            if(info) {
-                await SwapModel.updateOne(filter, update);
-            }
-            else {
-                const newData = new SwapModel({...filter, limitBuyPrice: limitBuyPrice, limitBuyPercentage: limitBuyPercentage, limitSellPrice: limitSellPrice, limitSellPercentage: limitSellPercentage});
-                await newData.save();
-            }
-
-            console.log(`end set swap info from DB`);
-    
-            return true;
-        }
-        catch (err) {
-            console.log("Error when setting limit order info to DB: " + err);
-        }
-    
-        return false;
-    },
-
-    getSwapInfo: async (discordId, tokenAddress) => {
-        try {
-            console.log(`start get swap info from DB`);
-            console.log("discordId" + discordId);
-            console.log("tokenAddress" + tokenAddress);
-
-            const info = await SwapModel.findOne({
-                discordId,
-                tokenAddress
-            });
-            console.log("info" + info);
-            console.log(`end get swap info from DB`);
-    
-            return info;
-        }
-        catch(err) {
-            console.log("Error when getting limit order info from DB: " + err);
-        }
-    
-        return null;
-    },
-
     saveTokenInfoByInteraction: async (interaction, tokenAddress) => {
         const filter = {
             interaction

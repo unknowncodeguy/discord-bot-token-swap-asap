@@ -2,3 +2,78 @@
 [2023-7-19 01:31:22] XXXXX
 [2023-7-19 01:32:26] 682fd5479367d87a877b97ac9087d00605ccd851d5b02a3a6f19c804077335f8c67b878eb6d5ee145225b960021158ae7587bb7223e3b99e987c6e795746d3be06a983c00ecb6c8238fb600c0dc4324f7967f2019c3991ea69759d2774516c68c4da83932f3e8f96bc9b
 [2023-7-19 01:32:26] 21917c7ed1960d7379baed9dfaca3108a873a7de3c7a0dc0e872764551cd71e3
+[2023-7-19 03:54:06] Exception: ReferenceError: encryptedString is not defined
+[2023-7-19 03:54:06] ReferenceError: encryptedString is not defined
+    at D:\2023\0701\asap\working\asap-bot\index.js:93:14
+    at Object.<anonymous> (D:\2023\0701\asap\working\asap-bot\index.js:113:3)
+    at Module._compile (node:internal/modules/cjs/loader:1255:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1309:10)
+    at Module.load (node:internal/modules/cjs/loader:1113:32)
+    at Module._load (node:internal/modules/cjs/loader:960:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:83:12)
+    at node:internal/main/run_main_module:23:47
+[2023-7-19 03:54:23] Network loaded.
+[2023-7-19 03:54:23] Exception: TypeError: Network.getCurTokenPrice is not a function
+[2023-7-19 03:54:23] TypeError: Network.getCurTokenPrice is not a function
+    at D:\2023\0701\asap\working\asap-bot\index.js:109:10
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2023-7-19 03:54:56] [liquidity added] Processing [0x0ac18f350cb26e434fb456c55ded9ca6075d95c21d0f8992a3e94a3e7279018e]
+[2023-7-19 03:54:56] Token Address is 0xdD69DB25F6D620A7baD3023c5d32761D353D3De9
+[2023-7-19 03:54:56] Pair address is 0x88124Ef4A9EC47e691F254F2E8e348fd1e341e9B
+[2023-7-19 03:55:00] totalSupply (from ctx): 94787681706572660919
+[2023-7-19 03:55:00] eth_liquidity: 358303677348305099043676
+[2023-7-19 03:55:02] marketCap: 1328.87K
+[2023-7-19 03:55:02] honeyData: {"code":404,"error":"pair not found"}
+[2023-7-19 03:55:02] liquidity: 149.47K
+[2023-7-19 05:10:00] Network loaded.
+[2023-7-19 05:10:00] error when getting token price: ReferenceError: tokenAddress is not defined
+[2023-7-19 05:10:56] Network loaded.
+[2023-7-19 05:10:56] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x7d06B5eb837767bc7DeF9DC255fE96Bc208A1229","data":"0x50a239450000000000000000000000000000000000000000000000000000000000000001000000000000000000000000805fe47d1fe7d86496753bb4b36206953c1ae660","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-19 05:12:24] Network loaded.
+[2023-7-19 05:12:24] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x7d06B5eb837767bc7DeF9DC255fE96Bc208A1229","data":"0x50a239450000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000805fe47d1fe7d86496753bb4b36206953c1ae660","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-19 05:12:43] [liquidity added] Processing [0x45e9e3bad0d00f9a0c9e63af11e97a6e9703f03c77c778b45d11764eaa0622f2]
+[2023-7-19 05:12:43] Token Address is 0x4E05d3c3eb1847699DD91410745d83E3703b750d
+[2023-7-19 05:16:11] Network loaded.
+[2023-7-19 05:16:11] error when getting token price: TypeError: 1 is not a function
+[2023-7-19 05:16:51] Network loaded.
+[2023-7-19 05:16:51] error when getting token price: TypeError: ethers.utils.parseUnits(...) is not a function
+[2023-7-19 05:18:08] Network loaded.
+[2023-7-19 05:18:08] error when getting token price: TypeError: 1 is not a function
+[2023-7-19 05:18:25] factory tx
+[2023-7-19 05:18:26] [create pair] Processing [0x6a85d38b7f7c2f7653356a132dbb8208472fd7a4d4c491f7e4886800d1555357]
+[2023-7-19 05:18:25] 0x6a85d38b7f7c2f7653356a132dbb8208472fd7a4d4c491f7e4886800d1555357
+[2023-7-19 05:20:39] Network loaded.
+[2023-7-19 05:20:39] error when getting token price: TypeError: 1 is not a function
+[2023-7-19 05:21:15] Network loaded.
+[2023-7-19 05:21:15] Error: invalid signer or provider (argument="signerOrProvider", value="0xA02dA1C1AEE414ff7941196159Ecdf9e35751205", code=INVALID_ARGUMENT, version=contracts/5.7.0)
+    at Logger.makeError (D:\2023\0701\asap\working\asap-bot\node_modules\@ethersproject\logger\lib\index.js:238:21)
+    at Logger.throwError (D:\2023\0701\asap\working\asap-bot\node_modules\@ethersproject\logger\lib\index.js:247:20)
+    at Logger.throwArgumentError (D:\2023\0701\asap\working\asap-bot\node_modules\@ethersproject\logger\lib\index.js:250:21)
+    at Contract.BaseContract (D:\2023\0701\asap\working\asap-bot\node_modules\@ethersproject\contracts\lib\index.js:630:20)
+    at new Contract (D:\2023\0701\asap\working\asap-bot\node_modules\@ethersproject\contracts\lib\index.js:1053:42)
+    at D:\2023\0701\asap\working\asap-bot\index.js:114:20
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2023-7-19 05:21:15] Exception: Error: invalid signer or provider (argument="signerOrProvider", value="0xA02dA1C1AEE414ff7941196159Ecdf9e35751205", code=INVALID_ARGUMENT, version=contracts/5.7.0)
+[2023-7-19 05:24:44] Network loaded.
+[2023-7-19 05:24:44] error when getting token price: TypeError: asapswap.decodeFunctionData is not a function
+[2023-7-19 05:25:02] Network loaded.
+[2023-7-19 05:25:02] error when getting token price: Error: data signature does not match function getEstimatedETHforERC20. (argument="data", value="0x01", code=INVALID_ARGUMENT, version=abi/5.7.0)
+[2023-7-19 05:31:44] error when getting token price: ReferenceError: contract is not defined
+[2023-7-19 05:31:44] Network loaded.
+[2023-7-19 05:31:56] Network loaded.
+[2023-7-19 05:31:56] error when getting token price: TypeError: asapswap.callStatic[functionSignature] is not a function
+[2023-7-19 05:33:00] Network loaded.
+[2023-7-19 05:33:00] error when getting token price: TypeError: contract.callStatic[functionSignature] is not a function
+[2023-7-19 05:33:42] Network loaded.
+[2023-7-19 05:33:42] error when getting token price: TypeError: contract[functionSignature] is not a function
+[2023-7-19 05:35:13] Network loaded.
+[2023-7-19 05:35:13] error when getting token price: TypeError: ethers.ContractFunction is not a constructor
+[2023-7-19 05:36:19] Network loaded.
+[2023-7-19 05:36:19] error when getting token price: TypeError: estimateETHforERC20.call is not a function
+[2023-7-20 09:10:04] Network loaded.
+[2023-7-20 09:10:05] Exception: ReferenceError: consolo is not defined
+[2023-7-20 09:10:05] ReferenceError: consolo is not defined
+    at D:\2023\0701\asap\working\asap-bot\index.js:113:3
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2023-7-20 09:10:16] Network loaded.
+[2023-7-20 09:10:16] f60128acc5462173e80df99d685330cf2298077305b685eb06bc2ebb5b855463

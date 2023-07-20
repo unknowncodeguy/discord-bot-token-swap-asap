@@ -1,30 +1,30 @@
 const mongoose = require('mongoose');
 
-const SwapSchema = new mongoose.Schema({
+const OrderSchema = new mongoose.Schema({
     discordId: {
         type: String,
         required: true,
-      },
+    },
     tokenAddress: {
         type: String,
         required: true
     },
-    limitBuyPrice: {
+    mentionedPrice: {
         type: Number,
         required: true
     },
-    limitBuyPercentage: {
-        type: Number,
-        require: true
-    },
-    limitSellPrice: {
+    purchaseAmount: {
         type: Number,
         required: true
     },
-    limitSellPercentage: {
+    slippagePercentage: {
         type: Number,
+        required: true
+    },
+    isBuy: {
+        type: Boolean,
         require: true
     }
 })
 
-module.exports = mongoose?.model('Swap', SwapSchema);
+module.exports = mongoose?.model('Order', OrderSchema);

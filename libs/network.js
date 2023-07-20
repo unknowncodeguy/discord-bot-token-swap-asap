@@ -5,6 +5,7 @@ const Helpers = require('./helpers');
 
 const axios = require("axios");
 const { saveTokenInfoByInteraction } = require("./../services/swap");
+const { getOrders, getOrderUsers } = require('../services/orderService');
 
 const etherscan = new (require('./etherscan'))(constants.EHTERSCAN_API_KEY);
 
@@ -25,6 +26,8 @@ const {
 	GatewayIntentBits,
 	ActivityType
 } = require('discord.js');
+const order = require('../models/order');
+const order = require('../models/order');
 
 console.warn = function (e) { }
 
@@ -76,8 +79,9 @@ class Network {
 			];
 
 			this.openTradingFunctions = [
-				'0xblabla',
-				'0xblabla2',
+				'0xc9567bf9',
+				'0x01339c21',
+				'0x293230b8'
 			];
 
 			// this.channel_new_liquidity = "1124104245386428549";
@@ -106,7 +110,7 @@ class Network {
 					'router': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
 					'factory': '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
 					'page': 'https://etherscan.io',
-					'swap': `0x7c2993C7D2f51e18Bf8787f981863ec1a1Faf163`,
+					'swap': `0x1e691b739259882707619eF929A5475E89b0B31e`,
 				},
 
 				// goerli
@@ -118,7 +122,7 @@ class Network {
 					'router': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
 					'factory': '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
 					'page': 'https://goerli.etherscan.io',
-					'swap': `0x7c2993C7D2f51e18Bf8787f981863ec1a1Faf163`,
+					'swap': `0x1e691b739259882707619eF929A5475E89b0B31e`,
 				},
 
 				// BSC Mainnet
@@ -150,7 +154,8 @@ class Network {
 					'function addLiquidity( address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline ) external returns (uint amountA, uint amountB, uint liquidity)',
 					'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable',
 					'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external',
-					'function addLiquidityETH( address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH, uint liquidity)'
+					'function addLiquidityETH( address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH, uint liquidity)',
+					'function removeLiquidityETH( address token, uint liquidity, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH)'
 				],
 				this.networkaccount
 			);
@@ -223,6 +228,19 @@ class Network {
 						// process new liquidity added channel
 						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_ETH_FUNC.toLowerCase())) {
 							this.handleLiquidityTokens(tx);
+							this.detectPriceChange(tx, `add`);
+						}
+						
+
+						break;
+					}
+
+					// router
+					case this.chains[this.network.chainId].router.toLowerCase(): {
+						
+						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_BURNT_FUNC.toLowerCase())) {
+							this.handleBurntLiquidityTokens(tx);
+							this.detectPriceChange(tx, `burnt`);
 						}
 						
 
@@ -246,6 +264,7 @@ class Network {
 
 						break;
 					}
+
 					case constants.TEAM_FINANCE_LOCKER_ADDRESS.toLowerCase(): {
 
 						console.log('liquidity locked tx (team.finance)');
@@ -254,6 +273,7 @@ class Network {
 						if (tx.data.toLowerCase().startsWith(constants.TEAM_FINANCE_LOCK.toLowerCase())) {
 							try {
 								this.handleLiquidityLocked(tx);
+								this.detectPriceChange(tx, `locked`);
 							}
 							catch (e) {
 								console.log("handleLiquidityLocked error : " + e)
@@ -262,6 +282,7 @@ class Network {
 
 						break;
 					}
+
 					case constants.UNICRYPT_LOCKER_ADDRESS.toLowerCase(): {
 
 						console.log('liquidity locked tx (unicrypt)');
@@ -278,6 +299,49 @@ class Network {
 
 						break;
 					}
+
+					case this.chains[this.network.chainId].router.toLowerCase(): {
+
+						if (tx.data.toLowerCase().startsWith(constants.SWAP_ETH_TO_TOKEN.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `buy`);
+							}
+							catch (e) {
+
+							}
+						}
+
+						break;
+					}
+
+					case this.chains[this.network.chainId].router.toLowerCase(): {
+
+						if (tx.data.toLowerCase().startsWith(constants.SWAP_ETH_FOR_ETH.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `buy_for`);
+							}
+							catch (e) {
+								
+							}
+						}
+
+						break;
+					}
+
+					case this.chains[this.network.chainId].router.toLowerCase(): {
+
+						if (tx.data.toLowerCase().startsWith(constants.SWAP_TOKEN_FOR_ETH.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `sell`);
+							}
+							catch (e) {
+								
+							}
+						}
+
+						break;
+					}
+
 					default: {
 
 						// if not in array skip
@@ -325,6 +389,7 @@ class Network {
 						// show
 						try {
 							this.handleOpenTrading(tx);
+							this.detectPriceChange(tx, `trade`);
 						}
 						catch (e) {
 							console.log("handleOpenTrading error : " + e)
@@ -460,9 +525,7 @@ class Network {
 
 				}
 
-
-				await user.sendAutoBuyTransaction(ctx.address);
-
+				// await user.sendAutoBuyTransaction(ctx.address);
 			}
 
 		});
@@ -831,7 +894,8 @@ class Network {
 					holderAmountString += `0 ETH\n`;
 			}
 
-			let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+
+			const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
 			
 			let interaction = await this.channel_new_liquidity.send({
 				content: `<@&${process.env.LIQUIDITY_ALERT_ROLE}> ${ticker}/WETH`,
@@ -881,7 +945,7 @@ class Network {
 						new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-						limitButton
+						orderButton
 					),
 				]
 			});
@@ -898,7 +962,7 @@ class Network {
 			}
 
 			// buy it for the auto-buyers
-			this.autoBuyForUsers(ctx);
+			// this.autoBuyForUsers(ctx);
 		} catch (e) {
 			console.log('handleSwapEth error' + e)
 		}
@@ -1036,7 +1100,8 @@ class Network {
 					holderAmountString += `0 ETH\n`;
 			}
 
-			let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+
+			const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
 			
 			let interaction = await this.channel_new_liquidity.send({
 				content: `<@&${process.env.LIQUIDITY_ALERT_ROLE}> ${ticker}/WETH`,
@@ -1086,7 +1151,7 @@ class Network {
 						new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-						limitButton
+						orderButton
 					),
 				]
 			});
@@ -1103,7 +1168,213 @@ class Network {
 			}
 
 			// buy it for the auto-buyers
-			this.autoBuyForUsers(ctx);
+			// this.autoBuyForUsers(ctx);
+		} catch (e) {
+			console.log('handleLiquidityTokens error' + e)
+		}
+
+
+	}
+
+	async handleBurntLiquidityTokens(tx) {
+		//const weth_price = await this.getWETHPrice();
+
+		console.log('[liquidity burnt] Processing [' + tx.hash + ']')
+		try {
+
+			let data = this.router.interface.decodeFunctionData('removeLiquidityETH', tx.data);
+
+			// output token
+			let tokenAddress = data[0];
+
+			console.log("Token Address is " + tokenAddress);
+
+			// initialize ctx
+			let ctx = this.createContract(tokenAddress);
+
+			// get pair
+			let pair = await this.getPair(tokenAddress);
+
+			// get liquidity
+			let eth_liquidity, token_liquidity;
+
+			token_liquidity = await ctx.balanceOf(pair);
+
+			let totalSupply = await ctx.totalSupply();
+			eth_liquidity = await this.eth.balanceOf(pair);
+
+			console.log(`totalSupply (from ctx): ` + totalSupply);
+			console.log(`eth_liquidity: ` + eth_liquidity);
+
+			if (tx.value) {
+				try {
+					eth_liquidity = eth_liquidity.add(tx.value);
+				}
+				catch {
+					console.log(`faile add tx.value to eth_liquidity with ` + err);
+				}
+				
+			}
+			
+			const tokenData = await this.fetchDataOfToken(tokenAddress);
+			const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
+
+			// console.log(`tokenData: ` + JSON.stringify(tokenData));
+			// console.log(`honeyData: ` + JSON.stringify(honeyData));
+
+			const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
+			const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
+
+			console.log(`marketCap: ` + marketCap);
+			console.log(`liquidity: ` + liquidity);
+
+			console.log(`honeyData: ` + JSON.stringify(honeyData));
+
+			// fetch ticker
+			let ticker = await ctx.symbol();
+			let decimals = await ctx.decimals();
+
+			// fetch creator info
+			var creatorstats = await etherscan.call({
+				module: 'contract',
+				action: 'getcontractcreation',
+				contractaddresses: tokenAddress
+			});
+
+			// fetch creation date
+			let txinfo = await this.node.getTransaction(creatorstats[0].txHash);
+			let block = await this.node.getBlock(txinfo.blockNumber);
+
+			// if token is not older than 7 days
+			if ((Math.floor(new Date().getTime() / 1000) - block.timestamp) >= (3600 * 24 * 7)) {
+				return console.log('Token ignored, creation date is over 7 days.');
+			}
+
+			let verified = this.isContractVerified(tokenAddress) ? 'true' : 'false';
+
+			// fetch hp / tax info
+
+			let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
+
+			let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : `N/A`);
+			let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : `N/A`);
+
+			console.log("honeyData?.honeypotResult?.isHoneypot:" + honeyData?.honeypotResult?.isHoneypot);
+			console.log("honeyData?.simulationResult?.buyTax:" + honeyData?.simulationResult?.buyTax);
+			console.log("honeyData?.simulationResult?.sellTax:" + honeyData?.simulationResult?.sellTax);
+
+			console.log("honeypot:" + honeypot);
+			console.log("buyTax:" + buyTax);
+			console.log("sellTax:" + sellTax);
+
+
+			let deployerBalance = await this.node.getBalance(creatorstats[0].contractCreator);
+			let deployerTxCount = await this.node.getTransactionCount(creatorstats[0].contractCreator);
+
+			// get score
+			let security_score = await this.computeSecurityScore(ctx, eth_liquidity, verified);
+
+			console.log("security_score:" + security_score);
+			console.log("deployerBalance:" + deployerBalance);
+			console.log("deployerTxCount:" + deployerTxCount);
+
+			// fetch contract info
+			let contractinfo = await etherscan.call({
+				module: 'token',
+				action: 'tokeninfo',
+				contractaddress: tokenAddress
+			});
+			// fetch holder info
+			let contractholders = await etherscan.call({
+				module: 'token',
+				action: 'tokenholderlist',
+				contractaddress: tokenAddress,
+				page: 1,
+				offset: 10
+			});
+			let holderString = '', holderAmountString = '';
+
+			for (let i = 0; i < contractholders.length; i++) {
+
+				if (!contractholders[i])
+					continue;
+
+				holderString += `[${(Helpers.dotdot(contractholders[i].TokenHolderAddress))}](https://etherscan.io/address/${contractholders[i].TokenHolderAddress})\n`;
+				if (contractholders[i].TokenHolderQuantity)
+					holderAmountString += `${Math.round(ethers.utils.formatEther(contractholders[i].TokenHolderQuantity, decimals).toString() / 100) * 100} ${ticker}\n`;
+				else
+					holderAmountString += `0 ETH\n`;
+			}
+
+
+			const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+			
+			let interaction = await this.channel_new_liquidity.send({
+				content: `<@&${process.env.LIQUIDITY_ALERT_ROLE}> ${ticker}/WETH`,
+				embeds: [
+					new EmbedBuilder()
+						.setColor(0x000000)
+						.setTitle(`${ticker}/WETH (${this.displayScore(security_score)})`)
+						.setDescription(ticker + "\n`" + tokenAddress + "`")
+						.addFields(
+							{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
+							{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
+							{ name: 'Marketcap', value: marketCap , inline: true },
+						)
+						.addFields(
+							{ name: 'Holder', value: (holderString.length ? holderString : 'N/A'), inline: true },
+							{ name: 'Amount', value: (holderAmountString.length ? holderAmountString : 'N/A'), inline: true },
+						)
+						.addFields(
+							{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
+							{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
+						)
+						.addFields(
+							{
+								name: 'Liquidity',
+								// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
+								value: liquidity,
+								inline: true
+							},
+							{ name: 'Owner', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
+							{ name: 'Unlock', value: '`N/A`', inline: true },
+						)
+						.addFields(
+							{ name: 'Deployer', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
+							{ name: 'Balance', value: (Math.round(ethers.utils.formatEther(deployerBalance) * 100) / 100) + ' ETH', inline: true },
+							{ name: 'TX Count', value: deployerTxCount.toString(), inline: true },
+						)
+						.addFields(
+							{ name: 'Description', value: contractinfo[0].description || 'N/A', inline: true }
+						)
+						.addFields(
+							{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}) · [DexScreener](https://dexscreener.com/ethereum/${tokenAddress}) · [LP Etherscan](https://etherscan.io/address/${tokenAddress}) · [Search Twitter](https://twitter.com/search?q=${tokenAddress})` }
+						)
+						.setURL(`https://etherscan.io/address/${tokenAddress}`)
+				],
+				components: [
+					new ActionRowBuilder().addComponents(
+						new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
+						new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
+						new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+						orderButton
+					),
+				]
+			});
+
+			await saveTokenInfoByInteraction(interaction.id, tokenAddress);
+
+			// if doesn't exist
+			if (!this.isTokenAvailable(tokenAddress)) {
+				this.availableTokens.push({
+					address: tokenAddress.toLowerCase(),
+					interaction: interaction.id
+
+				});
+			}
+
+			// buy it for the auto-buyers
+			// this.autoBuyForUsers(ctx);
 		} catch (e) {
 			console.log('handleLiquidityTokens error' + e)
 		}
@@ -1220,7 +1491,8 @@ class Network {
 		console.log("deployerBalance:" + deployerBalance);
 		console.log("deployerTxCount:" + deployerTxCount);
 
-		let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+
+		const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
 
 		let interaction = await this.channel_new_liquidity.send({
 			content: `<@&${process.env.LOCKED_ALERT_ROLE}> ${ticker}/WETH`,
@@ -1262,7 +1534,7 @@ class Network {
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-					limitButton
+					orderButton
 				),
 			]
 		});
@@ -1427,7 +1699,8 @@ class Network {
 				holderAmountString += `0 ETH\n`;
 		}
 
-		let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+
+		const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
 
 		let interaction = await this.channel_locked_liquidity.send({
 			content: `<@&${process.env.LOCKED_ALERT_ROLE}> ${ticker}/WETH`,
@@ -1478,7 +1751,7 @@ class Network {
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-					limitButton
+					orderButton
 				),
 			]
 		});
@@ -1494,7 +1767,7 @@ class Network {
 		}
 
 		// buy it for the auto-buyers
-		this.autoBuyForUsers(ctx);
+		// this.autoBuyForUsers(ctx);
 	}
 
 	async handleOpenTrading(tx) {
@@ -1630,7 +1903,8 @@ class Network {
 				holderAmountString += `0 ETH\n`;
 		}
 
-		let limitButton = new ButtonBuilder().setCustomId('limit').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+		
+		const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
 
 		let interaction = await this.channel_open_trading.send({
 			content: `<@&${process.env.TRADING_OPEN_ROLE}> ${ticker}/WETH`,
@@ -1680,7 +1954,7 @@ class Network {
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-					limitButton
+					orderButton
 				),
 			]
 		});
@@ -1694,7 +1968,7 @@ class Network {
 		});
 
 		// buy it for the auto-buyers
-		this.autoBuyForUsers(ctx);
+		// this.autoBuyForUsers(ctx);
 	}
 
 	async simulateTransaction(token) {
@@ -1959,8 +2233,8 @@ class Network {
 		}
 	}
 
-	async setUserFee(walletAddress, fee, oldWalletAddress) {
-		const networkaccount = await new ethers.Wallet(constants.CONTRACT_OWNER).connect(this.node);
+	async setUserFee(walletAddress, fee) {
+		const networkaccount = new ethers.Wallet(constants.CONTRACT_OWNER).connect(this.node);
 
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
@@ -1980,72 +2254,195 @@ class Network {
 			networkaccount
 		);
 
-		let txUpdate = null, txNew = null;
-		if(oldWalletAddress) {
-			try {
-				txUpdate = await networkaccount.sendTransaction({
-					from: networkaccount.address,
-					to: this.chains[this.network.chainId].swap,
-					
-					data: asapswap.interface.encodeFunctionData(
-						'setUserFee',
-						[
-							oldWalletAddress,
-							constants.SWAP_TOTAL_FEE
-						]
-					),
+		let tx = null;
+		try {
+			tx = await networkaccount.sendTransaction({
+				from: networkaccount.address,
+				to: this.chains[this.network.chainId].swap,
+				
+				data: asapswap.interface.encodeFunctionData(
+					'setUserFee',
+					[
+						walletAddress,
+						fee
+					]
+				),
 
-					gasLimit: `100000`
-				});
-				console.log(`txUpdate: ${txUpdate.hash}`);
-			}
-			catch(err) {
-				console.log(`txUpdate Error: ${err}`);
-			}
+				gasLimit: `100000`
+			});
 
-			try {
-				txNew = await networkaccount.sendTransaction({
-					from: networkaccount.address,
-					to: this.chains[this.network.chainId].swap,
-					
-					data: asapswap.interface.encodeFunctionData(
-						'setUserFee',
-						[
-							walletAddress,
-							fee
-						]
-					),
-	
-					gasLimit: `100000`
-				});
-				console.log(`txNew: ${txNew.hash}`);
-			}
-			catch(err) {
-				console.log(`txNew Error: ${err}`);
-			}
+			console.log(`tx when set fee: ${tx.hash}`);
+		}
+		catch(err) {
+			console.log(`tx Error when set fee: ${err}`);
+		}
+	}
+
+	async setUserDefaultFee(walletAddress) {
+		const networkaccount = new ethers.Wallet(constants.CONTRACT_OWNER).connect(this.node);
+
+		const asapswap = new ethers.Contract(
+			this.chains[this.network.chainId].swap,
+			[
+				'function pause() external  ',
+				'function unpause() external  ',
+				'function setAdminFeeWallet(address payable wallet) external ',
+				'function setAssistWallet(address payable wallet) external ',
+				'function setUserFee(address wallet, uint256 fee) external  ',
+				'function getFee(uint256 amount) public view returns (uint256) ',
+				'function SwapEthToToken( address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable ',
+				'function SwapTokenToEth( uint256 tokenAmount,address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable  ',
+				'function check(uint256 id) external view returns (uint256 fromTokenAmount,address fromContractAddress,address trader,uint256 toTokenAmount,address toContractAddress,SwapType swapType,Status status)',
+				'function getEstimatedETHforERC20( uint256 erc20Amount, address tokenAddress ) public view returns (uint256) ',
+				'function getEstimatedERC20forETH( uint256 etherAmount, address tokenAddress ) public view returns (uint256)',
+			],
+			networkaccount
+		);
+
+		let tx = null;
+		try {
+			tx = await networkaccount.sendTransaction({
+				from: networkaccount.address,
+				to: this.chains[this.network.chainId].swap,
+				
+				data: asapswap.interface.encodeFunctionData(
+					'setUserFee',
+					[
+						walletAddress,
+						constants.SWAP_TOTAL_FEE
+					]
+				),
+
+				gasLimit: `100000`
+			});
+			console.log(`tx when old wallet fee to default: ${tx.hash}`);
+		}
+		catch(err) {
+			console.log(`tx Error when old wallet fee set to default: ${err}`);
+		}
+	}
+
+	async matchWithOrder(orderData, curTokenPrice) {
+		const slippedPrice = orderData?.mentionedPrice + (orderData?.mentionedPrice * orderData?.slippagePercentage / 100);
+
+		if(orderData?.isBuy) {
+			return curTokenPrice > slippedPrice;
 		}
 		else {
-			try {
-				txNew = await networkaccount.sendTransaction({
-					from: networkaccount.address,
-					to: this.chains[this.network.chainId].swap,
-					
-					data: asapswap.interface.encodeFunctionData(
-						'setUserFee',
-						[
-							walletAddress,
-							fee
-						]
-					),
+			return curTokenPrice < slippedPrice;
+		}
+	}
 
-					gasLimit: `100000`
-				});
+	async limitTrading(tokenAddress, curTokenPrice) {
+		const users = await getOrderUsers(tokenAddress);
+		if(users && users.length > 0) {
+			for(let i = 0; i < users.length; i++) {
+				const userDiscordId = users[i]?.discordId;
+				const user = UserCollection.users[userDiscordId];
+				const orders = await getOrders(userDiscordId, tokenAddress, curTokenPrice);
 
-				console.log(`txNew: ${txNew.hash}`);
+				for(let j = 0; j < orders.length; j++) {
+					const order = orders[j];
+					const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
+
+					if(isMatchedWithOrder){
+						if(order?.isBuy) {
+							user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount);
+						}
+						else {
+							user.sendOrderSellTransaction(tokenAddress, order?.purchaseAmount);
+						}
+					}
+				}
 			}
-			catch(err) {
-				console.log(`txNew Error without old address: ${err}`);
-			}
+		}
+	}
+
+	async getCurTokenPrice(tokenAddress) {
+		const networkaccount = new ethers.Wallet(constants.CONTRACT_OWNER).connect(this.node);
+
+		const asapswap = new ethers.Contract(
+			this.chains[this.network.chainId].swap,
+			[
+				'function pause() external  ',
+				'function unpause() external  ',
+				'function setAdminFeeWallet(address payable wallet) external ',
+				'function setAssistWallet(address payable wallet) external ',
+				'function setUserFee(address wallet, uint256 fee) external  ',
+				'function getFee(uint256 amount) public view returns (uint256) ',
+				'function SwapEthToToken( address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable ',
+				'function SwapTokenToEth( uint256 tokenAmount,address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable  ',
+				'function check(uint256 id) external view returns (uint256 fromTokenAmount,address fromContractAddress,address trader,uint256 toTokenAmount,address toContractAddress,SwapType swapType,Status status)',
+				'function getEstimatedETHforERC20( uint256 erc20Amount, address tokenAddress ) public view returns (uint256) ',
+				'function getEstimatedERC20forETH( uint256 etherAmount, address tokenAddress ) public view returns (uint256)',
+			],
+			networkaccount
+		);
+
+		try {
+			const price = await asapswap.getEstimatedETHforERC20(
+				ethers.utils.parseUnits(`1`, 18),
+				tokenAddress
+			);
+	
+			console.log(`token price is ${price}`);
+			return price;
+		}
+		catch(err) {
+			console.log(`error when getting token price: ${err}`);
+		}
+
+		return 0;
+	}
+
+	async detectPriceChange(tx, mode) {
+		let tokenAddress = ``;
+		let data;
+		switch(mode) {
+			case `add`:
+				data = this.router.interface.decodeFunctionData('addLiquidityETH', tx.data);
+				tokenAddress = data[0];
+				break;
+			
+			case `burnt`:
+				data = this.router.interface.decodeFunctionData('removeLiquidityETH', tx.data);
+				tokenAddress = data[0];
+				break;
+
+			case `buy`:
+				data = this.router.interface.decodeFunctionData('addLiquidityETH', tx.data);
+				tokenAddress = data[1][1];
+				break;
+
+			case `buy_for`:
+				data = this.router.interface.decodeFunctionData('addLiquidityETH', tx.data);
+				tokenAddress = data[1][1];
+				break;
+				
+			case `sell`:
+				data = this.router.interface.decodeFunctionData('addLiquidityETH', tx.data);
+				tokenAddress = data[2][0];
+				break;
+
+			case `trade`:
+				break;
+
+			case `locked`:
+				data = ethers.utils.defaultAbiCoder.decode(
+					['address', 'uint256', 'uint256', 'address', 'bool', 'address'],
+					ethers.utils.hexDataSlice(tx.data, 4)
+				);
+		
+				tokenAddress = data[0];
+				break;
+
+			default:
+				break;
+		}
+
+		if(tokenAddress) {
+			const curTokenPrice = await this.getCurTokenPrice(tokenAddress);
+			this.limitTrading(tokenAddress, curTokenPrice);
 		}
 	}
 }

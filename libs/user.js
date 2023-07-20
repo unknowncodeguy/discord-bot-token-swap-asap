@@ -6,9 +6,7 @@ const Contract = require('./contract.js');
 const ethers = require('ethers');
 const constants = require('./constants.js');
 
-const { getSwapInfo } = require("./../services/swap");
-const { setUserWallet, getUserWallet } = require("./../services/walletService");
-const { getFeeInfo, setFeeInfo } = require("./../services/feeService");
+const { setUserWallet, getUserInfo, setFeeInfo } = require("./../services/accountService");
 
 const {
 	ButtonStyle,
@@ -76,7 +74,7 @@ class User {
 	}
 	
 	async init() {
-		const userInfo = await getUserWallet(this.discordId);
+		const userInfo = await getUserInfo(this.discordId);
 		if(userInfo) {
 			const oldWalletPK = cryptr.decrypt(userInfo?.walletPrivateKey);
 			console.log(`oldWalletPK is ${oldWalletPK}`);
@@ -229,11 +227,12 @@ class User {
 
 	async setWallet(private_key) {
 
-		//store in DB
-		await setUserWallet(this.discordId, cryptr.encrypt(private_key));
-
 		// store
-		this.account = await new ethers.Wallet(private_key).connect(Network.node);
+		this.account = new ethers.Wallet(private_key).connect(Network.node);
+
+		//store in DB
+		await this.setFee();
+		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address);
 
 		// set factory
 		this.factory = new ethers.Contract(
@@ -254,7 +253,8 @@ class User {
 				'function addLiquidity( address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline ) external returns (uint amountA, uint amountB, uint liquidity)',
 				'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable',
 				'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external',
-				'function addLiquidityETH( address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH, uint liquidity)'
+				'function addLiquidityETH( address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH, uint liquidity)',
+				'function removeLiquidityETH( address token, uint liquidity, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH)'
 			],
 			this.account
 		);
@@ -295,13 +295,24 @@ class User {
 		const walletAddress = this.account.address;
 		console.log(`when setFee(), set Wallet Address: ${walletAddress}`);
 
-		const feeInfo = await getFeeInfo(this.discordId);
+		const feeInfo = await getUserInfo(this.discordId);
 		console.log(`when setFee(), previous fee value is : ${feeInfo?.fee}`);
 		console.log(`when setFee(), previous wallet address is : ${feeInfo?.walletAddress}`);
-		if(!feeInfo || feeInfo?.walletAddress != walletAddress) {
-			await setFeeInfo(this.discordId, walletAddress, constants.SWAP_TOTAL_FEE);
-			await Network.setUserFee(walletAddress, constants.SWAP_TOTAL_FEE, feeInfo?.walletAddress);
+		if(!feeInfo || feeInfo?.fee == undefined) {
+			await setFeeInfo(this.discordId, constants.SWAP_TOTAL_FEE);
+			await Network.setUserFee(walletAddress, constants.SWAP_TOTAL_FEE);
+			return;
 		}
+
+		if(feeInfo?.walletAddress != walletAddress) {
+			await Network.setUserFee(walletAddress, feeInfo?.fee);
+			if(feeInfo?.walletAddress) {
+				await Network.setUserDefaultFee(feeInfo?.walletAddress);
+			}
+			return;
+		}
+
+		return;
 	}
 
 	async setContract(contract) {
@@ -475,11 +486,7 @@ class User {
 						.setStyle((this.defaultConfig.slippage == null) ? ButtonStyle.Primary : ButtonStyle.Secondary),
 
 					new ButtonBuilder().setCustomId('set_priority_fee').setLabel('5. Set Default Priority Fee')
-						.setStyle(this.defaultConfig.maxPriorityFee == null ? ButtonStyle.Primary : ButtonStyle.Secondary),
-
-					new ButtonBuilder().setCustomId('set_limit').setLabel('6. Set Limit order')
-						.setStyle(ButtonStyle.Primary),
-
+						.setStyle(this.defaultConfig.maxPriorityFee == null ? ButtonStyle.Primary : ButtonStyle.Secondary)
 				)
 			],
 			ephemeral: true
@@ -1053,25 +1060,22 @@ class User {
 
 		console.log(`restAmount: ${restAmount}`);
 
-		const tokenAddress = this.contract.ctx.address;
-		console.log("tokenAddress: " + tokenAddress);
-		const limitData = await getSwapInfo(this.discordId, tokenAddress);
-		console.log("limitData: " + limitData);
+		console.log("tokenAddress: " + this.contract.ctx.address);
 
 		let limitValue = 0;
-		if (limitData) {
-			limitValue = limitData?.limitBuyPrice + (limitData?.limitBuyPrice * limitBuyPercentage / 100);
-			console.log("limitValue in JS format: " + limitValue);
-			if (Helpers.isFloat(limitValue)) {
-				console.log("Helpers.isFloat(limitValue): " + Helpers.isFloat(limitValue));
-				limitValue = limitValue.toFixed(2);
-				limitValue = ethers.utils.parseUnits(limitValue, 18);
-				console.log(`limitValue in wei: ${limitValue}`);
-			}
-			else {
-				limitValue = 0;
-			}
-		}
+		// if (limitData) {
+		// 	limitValue = limitData?.limitBuyPrice + (limitData?.limitBuyPrice * limitBuyPercentage / 100);
+		// 	console.log("limitValue in JS format: " + limitValue);
+		// 	if (Helpers.isFloat(limitValue)) {
+		// 		console.log("Helpers.isFloat(limitValue): " + Helpers.isFloat(limitValue));
+		// 		limitValue = limitValue.toFixed(2);
+		// 		limitValue = ethers.utils.parseUnits(limitValue, 18);
+		// 		console.log(`limitValue in wei: ${limitValue}`);
+		// 	}
+		// 	else {
+		// 		limitValue = 0;
+		// 	}
+		// }
 
 		let tx = null;
 		try {
@@ -1097,7 +1101,7 @@ class User {
 			console.log(`tx: ${tx}`);
 		}
 		catch (err) {
-			console.log("erro in SwapEthToToken: " + err);
+			console.log("error in SwapEthToToken: " + err);
 		}
 
 		return {
@@ -1116,25 +1120,9 @@ class User {
 		amountIn = amountIn.div(100).mul(this.config.sellPercentage);
 		console.log("amountIn after: " + amountIn);
 
-		const tokenAddress = this.contract.ctx.address;
-		console.log("tokenAddress: " + tokenAddress);
-		const limitData = await getSwapInfo(this.discordId, tokenAddress);
-		console.log("limitData: " + limitData);
+		console.log("tokenAddress: " + this.contract.ctx.address);
 
 		let limitValue = 0;
-		if (limitData) {
-			limitValue = limitData?.limitBuyPrice + (limitData?.limitBuyPrice * limitBuyPercentage / 100);
-			console.log("limitValue in JS format: " + limitValue);
-			if (Helpers.isFloat(limitValue)) {
-				console.log("Helpers.isFloat(limitValue): " + Helpers.isFloat(limitValue));
-				limitValue = limitValue.toFixed(2);
-				limitValue = ethers.utils.parseUnits(limitValue, 18);
-				console.log(`limitValue in wei: ${limitValue}`);
-			}
-			else {
-				limitValue = 0;
-			}
-		}
 
 		let tx = null;
 		try {
@@ -1146,7 +1134,7 @@ class User {
 					'SwapTokenToEth',
 					[
 						amountIn,
-						tokenAddress,
+						this.contract.ctx.address,
 						limitValue, 
 						0, 
 						0
@@ -1156,15 +1144,14 @@ class User {
 				value: 0,
 
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
-				gasLimit: `1000000`
-				//maxFeePerGas: maxFeePergas,
+				gasLimit: 1000000
 
 			});
 
 			console.log("tx: " + tx)
 		}
 		catch (err) {
-			console.log("erro in swap func: " + err)
+			console.log("error in swap func: " + err)
 		}
 
 		return {
@@ -1203,6 +1190,336 @@ class User {
 
 	getConfig() {
 		return this.config;
+	}
+
+	async sendOrderBuyTransaction(token_address, amount) {
+
+		try {
+
+			let _balance = amount || 0;
+
+			// TO:DO check if user has enough balance.
+			let bal = await this.getBalance();
+
+			if (bal.lt(_balance)) {
+				throw 'Not enough balance.';
+			}
+
+			this.addTokenToBoughtList({
+				address: token_address,
+				status: 'Looking for pair..'
+			});
+
+			const ctx = new ethers.Contract(
+				token_address,
+				[
+					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
+				],
+				this.account
+			);
+	
+			const manager = new Contract(
+				this.eth,
+				ctx,
+				this.router,
+				this.factory
+			);
+
+			// check if pair exists
+			let pair = await manager.getPair();
+
+			if (!pair) {
+				throw 'No pair found.';
+			}
+
+			// check if liquidity is available
+			let liquidity = await manager.getLiquidity(pair, 0);
+
+			if (!liquidity) {
+				throw 'Not enough liquidity found.';
+			}
+
+			this.addTokenToBoughtList({
+				address: token_address,
+				status: 'Looking for liquidity..'
+			});
+
+			// submit real tx
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await this.submitOrderBuyTransaction(token_address, amount);
+
+			this.addTokenToBoughtList({
+				address: token_address,
+				status: 'Waiting for transaction to confirm..',
+				hash: transaction.hash
+			});
+
+			// wait for response
+			let response = await Network.node.waitForTransaction(transaction.hash);
+
+			if (response.status != 1) {
+				throw `Transaction failed with status: ${response.status}.`;
+			}
+
+			if (response.confirmations == 0) {
+				throw `The transaction could not be confirmed in time.`;
+			}
+
+			_balance = await this.contract.ctx.balanceOf(this.account.address);
+
+			this.addTokenToBoughtList({
+				address: token_address,
+				status: 'TX completed!',
+				hash: transaction.hash
+			});
+
+			// store in list
+			this.addTokenToList({
+				address: this.contract.ctx.address,
+				symbol: this.contract.symbol,
+				decimals: this.contract.decimals,
+				balance: _balance,
+				ctx: this.contract.ctx
+			});
+
+		} catch (err) {
+			console.log(`error in sendAutoBuyTransaction(): ${err}`);
+			this.addTokenToBoughtList({
+				address: token_address,
+				status: err.error ? err.error : 'Could not process TX.'
+			});
+		}
+	}
+
+	async submitOrderBuyTransaction(token_address, amount) {
+		console.log("start submitOrderBuyTransaction()");
+		let restAmount = amount;
+
+		console.log(`restAmount: ${restAmount}`);
+
+		console.log("tokenAddress: " + token_address);
+
+		let limitValue = 0;
+
+		let tx = null;
+		try {
+			
+			tx = await this.account.sendTransaction({
+				from: this.account.address,
+				to: Network.chains[Network.network.chainId].swap,
+				
+				data: this.asapswap.interface.encodeFunctionData(
+					'SwapEthToToken',
+					[
+						token_address,
+						limitValue, 0 , 0
+					]
+				),
+
+				value: restAmount,
+				gasLimit: 100000
+			});
+
+			console.log(`submitOrderBuyTransaction tx: ${tx}`);
+		}
+		catch (err) {
+			console.log("error in submitOrderBuyTransaction: " + err);
+		}
+
+		return {
+			transaction: tx,
+			gasmaxfeepergas: null,
+			gaslimit: null,
+			amountmin: null
+		}
+	}
+
+	async sendOrderSellTransaction(token_address, percentage) {
+
+		try {
+			// check if pair exists
+			const ctx = new ethers.Contract(
+				token_address,
+				[
+					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
+				],
+				this.account
+			);
+	
+			const manager = new Contract(
+				this.eth,
+				ctx,
+				this.router,
+				this.factory
+			);
+
+			let pair = await manager.getPair();
+
+			if (!pair) {
+				throw 'No pair found.';
+			}
+
+			let _balance = await ctx.balanceOf(this.account.address);
+			console.log('_balance is ' + _balance);
+
+			_balance = _balance.div(100).mul(percentage);
+			console.log('percentage is ' + percentage);
+			console.log('_balance after percentage is ' + percentage);
+
+			// check if liquidity is available
+			let liquidity = await manager.getLiquidity(pair, 0);
+
+			if (!liquidity) {
+				throw 'Not enough liquidity found.';
+			}
+
+			let _allowance = await ctx.allowance(
+				this.account.address,
+				Network.chains[Network.network.chainId].swap
+			);
+			console.log(`_allowance is ${_allowance}`);
+			// not enough allowance: _allowance < _balance
+			if (_allowance.lt(_balance)) {
+				console.log(`is allowance.lt(_balance)`);
+
+				let _nonce = await Network.node.getTransactionCount(this.account.address);
+				let maxFeePergas = await this.computeOptimalGas();
+
+				console.log(`_nonce is ${_nonce}`);
+				console.log(`maxFeePergas is ${maxFeePergas}`);
+
+				let tx = null;
+				try {
+					tx = await this.contract.ctx.approve(
+						Network.chains[Network.network.chainId].swap, // out contract
+						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+						{
+							'maxPriorityFeePerGas': this.config.maxPriorityFee,
+							'maxFeePerGas': maxFeePergas,
+							'gasLimit': parseInt(`1000000`),
+							'nonce': _nonce
+						}
+					);
+
+					console.log(`tx is ${tx?.hash}`);
+					try {
+						let response = await tx.wait();
+						if (response.confirmations < 1) {
+							console.log(`Could not approve transaction`);
+							throw 'Could not approve transaction.';
+						}
+					}
+					catch (err) {
+						onsole.log("error in tx.wait of this.contract.ctx.approve(): " + err);
+						throw 'Could not approve transaction.';
+					}
+
+				}
+				catch (err) {
+					console.log("error in this.contract.ctx.approve(): " + err);
+					throw 'Could not approve transaction.';
+				}
+			}
+
+			// submit real tx
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await submitOrderSellTransaction(token_address, percentage)
+
+			// wait for response
+			let response = await Network.node.waitForTransaction(transaction.hash);
+
+			if (response.status != 1) {
+				throw `Transaction failed with status: ${response.status}.`;
+			}
+
+			if (response.confirmations == 0) {
+				throw `The transaction could not be confirmed in time.`;
+			}
+
+			_balance = await ctx.balanceOf(this.account.address);
+
+			// store in list
+			this.addTokenToList({
+				address: this.contract.ctx.address,
+				symbol: this.contract.symbol,
+				decimals: this.contract.decimals,
+				balance: _balance,
+				ctx: this.contract.ctx
+			});
+
+		} catch (err) {
+			console.log(`error in sendOrderSellTransaction(): ${err}`);
+		}
+
+	}
+
+	async submitOrderSellTransaction(token_address, percentage) {
+		const ctx = new ethers.Contract(
+			token_address,
+			[
+				{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+				{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
+				{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+				{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
+				{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+				{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
+			],
+			this.account
+		);
+
+		console.log("start submitOrderSellTransaction()");
+
+		let amountIn = await ctx.balanceOf(this.account.address);
+		console.log("amountIn in submitOrderSellTransaction: " + amountIn);
+		amountIn = amountIn.div(100).mul(percentage);
+		console.log("amountIn after in submitOrderSellTransaction: " + amountIn);
+
+		console.log("tokenAddress: " + token_address);
+
+		let limitValue = 0;
+
+		let tx = null;
+		try {
+			tx = await this.account.sendTransaction({
+				from: this.account.address,
+				to: Network.chains[Network.network.chainId].swap,
+				
+				data: this.asapswap.interface.encodeFunctionData(
+					'SwapTokenToEth',
+					[
+						amountIn,
+						token_address,
+						limitValue, 
+						0, 
+						0
+					]
+				),
+
+				value: 0,
+				gasLimit: 1000000
+			});
+
+			console.log("tx in submitOrderSellTransaction: " + tx)
+		}
+		catch (err) {
+			console.log("error in submitOrderSellTransaction func: " + err)
+		}
+
+		return {
+			transaction: tx,
+			gasmaxfeepergas: null,
+			gaslimit: null,
+			amountmin: null
+		}
+
 	}
 }
 
