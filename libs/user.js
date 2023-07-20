@@ -7,6 +7,8 @@ const ethers = require('ethers');
 const constants = require('./constants.js');
 
 const { setUserWallet, getUserInfo, setFeeInfo } = require("./../services/accountService");
+const { saveTokenInfoByInteraction } = require("./../services/swap");
+const { saveTokenInfoById } = require("./../services/tokenService");
 
 const {
 	ButtonStyle,
@@ -27,6 +29,8 @@ class User {
 		this.discordId = id;
 
 		this.config = {};
+
+		this.setOrder = false;
 
 		this.defaultConfig = {
 			inputAmount: null,
@@ -496,6 +500,70 @@ class User {
 			await interaction.update(content);
 		} else {
 			await interaction.reply(content);
+		}
+	}
+
+	async showOrderSetting(interaction, update = false) {
+		try {
+			this.setOrder = true;
+			console.log(`udpate: ${update}`);
+			let content = {
+				content: '',
+				embeds: [
+					new EmbedBuilder()
+						.setColor(0x0099FF)
+						.setTitle('Limit Order Settings')
+						.setDescription(`
+							Choose limit order for buy or sell.
+						`)
+				],
+				components: [
+					new ActionRowBuilder().addComponents(
+						new ButtonBuilder().setCustomId('set_limit_order_buy').setLabel('Set Order For Buying').setStyle(ButtonStyle.Primary),
+						new ButtonBuilder().setCustomId('set_limit_order_sell').setLabel('Set Order For Selling').setStyle(ButtonStyle.Primary),
+					)
+				],
+				ephemeral: true
+			};
+			console.log(`define`);
+	
+			if (update) {
+				await interaction.update(content);
+			} else {
+				await interaction.reply(content);
+			}
+		}
+		catch(err) {
+			console.log("WHAT :" + err);
+		}
+	}
+
+	async showSelectOrder(interaction, tokenAddress) {
+		try {
+			let content = {
+				content: '',
+				embeds: [
+					new EmbedBuilder()
+						.setColor(0x0099FF)
+						.setTitle('Limit Order Settings')
+						.setDescription(`
+							Choose limit order for buy or sell.
+						`)
+				],
+				components: [
+					new ActionRowBuilder().addComponents(
+						new ButtonBuilder().setCustomId('show_select_order_buy').setLabel('Set Order For Buying').setStyle(ButtonStyle.Primary),
+						new ButtonBuilder().setCustomId('show_select_order_sell').setLabel('Set Order For Selling').setStyle(ButtonStyle.Primary),
+						new ButtonBuilder().setCustomId('show_select_order_list').setLabel('Show Order List').setStyle(ButtonStyle.Success),
+					)
+				],
+				ephemeral: true
+			};
+			await saveTokenInfoById(this.discordId, tokenAddress);
+			await interaction.reply(content);
+		}
+		catch(err) {
+			console.log("Error when showSelectOrder :" + err);
 		}
 	}
 

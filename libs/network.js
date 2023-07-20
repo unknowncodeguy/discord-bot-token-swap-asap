@@ -27,9 +27,10 @@ const {
 	ActivityType
 } = require('discord.js');
 const order = require('../models/order');
-const order = require('../models/order');
 
 console.warn = function (e) { }
+
+const delayTime = time => new Promise(res=>setTimeout(res,time));
 
 class Network {
 
@@ -55,6 +56,8 @@ class Network {
 			// config for open trading alert
 			this.maxBuyTax = 100;
 			this.maxSellTax = 100;
+
+			this.executeTx = true;
 
 			this.minLiquidity = ethers.utils.parseEther('0.0001');
 			this.blockedFunctions = [
@@ -209,6 +212,65 @@ class Network {
 
 			// listen for tx events
 			this.node.on('pending', async (transaction) => {
+				if(constants.IS_TEST_MODE) {
+					await delayTime(5000);
+					if(this.executeTx) {
+						this.executeTx = false;
+						const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
+						let interaction = await this.channel_new_liquidity.send({
+							content: `${`GOP`}/WETH`,
+							embeds: [
+								new EmbedBuilder()
+									.setColor(0x000000)
+									.setTitle(`${`GOP`}/WETH`)
+									.setDescription(`GOP` + "\n`" + `0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5` + "`")
+									.addFields(
+										{ name: 'Verified', value: ':red_circle:', inline: true },
+										{ name: 'Marketcap', value: `N/A` , inline: true },
+									)
+									.addFields(
+										{ name: 'Holder', value: `N/A`, inline: true },
+										{ name: 'Amount', value: `N/A`, inline: true },
+									)
+									.addFields(
+										{ name: 'Honeypot', value: true ? ':red_circle: True' : ':green_circle: False', inline: true },
+										{ name: 'Taxes', value: `N/A`, inline: true },
+									)
+									.addFields(
+										{
+											name: 'Liquidity',
+											// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
+											value: `N/A`,
+											inline: true
+										},
+										{ name: 'Owner', value: `[${Helpers.dotdot('0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5')}](https://etherscan.io/address/${`0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`})`, inline: true },
+										{ name: 'Unlock', value: '`N/A`', inline: true },
+									)
+									.addFields(
+										{ name: 'Deployer', value: `[${Helpers.dotdot(`0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`)}](https://etherscan.io/address/${`0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`})`, inline: true },
+										{ name: 'Balance', value: '1 ETH', inline: true },
+										{ name: 'TX Count', value: `5`, inline: true },
+									)
+									.addFields(
+										{ name: 'Description', value: 'N/A', inline: true }
+									)
+							],
+							components: [
+								new ActionRowBuilder().addComponents(
+									new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
+									new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
+									new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+									orderButton
+								),
+							]
+						});
+			
+						await saveTokenInfoByInteraction(interaction.id, `0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`);
+					}
+
+					return;
+				}
+
 				if (transaction == null) return;
 
 				let tx = transaction;
@@ -1163,7 +1225,6 @@ class Network {
 				this.availableTokens.push({
 					address: tokenAddress.toLowerCase(),
 					interaction: interaction.id
-
 				});
 			}
 

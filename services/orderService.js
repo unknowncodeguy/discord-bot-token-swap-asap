@@ -1,9 +1,19 @@
-const OrderModel = require('../models/order');
+const OrderModel = require('./../models/order');
 
 module.exports = {
 	setOrder: async (discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy) => {
         try {
-            return new OrderModel({discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy});
+            console.log(`Start set order`);
+            console.log(`discordId ${discordId}`);
+            console.log(`tokenAddress  ${tokenAddress}`);
+            console.log(`mentionedPrice  ${mentionedPrice}`);
+            console.log(`purchaseAmount  ${purchaseAmount}`);
+            console.log(`slippagePercentage  ${slippagePercentage}`);
+            console.log(`isBuy  ${isBuy}`);
+            const newData = new OrderModel({discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy});
+            await newData.save();
+
+            return true;
         }
         catch (err) {
             console.log("Error when setting order info to DB: " + err);

@@ -7,6 +7,7 @@ const Cryptr = require('cryptr');
 const mongoose = require('mongoose');
 
 const { getTokenInfoByInteraction } = require("./services/swap");
+const { getTokenInfoByUserId } = require("./services/tokenService");
 const { setOrder, getOrders } = require("./services/orderService");
 const { setFeeInfo } = require("./services/accountService");
 
@@ -25,12 +26,14 @@ const {
 	ChannelType,
 	PermissionsBitField,
 	ModalBuilder, 
+	MessageEmbed ,
 	TextInputBuilder, 
 	TextInputStyle, 
 	ActionRowBuilder, 
 	GatewayIntentBits,
 	ActivityType
 } = require('discord.js');
+const paginationEmbed = require('discord.js-pagination');
 const Fetch = require('./libs/fetchcoins');
 
 const etherscan = new(require('./libs/etherscan'))(constants.EHTERSCAN_API_KEY);
@@ -378,9 +381,8 @@ process.on('uncaughtException', (e, origin) => {
 					const result = await setFeeInfo(userID, Number(feepercentage));
 					let msg = `Setring user fee is failed. Please check your network!`;
 					if(result?.result) {
-						await Network.setUserFee(walletAddress, feepercentage);
 						if(result?.oldWalletAddress) {
-							await Network.setUserDefaultFee(result?.oldWalletAddress);
+							await Network.setUserFee(result?.oldWalletAddress, feepercentage);
 						}
 						msg = `User ${userID}'s fee is set to ${feepercentage}%!`;
 					}
@@ -679,23 +681,23 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 
-				case 'set_buy_order': {
-
-					const orderAmount = interaction.fields.getTextInputValue('order_buy_amount').toString();
+				case 'show_select_order_buy': {
+					const orderAmount = interaction.fields.getTextInputValue('show_select_order_buy_amount').toString();
 					console.log(`orderAmount when buying: ${orderAmount}`);
 					if(!Helpers.isFloat(orderAmount)) {
 						return interaction.reply({ content: 'Order amount must be a valid number.', ephemeral: true});
 					}
 
-					const orderPercentage = interaction.fields.getTextInputValue('order_buy_percentage').toString();
+					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_buy_percentage').toString();
 					console.log(`orderPercentage when buying: ${orderPercentage}`);
 					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
 						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
 					}
 
-					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
+					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
+					console.log("interaction:" + interaction);
+					console.log("message:" + interaction.message.id);
 					const { tokenAddress } = tokenDataByInteraction;
-					console.log("tokenDataByInteraction: " + tokenDataByInteraction);
 					console.log("tokenAddress: " + tokenAddress);
 
 					const curPrice = await Network.getCurTokenPrice(tokenAddress);
@@ -717,23 +719,100 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 
-				case 'set_sell_order': {
+				case 'set_limit_order_buy': {
 
-					const orderAmount = interaction.fields.getTextInputValue('order_sell_amount').toString();
-					console.log(`orderAmount when selling: ${orderAmount}`);
+					const orderAmount = interaction.fields.getTextInputValue('set_limit_order_buy_amount').toString();
+					console.log(`orderAmount when buying: ${orderAmount}`);
 					if(!Helpers.isFloat(orderAmount)) {
 						return interaction.reply({ content: 'Order amount must be a valid number.', ephemeral: true});
 					}
 
-					const orderPercentage = interaction.fields.getTextInputValue('order_sell_percentage').toString();
+					const orderPercentage = interaction.fields.getTextInputValue('set_limit_order_buy_percentage').toString();
+					console.log(`orderPercentage when buying: ${orderPercentage}`);
+					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
+					}
+
+					const tokenAddress = interaction.fields.getTextInputValue('set_limit_order_buy_token').toString();
+					if(!ethers.utils.isAddress(tokenAddress)) {
+						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
+					}
+					console.log("tokenAddress: " + tokenAddress);
+
+					const curPrice = await Network.getCurTokenPrice(tokenAddress);
+
+					let msg = `Your orders were not saved! Please check you network!`;
+					try {
+						const res = await setOrder(interaction.user.id, tokenAddress, Number(curPrice), Number(orderAmount), Number(orderPercentage), true);
+
+						if(res) {
+							msg = `Your orders were saved successfully!`;
+						}
+					}
+					catch(err) {
+						console.log(`error when saving limit values to DB: ${err}`)
+					}
+
+					await interaction.reply({ content: msg });
+
+					break;
+				}
+
+				case 'show_select_order_sell': {
+
+					const orderAmount = interaction.fields.getTextInputValue('show_select_order_sell_amount').toString();
+					console.log(`orderAmount when selling: ${orderAmount}`);
+					if(!Helpers.isInt(orderAmount) || orderAmount > 100 || orderAmount < 1) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
+					}
+
+					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_sell_percentage').toString();
 					console.log(`orderPercentage when buying: ${orderPercentage}`);
 					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
 						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
-					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
+					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
 					const { tokenAddress } = tokenDataByInteraction;
-					console.log("tokenDataByInteraction: " + tokenDataByInteraction);
+					console.log("tokenAddress: " + tokenAddress);
+
+					const curPrice = await Network.getCurTokenPrice(tokenAddress);
+
+					let msg = `Your orders were not saved! Please check you network!`;
+					try {
+						const res = await setOrder(interaction.user.id, tokenAddress, curPrice, Number(orderAmount), Number(orderPercentage), false);
+
+						if(res) {
+							msg = `Your orders were saved successfully!`;
+						}
+					}
+					catch(err) {
+						console.log(`error when saving limit values to DB: ${err}`)
+					}
+
+					await interaction.reply({ content: msg });
+
+					break;
+				}
+
+				case 'set_limit_order_sell': {
+
+					const orderAmount = interaction.fields.getTextInputValue('set_limit_order_sell_amount').toString();
+					console.log(`orderAmount when selling: ${orderAmount}`);
+					if(!Helpers.isInt(orderAmount) || orderAmount > 100 || orderAmount < 1) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
+					}
+
+					const orderPercentage = interaction.fields.getTextInputValue('set_limit_order_sell_percentage').toString();
+					console.log(`orderPercentage when selling: ${orderPercentage}`);
+					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
+					}
+
+					const tokenAddress = interaction.fields.getTextInputValue('set_limit_order_sell_token').toString();
+					if(!ethers.utils.isAddress(tokenAddress)) {
+						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
+					}
 					console.log("tokenAddress: " + tokenAddress);
 
 					const curPrice = await Network.getCurTokenPrice(tokenAddress);
@@ -814,6 +893,14 @@ process.on('uncaughtException', (e, origin) => {
 				case 'start': {
 
 					await _user.showStart(interaction);
+
+					break;
+				} 
+
+				case 'set_limit_order': {
+					console.log(`set_limit_order`);
+					console.log(`_user.setOrder ${_user.setOrder}`);
+					await _user.showOrderSetting(interaction, _user.setOrder);
 
 					break;
 				} 
@@ -963,14 +1050,22 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 
-				case 'set_buy_order': {
+				case 'set_limit_order_buy': {
 					const modal = new ModalBuilder()
-				        .setCustomId('set_buy_order')
-				        .setTitle('Set Order')
+				        .setCustomId('set_limit_order_buy')
+				        .setTitle('Set Order for Buying')
 				        .addComponents([
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('set_limit_order_buy_token').setLabel('The Token Address')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(``)
+									.setPlaceholder('Enter the token address')
+					              	.setRequired(true),
+				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('order_buy_percentage').setLabel('The percantage of order')
+					              	.setCustomId('set_limit_order_buy_percentage').setLabel('The percentage of order')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and 100')
@@ -978,7 +1073,7 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 							new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('order_buy_amount').setLabel('Limit amount of order')
+					              	.setCustomId('set_limit_order_buy_amount').setLabel('Limit amount of order')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the limit amount in ETH for buying token')
@@ -989,16 +1084,24 @@ process.on('uncaughtException', (e, origin) => {
 				    await interaction.showModal(modal);
 
 					break;
-				}
+				} 
 
-				case 'set_sell_order': {
+				case 'set_limit_order_sell': {
 					const modal = new ModalBuilder()
-				        .setCustomId('set_sell_order')
-				        .setTitle('Set Order')
+				        .setCustomId('set_limit_order_sell')
+				        .setTitle('Set Order for Selling')
 				        .addComponents([
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('set_limit_order_sell_token').setLabel('The Token Address')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(``)
+									.setPlaceholder('Enter the token address')
+					              	.setRequired(true),
+				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('order_sell_percentage').setLabel('The percantage of order')
+					              	.setCustomId('set_limit_order_sell_percentage').setLabel('The percentage of order')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and -100')
@@ -1006,10 +1109,69 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 							new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('order_sell_amount').setLabel('Limit amount of order')
+					              	.setCustomId('set_limit_order_sell_amount').setLabel('The percentage for selling')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
-									.setPlaceholder('Enter the limit amount in ETH for selling token')
+									.setPlaceholder('Enter the percentage between 0 and 100')
+					              	.setRequired(true),
+				            )
+				        ]);
+
+				    await interaction.showModal(modal);
+
+					break;
+				} 
+
+				case 'show_select_order_buy': {
+					const modal = new ModalBuilder()
+				        .setCustomId('show_select_order_buy')
+				        .setTitle('Set Order')
+				        .addComponents([
+				            new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('show_select_order_buy_percentage').setLabel('The percentage of order')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`0`)
+									.setPlaceholder('Enter the percentage between 0 and 100')
+					              	.setRequired(true),
+				            ),
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('show_select_order_buy_amount').setLabel('Limit amount of order')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`0`)
+									.setPlaceholder('Enter the limit amount in ETH for buying token')
+					              	.setRequired(true),
+				            )
+				        ]);
+
+					console.log(`show_select_order_buy interid ${interaction.id}`);
+					console.log(`show_select_order_buy message ${interaction.message.id}`);
+
+				    await interaction.showModal(modal);
+
+					break;
+				}
+
+				case 'show_select_order_sell': {
+					const modal = new ModalBuilder()
+				        .setCustomId('show_select_order_sell')
+				        .setTitle('Set Order')
+				        .addComponents([
+				            new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('show_select_order_sell_percentage').setLabel('The percentage of order')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`0`)
+									.setPlaceholder('Enter the percentage between 0 and -100')
+					              	.setRequired(true),
+				            ),
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('show_select_order_sell_amount').setLabel('The percentage for selling')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`0`)
+									.setPlaceholder('Enter the percentage between 0 and 100')
 					              	.setRequired(true),
 				            )
 				        ]);
@@ -1019,10 +1181,9 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 
-				case 'order_list': {
-					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
+				case 'show_select_order_list': {
+					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
 					const { tokenAddress } = tokenDataByInteraction;
-					console.log("tokenDataByInteraction: " + tokenDataByInteraction);
 					console.log("tokenAddress: " + tokenAddress);
 
 					const orderList = await getOrders(interaction.user.id, tokenAddress);
@@ -1044,16 +1205,16 @@ process.on('uncaughtException', (e, origin) => {
 
 						tokenList += `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})\n`;
 						percentList = percentList + `${order?.slippagePercentage}% \n`;
-						cancelList = cancelList + `Cancel \n`;
+						cancelList = cancelList + `❌ \n`;
 					});
 
-					const msgsent = await interaction.user.send({
-						content: ``,
+					await interaction.reply({
+						content: `Order List`,
 						embeds: [
 							new EmbedBuilder()
 								.setColor(0x000000)
 								.setTitle(`Order List`)
-								.setDescription(``)
+								.setDescription(`This shows the order list`)
 								.addFields(
 									{ name: 'Mode', value: modeList, inline: true },
 									{ name: 'Amount', value: amoutList, inline: true },
@@ -1062,32 +1223,17 @@ process.on('uncaughtException', (e, origin) => {
 									{ name: 'Cancel', value: cancelList , inline: true },
 								)
 						],
+						components: []
 					});
 
 					break;
 				}
 
 				case 'limit_order': {
-					const orderBuyButton = new ButtonBuilder().setCustomId('set_buy_order').setLabel('Set Order For Buying').setStyle(ButtonStyle.Primary);
-					const orderSellButton = new ButtonBuilder().setCustomId('set_sell_order').setLabel('Set Order For Selling').setStyle(ButtonStyle.Primary);
-					const orderListButton = new ButtonBuilder().setCustomId('order_list').setLabel('Order List').setStyle(ButtonStyle.Primary);
-
-					const modal = new ModalBuilder()
-				        .setCustomId('limit_order')
-				        .setTitle('Set Order')
-				        .addComponents([
-				            new ActionRowBuilder().addComponents(
-					            orderBuyButton
-				            ),
-							new ActionRowBuilder().addComponents(
-					            orderSellButton
-				            ),
-							new ActionRowBuilder().addComponents(
-					            orderSorderListButtonellButton
-				            )
-				        ]);
-
-				    await interaction.showModal(modal);
+					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
+					const { tokenAddress } = tokenDataByInteraction;
+					
+					await _user.showSelectOrder(interaction, tokenAddress);
 
 					break;
 				}
@@ -1344,9 +1490,12 @@ process.on('uncaughtException', (e, origin) => {
 					new ButtonBuilder().setCustomId('start').setLabel('Start').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('setup').setLabel('Config').setStyle(ButtonStyle.Secondary),
 				),
+				// new ActionRowBuilder().addComponents(
+				// 	new ButtonBuilder().setCustomId('start_auto').setLabel('Start Auto Buying').setStyle(ButtonStyle.Primary),
+				// 	new ButtonBuilder().setCustomId('setup_auto').setLabel('Config').setStyle(ButtonStyle.Secondary),
+				// ),
 				new ActionRowBuilder().addComponents(
-					new ButtonBuilder().setCustomId('start_auto').setLabel('Start Auto Buying').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('setup_auto').setLabel('Config').setStyle(ButtonStyle.Secondary),
+					new ButtonBuilder().setCustomId('set_limit_order').setLabel('Set Limit Order').setStyle(ButtonStyle.Primary)
 				)
 			]
 		});
