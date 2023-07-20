@@ -35,7 +35,7 @@ const Fetch = require('./libs/fetchcoins');
 
 const etherscan = new(require('./libs/etherscan'))(constants.EHTERSCAN_API_KEY);
 
-const cryptr = new Cryptr(constants.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
+const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
 
 let originalLog = console.log;
 
@@ -92,10 +92,7 @@ process.on('uncaughtException', (e, origin) => {
 	
 	mongoose.Promise = Promise;
 
-	let mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap?authSource=admin`;
-	if (constants.IS_TEST_MODE) {
-		mongoUri = `mongodb://devopshint:devopshint@44.197.67.107:27017/asap-test?authSource=admin`;
-	}
+	const mongoUri = process.env.MONGO_DB_URL;
 
 	mongoose?.connect(mongoUri);
 	mongoose?.connection.on('error', () => {

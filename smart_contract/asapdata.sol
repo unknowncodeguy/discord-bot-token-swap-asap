@@ -3,23 +3,12 @@
  * @dev ContractDescription
  * @custom:dev-run-script browser/scripts/asap_swap.ts
  */
-
 pragma solidity 0.6.2;
-import "@openzeppelin/contracts-ethereum-package/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol";
 
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
-import "@uniswap/lib/contracts/libraries/TransferHelper.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-
-import "./IWETH.sol";
-
-contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
-    using SafeERC20 for IERC20;
-    using SafeMath for uint256;
+contract AsapData is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
+   
     using Address for address;
 
 
@@ -37,99 +26,66 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         Status status;
     }
 
-    /// WETH contract address
-    address private constant ETH_ADDRESS =
-        address(
-            //main net
-            //0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
-
-            //goerli
-            0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
-        );
-    address private constant UNISWAP_ROUTER_ADDRESS =
-        address(
-            //main net
-            //0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
-
-            // goerli
-            0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
-        );
-
-    address private constant UNISWAP_FACTORY_ADDRESS =
-        address(
-            //main net
-            //0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
-
-            // goerli
-            0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
-        );
-
-    // FEE percentage is a percentage expressed in 1/10 (a tenth) of a percent hence we divide by 1000
-    uint256 private constant DEFAULT_FEE_PERCENTAGE = 10;
-    uint256 private constant MAIN_WALLET_PERCENTAGE = 85;
-    uint256 private constant ASSIST_WALLET_PERCENTAGE = 15;
-    uint256 private constant DEFAULT_SLIPPAGE_PERCENTAGE = 10;
-    uint256 private constant MINI_ETHER = 1000000000000000; // 0.01 ether
     //Global swap id. Also give total number of swaps made so far
     uint256 private _swapId;
+    //total volume of swap made by asap bot
     uint256 private _totalVolume;
     mapping(uint256 => Swap) private _swaps;
     mapping(address => uint256) private _userFees;
-    //Wallet where fees will go
-    address payable private _feesAdminWallet;
-    address payable private _feesAssistWallet;
 
-    /// swap id, trader
-    event DoSwap(uint256 id, address indexed trader);
-    event AdminWalletChanged(address indexed wallet);
-    event AssistWalletChanged(address indexed wallet);
-    event UserFeeChanged(address user, uint256 fee);
-    event BeforeSwap(uint256 awd);
-    event AfterTransfer(uint256 awd);
-    event AfterSwap(uint256 awd);
+    // Proxy Contract
+    address payable private _proxyContract;
+    address payable private _swapContract;
+
     modifier onlyContract(address account) {
-        require( account.isContract(), "[Validation] The address does not contain a contract");
+        require( account.isContract(), "[ASAP DATA Validation] The address does not contain a contract");
         _;
     }
-
-    modifier onlySuccessSwaps(uint256 id) {
-        Swap memory swap = _swaps[id];
-        require(swap.status == Status.FAILED);
+    modifier onlyProxy(address account) {
+        require( account.isContract(), "[ASAP DATA Validation] The address does not contain a contract");
+        require( account == _proxyContract, "[ASAP DATA Validation] The address does not contain a contract");
         _;
     }
+    modifier onlySwap(address account) {
+        require( account.isContract(), "[ASAP DATA Validation] The address does not contain a contract");
+        require( account == _swapContract, "[ASAP DATA Validation] The address does not contain a contract");
+        _;
+    }
+    constructor(){
 
+    }
     /**
      * @dev initialize
      */
     function initialize(
-        address payable adminWallet,
-        address payable assistWallet
+        address payable asapProxyContract,
+        address payable asapSwapContract
     ) public {
-        __AsapSwap_init(adminWallet, assistWallet);
+        __AsapData_init(asapProxyContract, asapSwapContract);
     }
 
-    function __AsapSwap_init(
-        address payable adminWallet,
-        address payable assistWallet
+    function __AsapData_init(
+        address payable asapProxyContract,
+        address payable asapSwapContract
     ) internal initializer {
         _totalVolume = 0;
         _swapId = 0;
+        __AsapData_init_unchained(asapProxyContract, asapSwapContract);
         __Context_init_unchained();
         __Ownable_init_unchained();
         __Pausable_init_unchained();
-        __AsapSwap_init_unchained(adminWallet, assistWallet);
 
     }
 
-    function __AsapSwap_init_unchained(
-        address payable adminWallet,
-        address payable assistWallet
+    function __AsapData_init_unchained(
+        address payable asapProxyContract,
+        address payable asapSwapContract
     ) internal initializer {
-        require( adminWallet != address(0), "[Validation] adminWallet is the zero address");
-        require( assistWallet != address(0), "[Validation] assistWallet is the zero address");
+        require( asapProxyContract != address(0), "[ASAP DATA Validation] ProxyContract is the zero address");
+        require( asapSwapContract != address(0), "[ASAP DATA Validation] SwapContract is the zero address");
 
-        _feesAdminWallet = adminWallet;
-        _feesAssistWallet = assistWallet;
+        _proxyContract = adminWallet;
+        _swapContract = assistWallet;
     }
 
     /**

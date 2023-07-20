@@ -17,7 +17,7 @@ const {
 	hyperlink,
 } = require('discord.js');
 
-const cryptr = new Cryptr(constants.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
+const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
 
 class User {
 

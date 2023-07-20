@@ -2234,7 +2234,7 @@ class Network {
 	}
 
 	async setUserFee(walletAddress, fee) {
-		const networkaccount = new ethers.Wallet(constants.CONTRACT_OWNER).connect(this.node);
+		const networkaccount = new ethers.Wallet(process.env.CONTRACT_OWNER).connect(this.node);
 
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
@@ -2279,7 +2279,7 @@ class Network {
 	}
 
 	async setUserDefaultFee(walletAddress) {
-		const networkaccount = new ethers.Wallet(constants.CONTRACT_OWNER).connect(this.node);
+		const networkaccount = new ethers.Wallet(process.env.CONTRACT_OWNER).connect(this.node);
 
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
@@ -2359,7 +2359,7 @@ class Network {
 	}
 
 	async getCurTokenPrice(tokenAddress) {
-		const networkaccount = new ethers.Wallet(constants.CONTRACT_OWNER).connect(this.node);
+		const networkaccount = new ethers.Wallet(process.env.CONTRACT_OWNER).connect(this.node);
 
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
