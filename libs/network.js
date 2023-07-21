@@ -2400,7 +2400,7 @@ class Network {
 			for(let i = 0; i < users.length; i++) {
 				const userDiscordId = users[i]?.discordId;
 				const user = UserCollection.users[userDiscordId];
-				const orders = await getOrders(userDiscordId, tokenAddress, curTokenPrice);
+				const orders = await getOrders(userDiscordId, tokenAddress);
 
 				for(let j = 0; j < orders.length; j++) {
 					const order = orders[j];

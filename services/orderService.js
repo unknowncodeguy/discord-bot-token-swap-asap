@@ -22,8 +22,48 @@ module.exports = {
         return null;
     },
 
-    getOrders: async (discordId, tokenAddress) => {
+    updateOrder: async (_id, updateData) => {
+        try {
+            console.log(`Start update order`);
+            console.log(`discordId ${_id}`);
+            console.log(`updateData  ${updateData}`);
+
+            const filter = {
+                _id
+            }
+
+            const update = { $set: updateData };
+            await AccountModel.updateOne(filter, update);
+
+            return true;
+        }
+        catch (err) {
+            console.log("Error when setting order info to DB: " + err);
+        }
+    
+        return false;
+    },
+
+    getOrder: async (_id) => {
         try{
+            return await OrderModel.findOne({
+                _id
+            });
+        }
+        catch(err) {
+            console.log(`Error when getting order data per user and token: ${err}`);
+        }
+
+        return null;
+    },
+
+    getOrders: async (discordId, tokenAddress = ``) => {
+        try{
+            if(!tokenAddress) {
+                return await OrderModel.find({
+                    discordId
+                });
+            }
             return await OrderModel.find({
                 discordId,
                 tokenAddress

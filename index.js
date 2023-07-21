@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 
 const { getTokenInfoByInteraction } = require("./services/swap");
 const { getTokenInfoByUserId } = require("./services/tokenService");
-const { setOrder, getOrders } = require("./services/orderService");
+const { setOrder, getOrders, updateOrder, getOrder, deleteOrder } = require("./services/orderService");
 const { setFeeInfo } = require("./services/accountService");
 
 const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
@@ -885,6 +885,65 @@ process.on('uncaughtException', (e, origin) => {
 				}
 			}
 
+			if(interaction.customId.startsWith(`editorrmodal`)) {
+				const customId = interaction.customId;
+				const _id = customId.split('_')[1]; 
+				const messageId = customId.split('_')[2];
+				const channelId = customId.split('_')[3];
+
+				const orderData = await getOrder(_id);
+
+				let orderAmount = 0, orderPercentage = 0;
+				const curPrice = await Network.getCurTokenPrice(orderData?.tokenAddress);
+				let msg = `Your orders were not edited! Please check you network!`;
+				if(orderData?.isBuy) {
+					orderAmount = interaction.fields.getTextInputValue('edit_buy_order_modal_amount').toString();
+					console.log(`orderAmount when buying: ${orderAmount}`);
+					if(!Helpers.isFloat(orderAmount)) {
+						return interaction.reply({ content: 'Order amount must be a valid number.', ephemeral: true});
+					}
+
+					orderPercentage = interaction.fields.getTextInputValue('edit_buy_order_modal_percentage').toString();
+					console.log(`orderPercentage when buying: ${orderPercentage}`);
+					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
+					}
+				}
+				else {
+					orderAmount = interaction.fields.getTextInputValue('edit_sell_order_modal_amount').toString();
+					console.log(`orderAmount when selling: ${orderAmount}`);
+					if(!Helpers.isInt(orderAmount) || orderAmount > 100 || orderAmount < 1) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
+					}
+
+					orderPercentage = interaction.fields.getTextInputValue('edit_sell_order_modal_percentage').toString();
+					console.log(`orderPercentage when buying: ${orderPercentage}`);
+					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
+					}
+				}
+				
+				const isUpdated = await updateOrder(_id, {
+					mentionedPrice: curPrice,
+					purchaseAmount: Number(orderAmount),
+					slippagePercentage: Number(orderPercentage)
+				});
+
+				if(isUpdated) {
+					const message = await channelId.messages.fetch(messageId);
+					const embed = message.embeds[0];
+					embed.fields = [];
+					embed.addFields(
+						{ name: 'Mode', value: orderData?.isBuy ? `Buy` : `Sell`, inline: false },
+						{ name: 'Amount', value: orderData?.isBuy ? `${Number().toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
+						{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
+						{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false }
+					)
+				}
+				
+				return await interaction.reply({ content: msg });
+			}
+
 		} else if(interaction.isButton()) {
 
 			// actions that require a valid wallet
@@ -1145,9 +1204,6 @@ process.on('uncaughtException', (e, origin) => {
 				            )
 				        ]);
 
-					console.log(`show_select_order_buy interid ${interaction.id}`);
-					console.log(`show_select_order_buy message ${interaction.message.id}`);
-
 				    await interaction.showModal(modal);
 
 					break;
@@ -1192,40 +1248,114 @@ process.on('uncaughtException', (e, origin) => {
 						return interaction.reply({ content: 'No order set on this token.', ephemeral: true});
 					}
 
-					let modeList = ``, amoutList = ``, tokenList = ``, percentList = ``, cancelList = ``;
-					orderList.forEach((order) => {
-						if(order?.isBuy) {
-							modeList = modeList + `Buy \n`;
-							amoutList = amoutList + `${order?.purchaseAmount.toFixed(3)} \n`;
+					for(let i = 0; i < orderList.length; i++) {
+						const order = orderList[i];
+						if(i == 0) {
+							await interaction.reply({
+								content: `Show Order List`,
+								embeds: [
+									new EmbedBuilder()
+										.setColor(0x000000)
+										.setTitle(`Order List`)
+										.setDescription(`This shows the order list`)
+										.addFields(
+											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
+											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
+											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false }
+										)
+								],
+								components: [
+									new ActionRowBuilder().addComponents(
+										// new ButtonBuilder().setCustomId('edit_order').setLabel('Edit').setStyle(ButtonStyle.Primary),
+										new ButtonBuilder().setCustomId(`deleteorder_${order?._id}`).setLabel('Cancel').setStyle(ButtonStyle.Danger)
+									),
+								]
+							});
 						}
 						else {
-							modeList = modeList + `Sell \n`;
-							amoutList = amoutList + `${order?.purchaseAmount.toFixed(3)}% \n`;
+							await interaction.followUp({
+								content: `Show Order List`,
+								embeds: [
+									new EmbedBuilder()
+										.setColor(0x000000)
+										.setTitle(`Order List`)
+										.setDescription(`This shows the order list`)
+										.addFields(
+											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
+											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
+											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
+										)
+								],
+								components: [
+									new ActionRowBuilder().addComponents(
+										// new ButtonBuilder().setCustomId(`editorder_${order?._id}`).setLabel('Edit').setStyle(ButtonStyle.Primary),
+										new ButtonBuilder().setCustomId(`deleteorder_${order?._id}`).setLabel('Cancel').setStyle(ButtonStyle.Danger)
+									),
+								]
+							});
 						}
+					}
+					break;
+				}
 
-						tokenList += `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})\n`;
-						percentList = percentList + `${order?.slippagePercentage}% \n`;
-						cancelList = cancelList + `❌ \n`;
-					});
+				case 'show_limit_order': {
+					const orderList = await getOrders(interaction.user.id);
 
-					await interaction.reply({
-						content: `Order List`,
-						embeds: [
-							new EmbedBuilder()
-								.setColor(0x000000)
-								.setTitle(`Order List`)
-								.setDescription(`This shows the order list`)
-								.addFields(
-									{ name: 'Mode', value: modeList, inline: true },
-									{ name: 'Amount', value: amoutList, inline: true },
-									{ name: 'Token Address', value: tokenList , inline: true },
-									{ name: 'Percentage', value: percentList , inline: true },
-									{ name: 'Cancel', value: cancelList , inline: true },
-								)
-						],
-						components: []
-					});
+					if(!orderList || orderList.length == 0) {
+						return interaction.reply({ content: 'No order set on this token.', ephemeral: true});
+					}
 
+					for(let i = 0; i < orderList.length; i++) {
+						const order = orderList[i];
+						if(i == 0) {
+							await interaction.reply({
+								content: `Show Order List`,
+								embeds: [
+									new EmbedBuilder()
+										.setColor(0x000000)
+										.setTitle(`Order List`)
+										.setDescription(`This shows the order list`)
+										.addFields(
+											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
+											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
+											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false }
+										)
+								],
+								components: [
+									new ActionRowBuilder().addComponents(
+										// new ButtonBuilder().setCustomId('edit_order').setLabel('Edit').setStyle(ButtonStyle.Primary),
+										new ButtonBuilder().setCustomId(`deleteorder_${order?._id}`).setLabel('Cancel').setStyle(ButtonStyle.Danger)
+									),
+								]
+							});
+						}
+						else {
+							await interaction.followUp({
+								content: `Show Order List`,
+								embeds: [
+									new EmbedBuilder()
+										.setColor(0x000000)
+										.setTitle(`Order List`)
+										.setDescription(`This shows the order list`)
+										.addFields(
+											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
+											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
+											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
+										)
+								],
+								components: [
+									new ActionRowBuilder().addComponents(
+										// new ButtonBuilder().setCustomId(`editorder_${order?._id}`).setLabel('Edit').setStyle(ButtonStyle.Primary),
+										new ButtonBuilder().setCustomId(`deleteorder_${order?._id}`).setLabel('Cancel').setStyle(ButtonStyle.Danger)
+									),
+								]
+							});
+						}
+					}
 					break;
 				}
 
@@ -1411,7 +1541,77 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+			}
 
+			if(interaction.customId.startsWith(`deleteorder`)) {
+				const customId = interaction.customId;
+				const dataId = customId.split('_')[1];
+				const deletedFromDB = await deleteOrder(dataId);
+				if(deletedFromDB) {
+					await interaction.message.delete();
+					await interaction.reply({ content: 'The order is deleted successfully!', ephemeral: true });
+				}
+
+				return;
+			}
+
+			if(interaction.customId.startsWith(`editorder`)) {
+				const customId = interaction.customId;
+				const dataId = customId.split('_')[1];
+				const orderData = await getOrder(dataId);
+				if(orderData) {
+					let modal;
+					if(orderData?.isBuy) {
+						modal = new ModalBuilder()
+				        .setCustomId(`editorrmodal_${dataId}_${interaction.message.id}_${interaction.channel}`)
+				        .setTitle('Set Order')
+				        .addComponents([
+				            new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('edit_buy_order_modal_percentage').setLabel('The percentage of order')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`${orderData?.slippagePercentage || 0}`)
+									.setPlaceholder('Enter the percentage between 0 and 100')
+					              	.setRequired(true),
+				            ),
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('edit_buy_order_modal_amount').setLabel('Limit amount of order')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`${orderData?.purchaseAmount || 0}`)
+									.setPlaceholder('Enter the limit amount in ETH for buying token')
+					              	.setRequired(true),
+				            )
+				        ]);
+					}
+					else {
+						modal = new ModalBuilder()
+				        .setCustomId('edit_sell_order_modal')
+				        .setTitle('Set Order')
+				        .addComponents([
+				            new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('edit_sell_order_modal_percentage').setLabel('The percentage of order')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`${orderData?.slippagePercentage || 0}`)
+									.setPlaceholder('Enter the percentage between 0 and -100')
+					              	.setRequired(true),
+				            ),
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('edit_sell_order_modal_amount').setLabel('The percentage for selling')
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`${orderData?.purchaseAmount || 0}`)
+									.setPlaceholder('Enter the percentage between 0 and 100')
+					              	.setRequired(true),
+				            )
+				        ]);
+					}
+
+					await interaction.showModal(modal);
+				}
+
+				return;
 			}
 
 		}
@@ -1495,7 +1695,8 @@ process.on('uncaughtException', (e, origin) => {
 				// 	new ButtonBuilder().setCustomId('setup_auto').setLabel('Config').setStyle(ButtonStyle.Secondary),
 				// ),
 				new ActionRowBuilder().addComponents(
-					new ButtonBuilder().setCustomId('set_limit_order').setLabel('Set Limit Order').setStyle(ButtonStyle.Primary)
+					new ButtonBuilder().setCustomId('set_limit_order').setLabel('Set Limit Order').setStyle(ButtonStyle.Primary),
+					new ButtonBuilder().setCustomId('show_limit_order').setLabel('Show Limit Orders').setStyle(ButtonStyle.Secondary)
 				)
 			]
 		});
