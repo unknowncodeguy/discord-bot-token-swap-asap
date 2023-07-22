@@ -1212,7 +1212,7 @@ class User {
 				value: 0,
 
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
-				gasLimit: 1000000
+				gasLimit: `1000000`
 
 			});
 
@@ -1264,7 +1264,7 @@ class User {
 
 		try {
 
-			let _balance = amount || 0;
+			let _balance = ethers.utils.parseUnits(amount, 18) || 0;
 
 			// TO:DO check if user has enough balance.
 			let bal = await this.getBalance();
@@ -1318,7 +1318,7 @@ class User {
 			});
 
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await this.submitOrderBuyTransaction(token_address, amount);
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await this.submitOrderBuyTransaction(token_address, _balance);
 
 			this.addTokenToBoughtList({
 				address: token_address,
@@ -1389,7 +1389,7 @@ class User {
 				),
 
 				value: restAmount,
-				gasLimit: 100000
+				gasLimit: `100000`
 			});
 
 			console.log(`submitOrderBuyTransaction tx: ${tx}`);
@@ -1441,7 +1441,7 @@ class User {
 
 			_balance = _balance.div(100).mul(percentage);
 			console.log('percentage is ' + percentage);
-			console.log('_balance after percentage is ' + percentage);
+			console.log('_balance after percentage is ' + _balance);
 
 			// check if liquidity is available
 			let liquidity = await manager.getLiquidity(pair, 0);
@@ -1572,7 +1572,7 @@ class User {
 				),
 
 				value: 0,
-				gasLimit: 1000000
+				gasLimit: `1000000`
 			});
 
 			console.log("tx in submitOrderSellTransaction: " + tx)
@@ -1588,6 +1588,30 @@ class User {
 			amountmin: null
 		}
 
+	}
+
+	async getTokenNumber(tokenAddress) {
+		try {
+			const ctx = new ethers.Contract(
+				tokenAddress,
+				[
+					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
+				],
+				this.account
+			);
+	
+			return await ctx.balanceOf(this.account.address);
+		}
+		catch(err) {
+			console.log(`get error in getTokenNumber: ${err}`);
+		}
+
+		return ethers.utils.parseUnits(`0`, 18);
 	}
 }
 

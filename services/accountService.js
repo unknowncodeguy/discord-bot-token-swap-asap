@@ -90,5 +90,86 @@ module.exports = {
             result: false,
             oldWalletAddress: ``
         }
-    }
+    },
+
+    setReferralLink: async (discordId, referralLink) => {
+        try {
+            const filter = {
+                discordId
+            }
+            const update = { $set: { referralLink: referralLink } };
+    
+            const info = await AccountModel.findOne(filter);
+            
+            console.log(`start setting referralLink info from DB`);
+            console.log("info" + info);
+
+            if(info) {
+                await AccountModel.updateOne(filter, update);
+            }
+            else {
+                const newData = new AccountModel({...filter, referralLink: referralLink});
+                await newData.save();
+            }
+
+            return true;
+        }
+        catch (err) {
+            console.log("Error when setting referralLink info to DB: " + err);
+        }
+    
+        return false;
+    },
+
+    increateReferralCount: async (discordId) => {
+        try {
+            const filter = {
+                discordId
+            }
+
+            const info = await AccountModel.findOne(filter);
+            
+            console.log(`start setting inviteCount info from DB`);
+            console.log("info" + info);
+
+            if(info) {
+                const oldCnt = info?.inviteCount || 0;
+                const update = { $set: { inviteCount: oldCnt + 1 } };
+                await AccountModel.updateOne(filter, update);
+
+                return {
+                    result: true,
+                    count: oldCnt + 1
+                };
+            }
+        }
+        catch (err) {
+            console.log("Error when setting inviteCount info to DB: " + err);
+        }
+    
+        return {
+            result: false,
+            count: 0
+        }
+    },
+
+    getCreator: async (referralLink) => {
+        try {
+            const filter = {
+                referralLink
+            }
+
+            const info = await AccountModel.findOne(filter);
+            
+            console.log(`start getCreator info from DB`);
+            console.log("info" + info);
+
+            return info;
+        }
+        catch (err) {
+            console.log("Error when setting inviteCount info to DB: " + err);
+        }
+    
+        return null;
+    },
 };

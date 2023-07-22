@@ -14,8 +14,11 @@ const AccountSchema = new mongoose.Schema({
     fee: {
         type: Number
     },
-    refferalLink: {
+    referralLink: {
         type: String
+    },
+    inviteCount: {
+        type: Number
     }
 })
 

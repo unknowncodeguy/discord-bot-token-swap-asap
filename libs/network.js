@@ -6,6 +6,7 @@ const Helpers = require('./helpers');
 const axios = require("axios");
 const { saveTokenInfoByInteraction } = require("./../services/swap");
 const { getOrders, getOrderUsers } = require('../services/orderService');
+const { setTokenPrice } = require('../services/priceService');
 
 const etherscan = new (require('./etherscan'))(constants.EHTERSCAN_API_KEY);
 
@@ -1370,7 +1371,7 @@ class Network {
 
 			const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
 			
-			let interaction = await this.channel_new_liquidity.send({
+			let interaction = await this.channel_burnt_liquidity.send({
 				content: `<@&${process.env.LIQUIDITY_ALERT_ROLE}> ${ticker}/WETH`,
 				embeds: [
 					new EmbedBuilder()
@@ -2384,13 +2385,14 @@ class Network {
 	}
 
 	async matchWithOrder(orderData, curTokenPrice) {
-		const slippedPrice = orderData?.mentionedPrice + (orderData?.mentionedPrice * orderData?.slippagePercentage / 100);
+		const changedAmount = orderData?.mentionedPrice.div(100).mul(orderData?.slippagePercentage);
+		const slippedPrice = orderData?.mentionedPrice.add(changedAmount);
 
 		if(orderData?.isBuy) {
-			return curTokenPrice > slippedPrice;
+			return curTokenPrice.gt(slippedPrice);
 		}
 		else {
-			return curTokenPrice < slippedPrice;
+			return curTokenPrice.lt(slippedPrice);
 		}
 	}
 
@@ -2406,7 +2408,7 @@ class Network {
 					const order = orders[j];
 					const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
 
-					if(isMatchedWithOrder){
+					if(isMatchedWithOrder) {
 						if(order?.isBuy) {
 							user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount);
 						}
@@ -2453,7 +2455,7 @@ class Network {
 			console.log(`error when getting token price: ${err}`);
 		}
 
-		return 0;
+		return ethers.utils.parseUnits(`0`, 18);
 	}
 
 	async detectPriceChange(tx, mode) {
@@ -2503,6 +2505,7 @@ class Network {
 
 		if(tokenAddress) {
 			const curTokenPrice = await this.getCurTokenPrice(tokenAddress);
+			await setTokenPrice(tokenAddress, curTokenPrice);
 			this.limitTrading(tokenAddress, curTokenPrice);
 		}
 	}

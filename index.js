@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const { getTokenInfoByInteraction } = require("./services/swap");
 const { getTokenInfoByUserId } = require("./services/tokenService");
 const { setOrder, getOrders, updateOrder, getOrder, deleteOrder } = require("./services/orderService");
-const { setFeeInfo } = require("./services/accountService");
+const { setFeeInfo, setReferralLink, increateReferralCount, getCreator } = require("./services/accountService");
 
 const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
@@ -23,14 +23,15 @@ const {
 	EmbedBuilder, 
 	Events, 
 	InteractionType,
+	Invite,
 	ChannelType,
 	PermissionsBitField,
-	ModalBuilder, 
-	MessageEmbed ,
+	ModalBuilder,
 	TextInputBuilder, 
 	TextInputStyle, 
 	ActionRowBuilder, 
 	GatewayIntentBits,
+	GatewayDispatchEvents,
 	ActivityType
 } = require('discord.js');
 const paginationEmbed = require('discord.js-pagination');
@@ -115,8 +116,10 @@ process.on('uncaughtException', (e, origin) => {
 	}
 
 	// initialize client
-	const client = new Client({ intents: [ GatewayIntentBits.Guilds ] });
+	const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
 	client.commands = new Collection();
+	client.invites = new Collection();
+	const userMap = new Map();
 
 	// listen for commands
 	client.on(Events.InteractionCreate, async (interaction) => {
@@ -957,8 +960,6 @@ process.on('uncaughtException', (e, origin) => {
 				} 
 
 				case 'set_limit_order': {
-					console.log(`set_limit_order`);
-					console.log(`_user.setOrder ${_user.setOrder}`);
 					await _user.showOrderSetting(interaction, _user.setOrder);
 
 					break;
@@ -1124,7 +1125,7 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_buy_percentage').setLabel('The percentage of order')
+					              	.setCustomId('set_limit_order_buy_percentage').setLabel('The % of Token Price Increase')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and 100')
@@ -1132,10 +1133,10 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 							new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_buy_amount').setLabel('Limit amount of order')
+					              	.setCustomId('set_limit_order_buy_amount').setLabel('Buy Amount In ETH')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
-									.setPlaceholder('Enter the limit amount in ETH for buying token')
+									.setPlaceholder('Enter the amount in ETH for buying token')
 					              	.setRequired(true),
 				            )
 				        ]);
@@ -1160,7 +1161,7 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_sell_percentage').setLabel('The percentage of order')
+					              	.setCustomId('set_limit_order_sell_percentage').setLabel('The % of Token Price Drops')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and -100')
@@ -1168,7 +1169,7 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 							new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_sell_amount').setLabel('The percentage for selling')
+					              	.setCustomId('set_limit_order_sell_amount').setLabel('The % Of The Tokens To Sell')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and 100')
@@ -1304,7 +1305,7 @@ process.on('uncaughtException', (e, origin) => {
 					const orderList = await getOrders(interaction.user.id);
 
 					if(!orderList || orderList.length == 0) {
-						return interaction.reply({ content: 'No order set on this token.', ephemeral: true});
+						return interaction.reply({ content: 'You set no order.', ephemeral: true});
 					}
 
 					for(let i = 0; i < orderList.length; i++) {
@@ -1541,6 +1542,43 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
+
+				case 'create_invite': {
+					const user = interaction.user;
+					const channel = interaction.channel;
+
+					const tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS);
+
+					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, 18))) {
+						console.log(`tokenNumber ${tokenNumber}`);
+						const invite = await channel.createInvite({
+							maxUses: constants.REFERRAL_LINK_MAX_USE,
+							unique: true,
+							inviter: user
+						  });
+
+						console.log(`invite ${invite.url}`);
+						
+						const userInviteLink = invite.url;
+
+						if(userInviteLink) {
+							const result = await setReferralLink(_user.discordId, userInviteLink);
+
+							if(result) {
+								await interaction.reply({ content: `Invite Link is ${userInviteLink}`, ephemeral: true });
+							}
+							else {
+								await interaction.reply({ content: 'Creating Invite Link was failed!', ephemeral: true });
+							}
+						}
+
+					}
+					else {
+						await interaction.reply({ content: 'You do not have enough token amount to create invite link!', ephemeral: true });
+					}
+
+					return;
+				}
 			}
 
 			if(interaction.customId.startsWith(`deleteorder`)) {
@@ -1627,6 +1665,7 @@ process.on('uncaughtException', (e, origin) => {
 		Network.channel_new_liquidity = c.channels.cache.get(process.env.CHANNEL_NEW_LIQUIDTY);
 		Network.channel_locked_liquidity = c.channels.cache.get(process.env.CHANNEL_LOCKED_LIQUIDITY);
 		Network.channel_open_trading = c.channels.cache.get(process.env.CHANNEL_OPEN_TRADING);
+		Network.channel_burnt_liquidity = c.channels.cache.get(process.env.CHANNEL_BURNT_ALERT);
 
 		// if channel is stored, delete the old one
 		if(content.mainchannel) {
@@ -1689,6 +1728,7 @@ process.on('uncaughtException', (e, origin) => {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('start').setLabel('Start').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('setup').setLabel('Config').setStyle(ButtonStyle.Secondary),
+					new ButtonBuilder().setCustomId('create_invite').setLabel('Create Invite Linkt').setStyle(ButtonStyle.Success)
 				),
 				// new ActionRowBuilder().addComponents(
 				// 	new ButtonBuilder().setCustomId('start_auto').setLabel('Start Auto Buying').setStyle(ButtonStyle.Primary),
@@ -1701,6 +1741,42 @@ process.on('uncaughtException', (e, origin) => {
 			]
 		});
 	});
+
+	client.on(Events.GuildMemberAdd, async member => {
+		const inviteManager = member.guild.invites;
+		const invites = await inviteManager.fetch();
+		const usedInvite = invites.find(
+			(invite) => {
+				try {
+					return invite.uses > (client.invites.get(invite.code) || { uses: 0 }).uses
+				}
+				catch(err){
+					console.log(`err in fetch invites: ${err}`);
+					return false;
+				}
+			}
+		);
+		if(usedInvite?.code) {
+			client.invites.set(usedInvite?.code, usedInvite);
+		}		
+
+		const creatorData = await getCreator(usedInvite?.url);
+		const creator = creatorData?.discordId;
+		if(creator) {
+			try {
+				const resInc = await increateReferralCount(creator);
+				if(resInc?.result && resInc?.count > 1) {
+					const result = await setFeeInfo(creator, constants.REFERRAL_FEE);
+					if(result?.result && result?.oldWalletAddress) {
+						await Network.setUserFee(result?.oldWalletAddress, constants.REFERRAL_FEE);
+					}
+				}
+			}
+			catch(er) {
+				console.log(`err when set referral fee ${err}`)
+			}
+		}
+	  });
 
 	// login
 	await client.login(process.env.TOKEN);
