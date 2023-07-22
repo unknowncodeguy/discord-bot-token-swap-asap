@@ -514,7 +514,7 @@ class User {
 						.setColor(0x0099FF)
 						.setTitle('Limit Order Settings')
 						.setDescription(`
-							Choose limit order for buy or sell.
+							Please insert new limit order.
 						`)
 				],
 				components: [
@@ -545,9 +545,9 @@ class User {
 				embeds: [
 					new EmbedBuilder()
 						.setColor(0x0099FF)
-						.setTitle('Limit Order Settings')
+						.setTitle('Limit Order Settings on Tokens')
 						.setDescription(`
-							Choose limit order for buy or sell.
+							Set limit order for buying or selling.
 						`)
 				],
 				components: [

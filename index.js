@@ -803,7 +803,7 @@ process.on('uncaughtException', (e, origin) => {
 					const orderAmount = interaction.fields.getTextInputValue('set_limit_order_sell_amount').toString();
 					console.log(`orderAmount when selling: ${orderAmount}`);
 					if(!Helpers.isInt(orderAmount) || orderAmount > 100 || orderAmount < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
 					}
 
 					const orderPercentage = interaction.fields.getTextInputValue('set_limit_order_sell_percentage').toString();
@@ -1169,7 +1169,7 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 							new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_sell_amount').setLabel('The % Of The Tokens To Sell')
+					              	.setCustomId('set_limit_order_sell_amount').setLabel('The % of The Tokens To Sell')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and 100')
@@ -1183,25 +1183,31 @@ process.on('uncaughtException', (e, origin) => {
 				} 
 
 				case 'show_select_order_buy': {
+					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
+					const { tokenAddress } = tokenDataByInteraction;
+					console.log("tokenAddress: " + tokenAddress);
+					let curPrice = await Network.getCurTokenPrice(tokenAddress);
+					curPrice = ethers.utils.formatEther(`${curPrice}`);
+
 					const modal = new ModalBuilder()
 				        .setCustomId('show_select_order_buy')
-				        .setTitle('Set Order')
+				        .setTitle('Set Buy Order')
 				        .addComponents([
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_buy_percentage').setLabel('The percentage of order')
+					              	.setCustomId('show_select_order_buy_percentage').setLabel(`The % of Token Price Increase: (Current Token Price is ${curPrice} ETH)`)
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and 100')
-					              	.setRequired(true),
+					              	.setRequired(true)
 				            ),
 							new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
 					              	.setCustomId('show_select_order_buy_amount').setLabel('Limit amount of order')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
-									.setPlaceholder('Enter the limit amount in ETH for buying token')
-					              	.setRequired(true),
+									.setPlaceholder('Enter the amount in ETH for buying token')
+					              	.setRequired(true)
 				            )
 				        ]);
 
@@ -1211,13 +1217,19 @@ process.on('uncaughtException', (e, origin) => {
 				}
 
 				case 'show_select_order_sell': {
+					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
+					const { tokenAddress } = tokenDataByInteraction;
+					console.log("tokenAddress: " + tokenAddress);
+					let curPrice = await Network.getCurTokenPrice(tokenAddress);
+					curPrice = ethers.utils.formatEther(`${curPrice}`);
+
 					const modal = new ModalBuilder()
 				        .setCustomId('show_select_order_sell')
-				        .setTitle('Set Order')
+				        .setTitle('Set Sell Order')
 				        .addComponents([
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_sell_percentage').setLabel('The percentage of order')
+					              	.setCustomId('show_select_order_sell_percentage').setLabel(`The % of Token Price Drops: Current Token Price is ${curPrice}`)
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and -100')
@@ -1225,7 +1237,7 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 							new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_sell_amount').setLabel('The percentage for selling')
+					              	.setCustomId('show_select_order_sell_amount').setLabel('The % of The Tokens To Sell')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and 100')
@@ -1246,7 +1258,7 @@ process.on('uncaughtException', (e, origin) => {
 					const orderList = await getOrders(interaction.user.id, tokenAddress);
 
 					if(!orderList || orderList.length == 0) {
-						return interaction.reply({ content: 'No order set on this token.', ephemeral: true});
+						return interaction.reply({ content: 'No order sets on this token.', ephemeral: true});
 					}
 
 					for(let i = 0; i < orderList.length; i++) {
@@ -1261,7 +1273,7 @@ process.on('uncaughtException', (e, origin) => {
 										.setDescription(`This shows the order list`)
 										.addFields(
 											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
-											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
+											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
 											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
 											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false }
 										)
@@ -1284,7 +1296,7 @@ process.on('uncaughtException', (e, origin) => {
 										.setDescription(`This shows the order list`)
 										.addFields(
 											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
-											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
+											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
 											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
 											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
 										)
@@ -1320,7 +1332,7 @@ process.on('uncaughtException', (e, origin) => {
 										.setDescription(`This shows the order list`)
 										.addFields(
 											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
-											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
+											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
 											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
 											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false }
 										)
@@ -1587,7 +1599,7 @@ process.on('uncaughtException', (e, origin) => {
 				const deletedFromDB = await deleteOrder(dataId);
 				if(deletedFromDB) {
 					await interaction.message.delete();
-					await interaction.reply({ content: 'The order is deleted successfully!', ephemeral: true });
+					await interaction.reply({ content: 'The order was deleted successfully!', ephemeral: true });
 				}
 
 				return;
