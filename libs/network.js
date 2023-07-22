@@ -8,7 +8,7 @@ const { saveTokenInfoByInteraction } = require("./../services/swap");
 const { getOrders, getOrderUsers } = require('../services/orderService');
 const { setTokenPrice } = require('../services/priceService');
 
-const etherscan = new (require('./etherscan'))(constants.EHTERSCAN_API_KEY);
+const etherscan = new (require('./etherscan'))(process.env.EHTERSCAN_API_KEY);
 
 const {
 	Client,
@@ -2388,7 +2388,7 @@ class Network {
 		const changedAmount = orderData?.mentionedPrice.div(100).mul(orderData?.slippagePercentage);
 		const slippedPrice = orderData?.mentionedPrice.add(changedAmount);
 
-		if(orderData?.isBuy) {
+		if(!orderData?.isBuy) {
 			return curTokenPrice.gt(slippedPrice);
 		}
 		else {

@@ -37,7 +37,7 @@ const {
 const paginationEmbed = require('discord.js-pagination');
 const Fetch = require('./libs/fetchcoins');
 
-const etherscan = new(require('./libs/etherscan'))(constants.EHTERSCAN_API_KEY);
+const etherscan = new(require('./libs/etherscan'))(process.env.EHTERSCAN_API_KEY);
 
 const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
 
@@ -100,7 +100,8 @@ process.on('uncaughtException', (e, origin) => {
 
 	mongoose?.connect(mongoUri);
 	mongoose?.connection.on('error', () => {
-		console.log(`unable to connect to database: ${mongoUri}`)
+		console.log(`unable to connect to database: ${mongoUri}`);
+		return;
 	})
 	mongoose?.connection.on('success', () => {
 		console.log(`connected to database: ${mongoUri}`)
@@ -110,16 +111,13 @@ process.on('uncaughtException', (e, origin) => {
 	await Network.load();
 
 	if(false) {
-		const oldWalletPK = cryptr.decrypt(`989efa962500763d4fa3deaec67c8679804a0b5fea9a4031a354c5297b61b9c8f14ab70bc418398cd55fa721a325cd55ea5e9f7704d12b15ea4dedc24a328769fa120fd68bc0f4f55800fef0a029e96776d822cd028d85e90f70b9543a7e922dd887ba6ca4cbaf05f0d6`);
-		console.log(oldWalletPK);
-		return;
+		// This is for testing part
 	}
 
 	// initialize client
 	const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
 	client.commands = new Collection();
 	client.invites = new Collection();
-	const userMap = new Map();
 
 	// listen for commands
 	client.on(Events.InteractionCreate, async (interaction) => {
@@ -693,8 +691,8 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_buy_percentage').toString();
 					console.log(`orderPercentage when buying: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
+					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
 					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
@@ -732,8 +730,8 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderPercentage = interaction.fields.getTextInputValue('set_limit_order_buy_percentage').toString();
 					console.log(`orderPercentage when buying: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
+					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
 					const tokenAddress = interaction.fields.getTextInputValue('set_limit_order_buy_token').toString();
@@ -765,12 +763,12 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderAmount = interaction.fields.getTextInputValue('show_select_order_sell_amount').toString();
 					console.log(`orderAmount when selling: ${orderAmount}`);
-					if(!Helpers.isInt(orderAmount) || orderAmount > 100 || orderAmount < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
+					if(!Helpers.isInt(orderAmount) || orderAmount < -100 || orderAmount < 0) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
 					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_sell_percentage').toString();
-					console.log(`orderPercentage when buying: ${orderPercentage}`);
+					console.log(`orderPercentage when selling: ${orderPercentage}`);
 					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
 						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
@@ -808,8 +806,8 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderPercentage = interaction.fields.getTextInputValue('set_limit_order_sell_percentage').toString();
 					console.log(`orderPercentage when selling: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
+					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
 					}
 
 					const tokenAddress = interaction.fields.getTextInputValue('set_limit_order_sell_token').toString();
@@ -886,65 +884,6 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
-			}
-
-			if(interaction.customId.startsWith(`editorrmodal`)) {
-				const customId = interaction.customId;
-				const _id = customId.split('_')[1]; 
-				const messageId = customId.split('_')[2];
-				const channelId = customId.split('_')[3];
-
-				const orderData = await getOrder(_id);
-
-				let orderAmount = 0, orderPercentage = 0;
-				const curPrice = await Network.getCurTokenPrice(orderData?.tokenAddress);
-				let msg = `Your orders were not edited! Please check you network!`;
-				if(orderData?.isBuy) {
-					orderAmount = interaction.fields.getTextInputValue('edit_buy_order_modal_amount').toString();
-					console.log(`orderAmount when buying: ${orderAmount}`);
-					if(!Helpers.isFloat(orderAmount)) {
-						return interaction.reply({ content: 'Order amount must be a valid number.', ephemeral: true});
-					}
-
-					orderPercentage = interaction.fields.getTextInputValue('edit_buy_order_modal_percentage').toString();
-					console.log(`orderPercentage when buying: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
-					}
-				}
-				else {
-					orderAmount = interaction.fields.getTextInputValue('edit_sell_order_modal_amount').toString();
-					console.log(`orderAmount when selling: ${orderAmount}`);
-					if(!Helpers.isInt(orderAmount) || orderAmount > 100 || orderAmount < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
-					}
-
-					orderPercentage = interaction.fields.getTextInputValue('edit_sell_order_modal_percentage').toString();
-					console.log(`orderPercentage when buying: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
-					}
-				}
-				
-				const isUpdated = await updateOrder(_id, {
-					mentionedPrice: curPrice,
-					purchaseAmount: Number(orderAmount),
-					slippagePercentage: Number(orderPercentage)
-				});
-
-				if(isUpdated) {
-					const message = await channelId.messages.fetch(messageId);
-					const embed = message.embeds[0];
-					embed.fields = [];
-					embed.addFields(
-						{ name: 'Mode', value: orderData?.isBuy ? `Buy` : `Sell`, inline: false },
-						{ name: 'Amount', value: orderData?.isBuy ? `${Number().toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
-						{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
-						{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false }
-					)
-				}
-				
-				return await interaction.reply({ content: msg });
 			}
 
 		} else if(interaction.isButton()) {
@@ -1125,10 +1064,10 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_buy_percentage').setLabel('The % of Token Price Increase')
+					              	.setCustomId('set_limit_order_buy_percentage').setLabel('The % of Token Price Drops')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
-									.setPlaceholder('Enter the percentage between 0 and 100')
+									.setPlaceholder('Enter the percentage between 0 and -100')
 					              	.setRequired(true),
 				            ),
 							new ActionRowBuilder().addComponents(
@@ -1161,10 +1100,10 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_sell_percentage').setLabel('The % of Token Price Drops')
+					              	.setCustomId('set_limit_order_sell_percentage').setLabel('The % of Token Price Increase')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
-									.setPlaceholder('Enter the percentage between 0 and -100')
+									.setPlaceholder('Enter the percentage between 0 and 100')
 					              	.setRequired(true),
 				            ),
 							new ActionRowBuilder().addComponents(
@@ -1195,10 +1134,10 @@ process.on('uncaughtException', (e, origin) => {
 				        .addComponents([
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_buy_percentage').setLabel(`The % of Token Price Increase: (Current Token Price is ${curPrice} ETH)`)
+					              	.setCustomId('show_select_order_buy_percentage').setLabel(`The % of Token Price Drops: (Current Token Price is ${curPrice} ETH)`)
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
-									.setPlaceholder('Enter the percentage between 0 and 100')
+									.setPlaceholder('Enter the percentage between 0 and -100')
 					              	.setRequired(true)
 				            ),
 							new ActionRowBuilder().addComponents(
@@ -1229,10 +1168,10 @@ process.on('uncaughtException', (e, origin) => {
 				        .addComponents([
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_sell_percentage').setLabel(`The % of Token Price Drops: Current Token Price is ${curPrice}`)
+					              	.setCustomId('show_select_order_sell_percentage').setLabel(`The % of Token Price Increase: Current Token Price is ${curPrice}`)
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
-									.setPlaceholder('Enter the percentage between 0 and -100')
+									.setPlaceholder('Enter the percentage between 0 and 100')
 					              	.setRequired(true),
 				            ),
 							new ActionRowBuilder().addComponents(
@@ -1303,7 +1242,6 @@ process.on('uncaughtException', (e, origin) => {
 								],
 								components: [
 									new ActionRowBuilder().addComponents(
-										// new ButtonBuilder().setCustomId(`editorder_${order?._id}`).setLabel('Edit').setStyle(ButtonStyle.Primary),
 										new ButtonBuilder().setCustomId(`deleteorder_${order?._id}`).setLabel('Cancel').setStyle(ButtonStyle.Danger)
 									),
 								]
@@ -1362,7 +1300,6 @@ process.on('uncaughtException', (e, origin) => {
 								],
 								components: [
 									new ActionRowBuilder().addComponents(
-										// new ButtonBuilder().setCustomId(`editorder_${order?._id}`).setLabel('Edit').setStyle(ButtonStyle.Primary),
 										new ButtonBuilder().setCustomId(`deleteorder_${order?._id}`).setLabel('Cancel').setStyle(ButtonStyle.Danger)
 									),
 								]
@@ -1604,66 +1541,6 @@ process.on('uncaughtException', (e, origin) => {
 
 				return;
 			}
-
-			if(interaction.customId.startsWith(`editorder`)) {
-				const customId = interaction.customId;
-				const dataId = customId.split('_')[1];
-				const orderData = await getOrder(dataId);
-				if(orderData) {
-					let modal;
-					if(orderData?.isBuy) {
-						modal = new ModalBuilder()
-				        .setCustomId(`editorrmodal_${dataId}_${interaction.message.id}_${interaction.channel}`)
-				        .setTitle('Set Order')
-				        .addComponents([
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('edit_buy_order_modal_percentage').setLabel('The percentage of order')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`${orderData?.slippagePercentage || 0}`)
-									.setPlaceholder('Enter the percentage between 0 and 100')
-					              	.setRequired(true),
-				            ),
-							new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('edit_buy_order_modal_amount').setLabel('Limit amount of order')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`${orderData?.purchaseAmount || 0}`)
-									.setPlaceholder('Enter the limit amount in ETH for buying token')
-					              	.setRequired(true),
-				            )
-				        ]);
-					}
-					else {
-						modal = new ModalBuilder()
-				        .setCustomId('edit_sell_order_modal')
-				        .setTitle('Set Order')
-				        .addComponents([
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('edit_sell_order_modal_percentage').setLabel('The percentage of order')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`${orderData?.slippagePercentage || 0}`)
-									.setPlaceholder('Enter the percentage between 0 and -100')
-					              	.setRequired(true),
-				            ),
-							new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('edit_sell_order_modal_amount').setLabel('The percentage for selling')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`${orderData?.purchaseAmount || 0}`)
-									.setPlaceholder('Enter the percentage between 0 and 100')
-					              	.setRequired(true),
-				            )
-				        ]);
-					}
-
-					await interaction.showModal(modal);
-				}
-
-				return;
-			}
-
 		}
 	});
 
