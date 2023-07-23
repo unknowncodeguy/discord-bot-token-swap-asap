@@ -1,6 +1,3 @@
-const Cryptr = require('cryptr');
-const ethers = require('ethers');
-
 const AccountModel = require('../models/account');
 
 module.exports = {
@@ -121,7 +118,7 @@ module.exports = {
         return false;
     },
 
-    increateReferralCount: async (discordId) => {
+    increaseReferralCount: async (discordId, invitedUser) => {
         try {
             const filter = {
                 discordId
@@ -133,24 +130,21 @@ module.exports = {
             console.log("info" + info);
 
             if(info) {
-                const oldCnt = info?.inviteCount || 0;
-                const update = { $set: { inviteCount: oldCnt + 1 } };
-                await AccountModel.updateOne(filter, update);
-
-                return {
-                    result: true,
-                    count: oldCnt + 1
-                };
+                const oldCnt = info?.inviteCount;
+                if(Array.isArray(oldCnt)) {
+                    oldCnt.push(invitedUser);
+                    const update = { $set: { inviteCount: oldCnt } };
+                    await AccountModel.updateOne(filter, update);
+    
+                    return oldCnt;
+                }
             }
         }
         catch (err) {
             console.log("Error when setting inviteCount info to DB: " + err);
         }
     
-        return {
-            result: false,
-            count: 0
-        }
+        return null;
     },
 
     getCreator: async (referralLink) => {

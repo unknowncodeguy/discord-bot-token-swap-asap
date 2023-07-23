@@ -77,3 +77,126 @@
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
 [2023-7-20 09:10:16] Network loaded.
 [2023-7-20 09:10:16] f60128acc5462173e80df99d685330cf2298077305b685eb06bc2ebb5b855463
+[2023-7-23 06:13:08] Network loaded.
+[2023-7-23 06:13:08] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x1e691b739259882707619eF929A5475E89b0B31e","data":"0x50a239450000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000009ef7a28565206978d82f25ce9418e4557bd00fe5","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-23 06:13:13] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 06:13:13] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 06:14:18] Network loaded.
+[2023-7-23 06:14:19] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x1e691b739259882707619eF929A5475E89b0B31e","data":"0x50a2394500000000000000000000000000000000000000000000000000000000000000010000000000000000000000009ef7a28565206978d82f25ce9418e4557bd00fe5","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-23 06:14:48] Network loaded.
+[2023-7-23 06:14:48] 2
+[2023-7-23 06:14:48] 3
+[2023-7-23 06:14:48] 1
+[2023-7-23 06:14:48] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x1e691b739259882707619eF929A5475E89b0B31e","data":"0x50a2394500000000000000000000000000000000000000000000000000000000000000010000000000000000000000009ef7a28565206978d82f25ce9418e4557bd00fe5","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-23 06:15:23] Network loaded.
+[2023-7-23 06:15:24] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x1e691b739259882707619eF929A5475E89b0B31e","data":"0x50a2394500000000000000000000000000000000000000000000000000000000000000010000000000000000000000009ef7a28565206978d82f25ce9418e4557bd00fe5","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-23 06:15:53] Network loaded.
+[2023-7-23 06:15:53] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x1e691b739259882707619eF929A5475E89b0B31e","data":"0x50a2394500000000000000000000000000000000000000000000000000000000000000010000000000000000000000009ef7a28565206978d82f25ce9418e4557bd00fe5","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-23 06:15:58] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 06:15:58] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 06:17:15] Network loaded.
+[2023-7-23 06:17:21] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 06:17:21] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 06:17:38] Network loaded.
+[2023-7-23 06:17:38] curPrice
+[2023-7-23 06:17:44] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 06:17:44] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 06:17:52] Network loaded.
+[2023-7-23 06:17:52] curPrice
+[2023-7-23 06:17:52] curPrice
+[2023-7-23 06:17:58] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 06:17:58] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 06:18:43] Network loaded.
+[2023-7-23 06:18:43] curPrice1000000000000000000
+[2023-7-23 06:18:43] curPrice1.0
+[2023-7-23 06:18:49] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 06:18:49] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 06:18:57] Network loaded.
+[2023-7-23 06:18:57] curPrice0
+[2023-7-23 06:18:57] curPrice0.0
+[2023-7-23 06:19:03] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 06:19:03] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 06:19:21] Network loaded.
+[2023-7-23 06:19:22] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x1e691b739259882707619eF929A5475E89b0B31e","data":"0x50a2394500000000000000000000000000000000000000000000000000000000000000010000000000000000000000009ef7a28565206978d82f25ce9418e4557bd00fe5","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-23 06:19:22] curPrice0.0
+[2023-7-23 06:19:22] curPrice0
+[2023-7-23 06:19:27] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 06:19:27] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 06:19:32] Network loaded.
+[2023-7-23 06:19:32] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x1e691b739259882707619eF929A5475E89b0B31e","data":"0x50a2394500000000000000000000000000000000000000000000000000000000000000010000000000000000000000009ef7a28565206978d82f25ce9418e4557bd00fe5","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-23 06:19:32] curPrice0
+[2023-7-23 06:19:32] curPrice0.0
+[2023-7-23 06:19:38] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 06:19:38] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 07:00:39] Network loaded.
+[2023-7-23 07:00:39] xx is 1000000000000000000 and object
+[2023-7-23 07:00:45] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 07:00:45] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 07:00:58] Network loaded.
+[2023-7-23 07:00:58] Exception: Error: BigNumber.toString does not accept parameters (code=UNEXPECTED_ARGUMENT, version=bignumber/5.7.0)
+[2023-7-23 07:00:58] Error: BigNumber.toString does not accept parameters (code=UNEXPECTED_ARGUMENT, version=bignumber/5.7.0)
+    at Logger.makeError (D:\2023\0701\asap\working\asap-bot\node_modules\@ethersproject\logger\lib\index.js:238:21)
+    at Logger.throwError (D:\2023\0701\asap\working\asap-bot\node_modules\@ethersproject\logger\lib\index.js:247:20)
+    at BigNumber.toString (D:\2023\0701\asap\working\asap-bot\node_modules\@ethersproject\bignumber\lib\bignumber.js:177:24)
+    at D:\2023\0701\asap\working\asap-bot\index.js:127:44
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2023-7-23 07:01:02] Network loaded.
+[2023-7-23 07:01:02] xx is 1000000000000000000 and string
+[2023-7-23 07:01:08] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 07:01:08] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 07:01:24] xx is 1000000000000000000 and string
+[2023-7-23 07:01:24] Network loaded.
+[2023-7-23 07:02:09] Network loaded.
+[2023-7-23 07:02:09] 1000000000000000000
+[2023-7-23 07:06:30] Network loaded.
+[2023-7-23 07:06:30] tokenAddress  0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5
+[2023-7-23 07:06:30] mentionedPrice  1000000000000000
+[2023-7-23 07:06:30] Start set order
+[2023-7-23 07:06:30] discordId 995312778426470512
+[2023-7-23 07:06:30] purchaseAmount  0.001
+[2023-7-23 07:06:30] slippagePercentage  -20
+[2023-7-23 07:06:30] isBuy  true
+[2023-7-23 07:09:52] 10000000000000
+[2023-7-23 07:09:52] Network loaded.
+[2023-7-23 07:09:57] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 07:09:57] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 07:11:51] Network loaded.
+[2023-7-23 07:11:52] Exception: TypeError: price.div is not a function
+[2023-7-23 07:11:52] TypeError: price.div is not a function
+    at D:\2023\0701\asap\working\asap-bot\index.js:128:22
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2023-7-23 07:11:57] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 07:11:57] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 07:12:15] Network loaded.
+[2023-7-23 07:12:16] TypeError: price.div is not a function
+    at D:\2023\0701\asap\working\asap-bot\index.js:129:22
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[2023-7-23 07:12:16] Exception: TypeError: price.div is not a function
+[2023-7-23 07:12:16] object
+[2023-7-23 07:12:20] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 07:12:20] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 07:30:29] Start set order
+[2023-7-23 07:30:29] Network loaded.
+[2023-7-23 07:30:29] mentionedPrice  1000000000000000
+[2023-7-23 07:30:29] discordId 995312778426470512
+[2023-7-23 07:30:29] tokenAddress  0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5
+[2023-7-23 07:30:29] purchaseAmount  0.001
+[2023-7-23 07:30:29] isBuy  true
+[2023-7-23 07:30:29] slippagePercentage  -20
+[2023-7-23 07:30:35] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 07:30:35] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)

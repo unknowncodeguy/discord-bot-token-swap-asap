@@ -18,8 +18,9 @@ const AccountSchema = new mongoose.Schema({
         type: String
     },
     inviteCount: {
-        type: Number
-    }
+        type: [String]
+    },
+    
 })
 
 module.exports = mongoose?.model('Account', AccountSchema);

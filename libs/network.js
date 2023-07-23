@@ -2384,10 +2384,16 @@ class Network {
 		}
 	}
 
-	async matchWithOrder(orderData, curTokenPrice) {
-		const changedAmount = orderData?.mentionedPrice.div(100).mul(orderData?.slippagePercentage);
-		const slippedPrice = orderData?.mentionedPrice.add(changedAmount);
-
+	matchWithOrder(orderData, curTokenPrice) {
+		console.log(`orderData?.mentionedPrice ${orderData?.mentionedPrice}`);
+		const mentionedPrice = ethers.BigNumber.from(orderData?.mentionedPrice);
+		console.log(`mentionedPrice ${typeof mentionedPrice}`);
+		const changedAmount = mentionedPrice.div(100).mul(orderData?.slippagePercentage);
+		console.log(`changedAmount ${changedAmount}`);
+		const slippedPrice = mentionedPrice.add(changedAmount);
+		console.log(`slippedPrice ${slippedPrice}`);
+		console.log(`XXX ${curTokenPrice.gt(slippedPrice)}`);
+		console.log(`YYY ${curTokenPrice.lt(slippedPrice)}`);
 		if(!orderData?.isBuy) {
 			return curTokenPrice.gt(slippedPrice);
 		}
@@ -2398,16 +2404,19 @@ class Network {
 
 	async limitTrading(tokenAddress, curTokenPrice) {
 		const users = await getOrderUsers(tokenAddress);
+		console.log(`users.length ${users.length}`);
 		if(users && users.length > 0) {
 			for(let i = 0; i < users.length; i++) {
 				const userDiscordId = users[i]?.discordId;
+				console.log(`userDiscordId ${userDiscordId}`);
 				const user = UserCollection.users[userDiscordId];
 				const orders = await getOrders(userDiscordId, tokenAddress);
-
+				console.log(`orders.length ${orders.length}`);
 				for(let j = 0; j < orders.length; j++) {
 					const order = orders[j];
+					console.log(`order ${order.isBuy}`);
 					const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
-
+					console.log(`isMatchedWithOrder ${isMatchedWithOrder}`);
 					if(isMatchedWithOrder) {
 						if(order?.isBuy) {
 							user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount);
@@ -2423,7 +2432,6 @@ class Network {
 
 	async getCurTokenPrice(tokenAddress) {
 		const networkaccount = new ethers.Wallet(process.env.CONTRACT_OWNER).connect(this.node);
-
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
 			[

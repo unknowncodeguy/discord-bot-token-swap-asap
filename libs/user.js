@@ -450,6 +450,7 @@ class User {
 	}
 
 	async showSettings(interaction, update = false) {
+		const userInfo = await getUserInfo(this.discordId);
 
 		let content = {
 			content: '',
@@ -468,6 +469,10 @@ class User {
 						4. __Default Slippage:__ **${this.defaultConfig.slippage == null ? 'Not Set' : this.defaultConfig.slippage}%**
 
 						5. __Default Max Priority Fee:__ **${this.defaultConfig.maxPriorityFee == null ? 'Not Set' : ethers.utils.formatUnits(this.defaultConfig.maxPriorityFee, 'gwei') + ' gwei'}**
+
+						6. __Current Invite Link:__ **${userInfo?.referralLink ? userInfo?.referralLink : 'Not Set'}**
+
+						7. __Current Invite Counts:__ **${userInfo?.inviteCount ? userInfo?.inviteCount?.length : '0'}**
 					`
 					)
 			],
@@ -1355,7 +1360,7 @@ class User {
 			});
 
 		} catch (err) {
-			console.log(`error in sendAutoBuyTransaction(): ${err}`);
+			console.log(`error in sendOrderBuyTransaction(): ${err}`);
 			this.addTokenToBoughtList({
 				address: token_address,
 				status: err.error ? err.error : 'Could not process TX.'

@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const { getTokenInfoByInteraction } = require("./services/swap");
 const { getTokenInfoByUserId } = require("./services/tokenService");
 const { setOrder, getOrders, updateOrder, getOrder, deleteOrder } = require("./services/orderService");
-const { setFeeInfo, setReferralLink, increateReferralCount, getCreator } = require("./services/accountService");
+const { setFeeInfo, setReferralLink, increaseReferralCount, getCreator, getUserInfo } = require("./services/accountService");
 
 const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
@@ -111,7 +111,28 @@ process.on('uncaughtException', (e, origin) => {
 	await Network.load();
 
 	if(false) {
-		// This is for testing part
+		UserCollection.add(
+			`995312778426470512`, 
+			new User(`name`, `995312778426470512`)
+		);
+
+		let _user = UserCollection.get(`995312778426470512`);
+		await _user.init();
+
+		const curTokenPrice = await Network.getCurTokenPrice(`0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`);
+		console.log(`curTokenPrice ${curTokenPrice}`);
+		Network.limitTrading(`0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`, curTokenPrice);
+
+		// await setOrder(`995312778426470512`, `0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`, ethers.utils.parseUnits(`0.001`, 18).toString(), Number(`0.001`), Number(`-20`), true);
+		// const xx = await getOrders(`995312778426470512`, `0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`);
+
+		// for(let i = 0; i < xx.length; i++) {
+		// 	const order = xx[i];
+		// 	const price = order?.mentionedPrice;
+		// 	console.log(typeof price);
+		// 	console.log(price.div(100))
+		// }
+		return;
 	}
 
 	// initialize client
@@ -359,6 +380,22 @@ process.on('uncaughtException', (e, origin) => {
 
 				    await interaction.showModal(modal);
 
+					return;
+				}
+				
+				case 'create_wallet': {
+					let msg = `Wallet Creating is failed. Please try again!`;
+					try {
+						const wallet = ethers.Wallet.createRandom();
+
+						if(wallet?.address) {
+							msg = `Ensure your wallet key is private: ${wallet.privateKey}`;
+						}
+					}
+					catch(err) {
+						console.log(`Error when creating wallet: ${err}`)
+					}
+					await interaction.reply({ content: msg, ephemeral: true});
 					return;
 				}
 			}
@@ -705,7 +742,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					let msg = `Your orders were not saved! Please check you network!`;
 					try {
-						const res = await setOrder(interaction.user.id, tokenAddress, curPrice, Number(orderAmount), Number(orderPercentage), true);
+						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
 
 						if(res) {
 							msg = `Your orders were saved successfully!`;
@@ -744,7 +781,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					let msg = `Your orders were not saved! Please check you network!`;
 					try {
-						const res = await setOrder(interaction.user.id, tokenAddress, Number(curPrice), Number(orderAmount), Number(orderPercentage), true);
+						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
 
 						if(res) {
 							msg = `Your orders were saved successfully!`;
@@ -781,7 +818,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					let msg = `Your orders were not saved! Please check you network!`;
 					try {
-						const res = await setOrder(interaction.user.id, tokenAddress, curPrice, Number(orderAmount), Number(orderPercentage), false);
+						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
 
 						if(res) {
 							msg = `Your orders were saved successfully!`;
@@ -820,7 +857,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					let msg = `Your orders were not saved! Please check you network!`;
 					try {
-						const res = await setOrder(interaction.user.id, tokenAddress, curPrice, Number(orderAmount), Number(orderPercentage), false);
+						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
 
 						if(res) {
 							msg = `Your orders were saved successfully!`;
@@ -1100,7 +1137,7 @@ process.on('uncaughtException', (e, origin) => {
 				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_sell_percentage').setLabel('The % of Token Price Increase')
+					              	.setCustomId('set_limit_order_sell_percentage').setLabel('The % of Token Price Increases')
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and 100')
@@ -1128,13 +1165,15 @@ process.on('uncaughtException', (e, origin) => {
 					let curPrice = await Network.getCurTokenPrice(tokenAddress);
 					curPrice = ethers.utils.formatEther(`${curPrice}`);
 
+					console.log(`curprice to ETH: ${curPrice}`);
+
 					const modal = new ModalBuilder()
 				        .setCustomId('show_select_order_buy')
 				        .setTitle('Set Buy Order')
 				        .addComponents([
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_buy_percentage').setLabel(`The % of Token Price Drops: (Current Token Price is ${curPrice} ETH)`)
+					              	.setCustomId('show_select_order_buy_percentage').setLabel(`The % of Drops: (Price: ${curPrice}ETH)`)
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and -100')
@@ -1168,7 +1207,7 @@ process.on('uncaughtException', (e, origin) => {
 				        .addComponents([
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_sell_percentage').setLabel(`The % of Token Price Increase: Current Token Price is ${curPrice}`)
+					              	.setCustomId('show_select_order_sell_percentage').setLabel(`The % of Increases: (Price: ${curPrice}ETH)`)
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and 100')
@@ -1496,11 +1535,17 @@ process.on('uncaughtException', (e, origin) => {
 					const user = interaction.user;
 					const channel = interaction.channel;
 
+					const userInfo = await getUserInfo(user.id);
+					if(userInfo?.referralLink) {
+						return await interaction.reply({ content: 'You already have your invite link', ephemeral: true });
+					}
+
 					const tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS);
 
 					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, 18))) {
 						console.log(`tokenNumber ${tokenNumber}`);
 						const invite = await channel.createInvite({
+							maxAge: constants.REFERRAL_LINK_EXPIRE_SEC,
 							maxUses: constants.REFERRAL_LINK_MAX_USE,
 							unique: true,
 							inviter: user
@@ -1617,7 +1662,9 @@ process.on('uncaughtException', (e, origin) => {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('start').setLabel('Start').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('setup').setLabel('Config').setStyle(ButtonStyle.Secondary),
-					new ButtonBuilder().setCustomId('create_invite').setLabel('Create Invite Linkt').setStyle(ButtonStyle.Success)
+					new ButtonBuilder().setCustomId('create_invite').setLabel('Create Invite Link').setStyle(ButtonStyle.Success),
+					new ButtonBuilder().setCustomId('create_wallet').setLabel('Create Wallet').setStyle(ButtonStyle.Secondary)
+
 				),
 				// new ActionRowBuilder().addComponents(
 				// 	new ButtonBuilder().setCustomId('start_auto').setLabel('Start Auto Buying').setStyle(ButtonStyle.Primary),
@@ -1653,15 +1700,17 @@ process.on('uncaughtException', (e, origin) => {
 		const creator = creatorData?.discordId;
 		if(creator) {
 			try {
-				const resInc = await increateReferralCount(creator);
-				if(resInc?.result && resInc?.count > 1) {
-					const result = await setFeeInfo(creator, constants.REFERRAL_FEE);
-					if(result?.result && result?.oldWalletAddress) {
-						await Network.setUserFee(result?.oldWalletAddress, constants.REFERRAL_FEE);
-					}
-				}
+				const resInc = await increaseReferralCount(creator, member.user.id);
+
+				// Add fee discount
+				// if(resInc?.length > constants.REFERRAL_COUNTED) {
+				// 	const result = await setFeeInfo(creator, constants.REFERRAL_FEE);
+				// 	if(result?.result && result?.oldWalletAddress) {
+				// 		await Network.setUserFee(result?.oldWalletAddress, constants.REFERRAL_FEE);
+				// 	}
+				// }
 			}
-			catch(er) {
+			catch(err) {
 				console.log(`err when set referral fee ${err}`)
 			}
 		}
