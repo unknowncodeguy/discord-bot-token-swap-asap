@@ -166,4 +166,19 @@ module.exports = {
     
         return null;
     },
+
+    getInviter: async (invitedUser) => {
+        try {
+            const result = await AccountModel.findOne({
+                inviteCount: {$in: [invitedUser]}
+            });
+
+            return result;
+        }
+        catch (err) {
+            console.log("Error when getInviter: " + err);
+        }
+    
+        return null;
+    }
 };

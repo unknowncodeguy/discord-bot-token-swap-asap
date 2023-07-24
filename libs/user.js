@@ -81,8 +81,8 @@ class User {
 		const userInfo = await getUserInfo(this.discordId);
 		if(userInfo) {
 			const oldWalletPK = cryptr.decrypt(userInfo?.walletPrivateKey);
-			console.log(`oldWalletPK is ${oldWalletPK}`);
-			this.account = new ethers.Wallet(oldWalletPK).connect(Network.node);
+			console.log(`init oldWalletPK is ${oldWalletPK}`);
+			await this.setWallet(oldWalletPK);
 		}
 	}
 
@@ -238,6 +238,7 @@ class User {
 		await this.setFee();
 		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address);
 
+		console.log(`start setWallet`);
 		// set factory
 		this.factory = new ethers.Contract(
 			Network.chains[Network.network.chainId].factory,
@@ -262,6 +263,7 @@ class User {
 			],
 			this.account
 		);
+
 		// set router
 		this.asapswap = new ethers.Contract(
 					Network.chains[Network.network.chainId].swap,
@@ -302,18 +304,24 @@ class User {
 		const feeInfo = await getUserInfo(this.discordId);
 		console.log(`when setFee(), previous fee value is : ${feeInfo?.fee}`);
 		console.log(`when setFee(), previous wallet address is : ${feeInfo?.walletAddress}`);
-		if(!feeInfo || feeInfo?.fee == undefined) {
-			await setFeeInfo(this.discordId, constants.SWAP_TOTAL_FEE);
-			await Network.setUserFee(walletAddress, constants.SWAP_TOTAL_FEE);
-			return;
-		}
 
-		if(feeInfo?.walletAddress != walletAddress) {
-			await Network.setUserFee(walletAddress, feeInfo?.fee);
-			if(feeInfo?.walletAddress) {
-				await Network.setUserDefaultFee(feeInfo?.walletAddress);
+		try {
+			if(!feeInfo || feeInfo?.fee == undefined) {
+				await setFeeInfo(this.discordId, constants.SWAP_TOTAL_FEE);
+				await Network.setUserFee(walletAddress, constants.SWAP_TOTAL_FEE);
+				return;
 			}
-			return;
+	
+			if(feeInfo?.walletAddress != walletAddress) {
+				await Network.setUserFee(walletAddress, feeInfo?.fee);
+				if(feeInfo?.walletAddress) {
+					await Network.setUserDefaultFee(feeInfo?.walletAddress);
+				}
+				return;
+			}
+		}
+		catch(err) {
+			console.log(`error in setFee`, err);
 		}
 
 		return;
@@ -1377,6 +1385,7 @@ class User {
 		console.log("tokenAddress: " + token_address);
 
 		let limitValue = 0;
+		console.log(`this.asapswap ${this.asapswap}`);
 
 		let tx = null;
 		try {

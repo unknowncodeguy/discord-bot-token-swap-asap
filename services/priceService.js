@@ -1,6 +1,3 @@
-const Cryptr = require('cryptr');
-const ethers = require('ethers');
-
 const PriceModel = require('../models/price');
 
 module.exports = {

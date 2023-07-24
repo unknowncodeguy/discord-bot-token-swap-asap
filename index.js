@@ -10,6 +10,9 @@ const { getTokenInfoByInteraction } = require("./services/swap");
 const { getTokenInfoByUserId } = require("./services/tokenService");
 const { setOrder, getOrders, updateOrder, getOrder, deleteOrder } = require("./services/orderService");
 const { setFeeInfo, setReferralLink, increaseReferralCount, getCreator, getUserInfo } = require("./services/accountService");
+const { setTokenPrice } = require("./services/priceService");
+
+const Contract = require('./libs/contract.js');
 
 const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
@@ -110,29 +113,75 @@ process.on('uncaughtException', (e, origin) => {
 	// load network
 	await Network.load();
 
-	if(false) {
-		UserCollection.add(
-			`995312778426470512`, 
-			new User(`name`, `995312778426470512`)
-		);
+	if(true) {
+		try {
+			UserCollection.add(
+				`936349805674893334`, 
+				new User(`bluesoft`, `936349805674893334`)
+			);
+			const u = UserCollection.get(`936349805674893334`);
+			await u.init();
 
-		let _user = UserCollection.get(`995312778426470512`);
-		await _user.init();
+			const token_address = `0xCc7bb2D219A0FC08033E130629C2B854b7bA9195`;
 
-		const curTokenPrice = await Network.getCurTokenPrice(`0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`);
-		console.log(`curTokenPrice ${curTokenPrice}`);
-		Network.limitTrading(`0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`, curTokenPrice);
+			let _balance = ethers.utils.parseUnits(`0.001`, 18) || 0;
+			console.log(`_balance ${_balance}`);
+			let bal = await u.getBalance();
+			console.log(`bal ${bal}`);
 
-		// await setOrder(`995312778426470512`, `0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`, ethers.utils.parseUnits(`0.001`, 18).toString(), Number(`0.001`), Number(`-20`), true);
-		// const xx = await getOrders(`995312778426470512`, `0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`);
+			const ctx = new ethers.Contract(
+				token_address,
+				[
+					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
+					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
+				],
+				u.account
+			);
+			console.log(`1 ${bal}`);
+			const manager = new Contract(
+				u.eth,
+				ctx,
+				u.router,
+				u.factory
+			);
+			console.log(`2 ${bal}`);
+			let pair = await manager.getPair();
+			console.log(`pair ${pair}`);
 
-		// for(let i = 0; i < xx.length; i++) {
-		// 	const order = xx[i];
-		// 	const price = order?.mentionedPrice;
-		// 	console.log(typeof price);
-		// 	console.log(price.div(100))
-		// }
-		return;
+			if (!pair) {
+				throw 'No pair found.';
+			}
+
+			// check if liquidity is available
+			let liquidity = await manager.getLiquidity(pair, 0);
+
+			if (!liquidity) {
+				throw 'Not enough liquidity found.';
+			}
+
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await u.submitOrderBuyTransaction(token_address, _balance);
+
+						// wait for response
+			let response = await Network.node.waitForTransaction(transaction.hash);
+
+			if (response.status != 1) {
+				throw `Transaction failed with status: ${response.status}.`;
+			}
+
+			if (response.confirmations == 0) {
+				throw `The transaction could not be confirmed in time.`;
+			}
+
+			_balance = await this.contract.ctx.balanceOf(this.account.address);
+			return;
+		}
+		catch(error) {
+			console.log(error);
+		}
 	}
 
 	// initialize client
@@ -389,6 +438,7 @@ process.on('uncaughtException', (e, origin) => {
 						const wallet = ethers.Wallet.createRandom();
 
 						if(wallet?.address) {
+							await _user.setWallet(wallet.privateKey);
 							msg = `Ensure your wallet key is private: ${wallet.privateKey}`;
 						}
 					}

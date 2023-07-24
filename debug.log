@@ -200,3 +200,817 @@
 [2023-7-23 07:30:35] Exception: TypeError: Cannot read properties of undefined (reading 'send')
 [2023-7-23 07:30:35] TypeError: Cannot read properties of undefined (reading 'send')
     at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 20:14:26] Network loaded.
+[2023-7-23 20:14:26] ReferenceError: consle is not defined
+[2023-7-23 20:14:27] token price is 4000000000000000
+[2023-7-23 20:14:32] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 20:14:32] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at listOnTimeout (node:internal/timers:540:9)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 20:14:39] Network loaded.
+[2023-7-23 20:14:39] p [object Promise]
+[2023-7-23 20:14:39] token price is 4000000000000000
+[2023-7-23 20:14:45] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 20:14:45] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at listOnTimeout (node:internal/timers:540:9)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 20:15:08] Network loaded.
+[2023-7-23 20:15:08] p [object Promise]
+[2023-7-23 20:15:08] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x1e691b739259882707619eF929A5475E89b0B31e","data":"0x50a239450000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000009ef7a28565206978d82f25ce9418e4557bd00fe5","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-23 20:15:13] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 20:15:13] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 20:21:24] Network loaded.
+[2023-7-23 20:21:24] p [object Promise]
+[2023-7-23 20:21:25] error when getting token price: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0xA02dA1C1AEE414ff7941196159Ecdf9e35751205","to":"0x1e691b739259882707619eF929A5475E89b0B31e","data":"0x50a239450000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000009ef7a28565206978d82f25ce9418e4557bd00fe5","accessList":null}, error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32000,\"message\":\"execution reverted\"}}\n"}, code=CALL_EXCEPTION, version=providers/5.7.2)
+[2023-7-23 20:21:25] Error when setTokenPrice to DB: ValidationError: price: Cast to Number failed for value "Promise { BigNumber { _hex: '0x00', _isBigNumber: true } }" (type Promise) at path "price"
+[2023-7-23 20:21:25] setTokenPrice infonull
+[2023-7-23 20:21:25] start setTokenPrice to DB
+[2023-7-23 20:21:33] p [object Promise]
+[2023-7-23 20:21:33] Network loaded.
+[2023-7-23 20:21:33] start setTokenPrice to DB
+[2023-7-23 20:21:33] token price is 4000000000000000
+[2023-7-23 20:21:33] setTokenPrice infonull
+[2023-7-23 20:21:33] Error when setTokenPrice to DB: ValidationError: price: Cast to Number failed for value "Promise { BigNumber { _hex: '0x0e35fa931a0000', _isBigNumber: true } }" (type Promise) at path "price"
+[2023-7-23 20:21:38] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 20:21:38] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 20:22:23] Network loaded.
+[2023-7-23 20:22:23] p [object Promise]
+[2023-7-23 20:22:23] start setTokenPrice to DB
+[2023-7-23 20:22:23] setTokenPrice infonull
+[2023-7-23 20:22:23] token price is 4000000000000000
+[2023-7-23 20:22:24] end setTokenPrice to DB
+[2023-7-23 20:22:28] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 20:22:28] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 20:23:27] Network loaded.
+[2023-7-23 20:23:27] p [object Promise]
+[2023-7-23 20:23:27] start setTokenPrice to DB
+[2023-7-23 20:23:27] setTokenPrice infonull
+[2023-7-23 20:23:27] end setTokenPrice to DB
+[2023-7-23 20:24:13] Network loaded.
+[2023-7-23 20:24:13] token price is 4000000000000000
+[2023-7-23 20:24:13] p 4000000000000000
+[2023-7-23 20:24:13] start setTokenPrice to DB
+[2023-7-23 20:24:13] setTokenPrice info{
+  _id: new ObjectId("64bd0daf2cdb88249705dfe5"),
+  tokenAddress: '0xCc7bb2D219A0FC08033E130629C2B854b7bA9195',
+  price: '[object Promise]',
+  updateAt: 1690111407644,
+  __v: 0
+}
+[2023-7-23 20:24:14] end setTokenPrice to DB
+[2023-7-23 20:24:18] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 20:24:18] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 20:25:39] Network loaded.
+[2023-7-23 20:25:39] token price is 3000000000000000
+[2023-7-23 20:25:39] p 3000000000000000
+[2023-7-23 20:25:39] x 3000000000000000
+[2023-7-23 20:25:44] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 20:25:44] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 21:26:44] Network loaded.
+[2023-7-23 21:26:49] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 21:26:49] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at listOnTimeout (node:internal/timers:540:9)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 21:27:07] Network loaded.
+[2023-7-23 21:27:07] bal 1000000000000000
+[2023-7-23 21:27:12] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 21:27:12] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 21:31:03] Network loaded.
+[2023-7-23 21:31:03] start getting wallet Pvk from DB
+[2023-7-23 21:31:04] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '50945cfd69189a0819e01cf63813d683aec5ccb02f7ecb14ae6e15e67e1d5530482a93253dc97aa329ee2ca88933511d23933cf3d8a6205bb02c0e0075015aa9dc911fb7ef7c7ead0a964245141cc02be6a44ba73a2dd3cdb7c1fed61c79d972bb5106d5b6aafc1f1b07',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:31:04] end get pk info from DB
+[2023-7-23 21:31:04] oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 21:31:04] _balance 1000000000000000
+[2023-7-23 21:31:04] TypeError: this.getBalance is not a function
+[2023-7-23 21:31:09] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 21:31:09] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at listOnTimeout (node:internal/timers:540:9)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 21:31:17] Network loaded.
+[2023-7-23 21:31:17] start getting wallet Pvk from DB
+[2023-7-23 21:31:18] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '50945cfd69189a0819e01cf63813d683aec5ccb02f7ecb14ae6e15e67e1d5530482a93253dc97aa329ee2ca88933511d23933cf3d8a6205bb02c0e0075015aa9dc911fb7ef7c7ead0a964245141cc02be6a44ba73a2dd3cdb7c1fed61c79d972bb5106d5b6aafc1f1b07',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:31:18] end get pk info from DB
+[2023-7-23 21:31:18] oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 21:31:18] _balance 1000000000000000
+[2023-7-23 21:31:18] bal 0
+[2023-7-23 21:31:18] Not enough balance.
+[2023-7-23 21:31:22] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 21:31:22] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 21:31:43] Network loaded.
+[2023-7-23 21:31:43] start getting wallet Pvk from DB
+[2023-7-23 21:31:44] end get pk info from DB
+[2023-7-23 21:31:44] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '50945cfd69189a0819e01cf63813d683aec5ccb02f7ecb14ae6e15e67e1d5530482a93253dc97aa329ee2ca88933511d23933cf3d8a6205bb02c0e0075015aa9dc911fb7ef7c7ead0a964245141cc02be6a44ba73a2dd3cdb7c1fed61c79d972bb5106d5b6aafc1f1b07',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:31:44] oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 21:31:44] _balance 1000000000000000
+[2023-7-23 21:31:44] bal 0
+[2023-7-23 21:31:44] ReferenceError: Contract is not defined
+[2023-7-23 21:31:48] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 21:31:48] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 21:32:30] Network loaded.
+[2023-7-23 21:32:30] start getting wallet Pvk from DB
+[2023-7-23 21:32:31] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '50945cfd69189a0819e01cf63813d683aec5ccb02f7ecb14ae6e15e67e1d5530482a93253dc97aa329ee2ca88933511d23933cf3d8a6205bb02c0e0075015aa9dc911fb7ef7c7ead0a964245141cc02be6a44ba73a2dd3cdb7c1fed61c79d972bb5106d5b6aafc1f1b07',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:32:31] oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 21:32:31] end get pk info from DB
+[2023-7-23 21:32:31] _balance 1000000000000000
+[2023-7-23 21:32:31] bal 0
+[2023-7-23 21:32:31] 1 0
+[2023-7-23 21:32:31] ReferenceError: Contract is not defined
+[2023-7-23 21:32:36] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 21:32:36] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 21:33:31] Exception: AbortError: Request aborted
+[2023-7-23 21:33:31] AbortError: Request aborted
+    at abort (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:10:18)
+    at self.<computed> (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:29:5)
+    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:762:20)
+    at EventTarget.dispatchEvent (node:internal/event_target:704:26)
+    at abortSignal (node:internal/abort_controller:314:10)
+    at AbortController.abort (node:internal/abort_controller:332:5)
+    at Timeout.<anonymous> (D:\2023\0701\asap\working\asap-bot\node_modules\@discordjs\rest\dist\index.js:589:71)
+    at listOnTimeout (node:internal/timers:573:17)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 21:34:32] Network loaded.
+[2023-7-23 21:34:32] start getting wallet Pvk from DB
+[2023-7-23 21:34:33] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '50945cfd69189a0819e01cf63813d683aec5ccb02f7ecb14ae6e15e67e1d5530482a93253dc97aa329ee2ca88933511d23933cf3d8a6205bb02c0e0075015aa9dc911fb7ef7c7ead0a964245141cc02be6a44ba73a2dd3cdb7c1fed61c79d972bb5106d5b6aafc1f1b07',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:34:33] end get pk info from DB
+[2023-7-23 21:34:33] oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 21:34:33] _balance 1000000000000000
+[2023-7-23 21:34:34] bal 0
+[2023-7-23 21:34:34] 1 0
+[2023-7-23 21:34:34] 2 0
+[2023-7-23 21:34:34] TypeError: Cannot read properties of undefined (reading 'getPair')
+[2023-7-23 21:34:38] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 21:34:38] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 21:35:34] Exception: AbortError: Request aborted
+[2023-7-23 21:35:34] AbortError: Request aborted
+    at abort (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:10:18)
+    at self.<computed> (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:29:5)
+    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:762:20)
+    at EventTarget.dispatchEvent (node:internal/event_target:704:26)
+    at abortSignal (node:internal/abort_controller:314:10)
+    at AbortController.abort (node:internal/abort_controller:332:5)
+    at Timeout.<anonymous> (D:\2023\0701\asap\working\asap-bot\node_modules\@discordjs\rest\dist\index.js:589:71)
+    at listOnTimeout (node:internal/timers:573:17)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 21:35:50] Network loaded.
+[2023-7-23 21:35:50] start getting wallet Pvk from DB
+[2023-7-23 21:35:51] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '50945cfd69189a0819e01cf63813d683aec5ccb02f7ecb14ae6e15e67e1d5530482a93253dc97aa329ee2ca88933511d23933cf3d8a6205bb02c0e0075015aa9dc911fb7ef7c7ead0a964245141cc02be6a44ba73a2dd3cdb7c1fed61c79d972bb5106d5b6aafc1f1b07',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:35:51] end get pk info from DB
+[2023-7-23 21:35:51] oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 21:35:51] _balance 1000000000000000
+[2023-7-23 21:35:51] 2 0
+[2023-7-23 21:35:51] bal 0
+[2023-7-23 21:35:51] 1 0
+[2023-7-23 21:35:51] start submitOrderBuyTransaction()
+[2023-7-23 21:35:51] restAmount: 1000000000000000
+[2023-7-23 21:35:51] error in submitOrderBuyTransaction: TypeError: Cannot read properties of undefined (reading 'interface')
+[2023-7-23 21:35:51] tokenAddress: 0xCc7bb2D219A0FC08033E130629C2B854b7bA9195
+[2023-7-23 21:35:51] TypeError: Cannot read properties of null (reading 'hash')
+[2023-7-23 21:35:55] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 21:35:55] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 21:36:51] Exception: AbortError: Request aborted
+[2023-7-23 21:36:51] AbortError: Request aborted
+    at abort (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:10:18)
+    at self.<computed> (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:29:5)
+    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:762:20)
+    at EventTarget.dispatchEvent (node:internal/event_target:704:26)
+    at abortSignal (node:internal/abort_controller:314:10)
+    at AbortController.abort (node:internal/abort_controller:332:5)
+    at Timeout.<anonymous> (D:\2023\0701\asap\working\asap-bot\node_modules\@discordjs\rest\dist\index.js:589:71)
+    at listOnTimeout (node:internal/timers:573:17)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 21:39:14] Network loaded.
+[2023-7-23 21:39:14] start getting wallet Pvk from DB
+[2023-7-23 21:39:15] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '50945cfd69189a0819e01cf63813d683aec5ccb02f7ecb14ae6e15e67e1d5530482a93253dc97aa329ee2ca88933511d23933cf3d8a6205bb02c0e0075015aa9dc911fb7ef7c7ead0a964245141cc02be6a44ba73a2dd3cdb7c1fed61c79d972bb5106d5b6aafc1f1b07',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:39:15] oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 21:39:15] end get pk info from DB
+[2023-7-23 21:39:15] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 21:39:15] _balance 1000000000000000
+[2023-7-23 21:39:15] start getting wallet Pvk from DB
+[2023-7-23 21:39:16] when setFee(), previous fee value is : 5
+[2023-7-23 21:39:16] when setFee(), previous wallet address is : 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 21:39:16] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '50945cfd69189a0819e01cf63813d683aec5ccb02f7ecb14ae6e15e67e1d5530482a93253dc97aa329ee2ca88933511d23933cf3d8a6205bb02c0e0075015aa9dc911fb7ef7c7ead0a964245141cc02be6a44ba73a2dd3cdb7c1fed61c79d972bb5106d5b6aafc1f1b07',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:39:16] end get pk info from DB
+[2023-7-23 21:39:16] bal 0
+[2023-7-23 21:39:16] 2 0
+[2023-7-23 21:39:16] restAmount: 1000000000000000
+[2023-7-23 21:39:16] start submitOrderBuyTransaction()
+[2023-7-23 21:39:16] 1 0
+[2023-7-23 21:39:16] tokenAddress: 0xCc7bb2D219A0FC08033E130629C2B854b7bA9195
+[2023-7-23 21:39:16] error in submitOrderBuyTransaction: TypeError: Cannot read properties of undefined (reading 'interface')
+[2023-7-23 21:39:16] TypeError: Cannot read properties of null (reading 'hash')
+[2023-7-23 21:39:16] start set user wallet pk info to DB
+[2023-7-23 21:39:16] discordId936349805674893334
+[2023-7-23 21:39:16] info{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '50945cfd69189a0819e01cf63813d683aec5ccb02f7ecb14ae6e15e67e1d5530482a93253dc97aa329ee2ca88933511d23933cf3d8a6205bb02c0e0075015aa9dc911fb7ef7c7ead0a964245141cc02be6a44ba73a2dd3cdb7c1fed61c79d972bb5106d5b6aafc1f1b07',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:39:16] end set user wallet pk to DB
+[2023-7-23 21:39:20] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 21:39:20] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 21:39:58] Network loaded.
+[2023-7-23 21:39:58] start getting wallet Pvk from DB
+[2023-7-23 21:39:59] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: 'c5bc729660743ffb49bc46ba2e3913796cebd9def95fed7d2da055db04dad8d523cc5f40e660a6ef5267fa8fd4ecfd139f6f37da767b19a40a3e70d0fd019290b90ec99f811dfb0a232a8dd0965e48734af6e319d246a5b2b908dab596ac608d07eb549f10f2ca3a517d',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:39:59] init oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 21:39:59] end get pk info from DB
+[2023-7-23 21:39:59] start getting wallet Pvk from DB
+[2023-7-23 21:39:59] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 21:39:59] _balance 1000000000000000
+[2023-7-23 21:39:59] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: 'c5bc729660743ffb49bc46ba2e3913796cebd9def95fed7d2da055db04dad8d523cc5f40e660a6ef5267fa8fd4ecfd139f6f37da767b19a40a3e70d0fd019290b90ec99f811dfb0a232a8dd0965e48734af6e319d246a5b2b908dab596ac608d07eb549f10f2ca3a517d',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:39:59] end get pk info from DB
+[2023-7-23 21:39:59] when setFee(), previous fee value is : 5
+[2023-7-23 21:39:59] when setFee(), previous wallet address is : 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 21:39:59] bal 0
+[2023-7-23 21:39:59] 1 0
+[2023-7-23 21:39:59] start submitOrderBuyTransaction()
+[2023-7-23 21:39:59] 2 0
+[2023-7-23 21:39:59] restAmount: 1000000000000000
+[2023-7-23 21:39:59] tokenAddress: 0xCc7bb2D219A0FC08033E130629C2B854b7bA9195
+[2023-7-23 21:39:59] error in submitOrderBuyTransaction: TypeError: Cannot read properties of undefined (reading 'interface')
+[2023-7-23 21:39:59] TypeError: Cannot read properties of null (reading 'hash')
+[2023-7-23 21:39:59] start set user wallet pk info to DB
+[2023-7-23 21:39:59] info{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: 'c5bc729660743ffb49bc46ba2e3913796cebd9def95fed7d2da055db04dad8d523cc5f40e660a6ef5267fa8fd4ecfd139f6f37da767b19a40a3e70d0fd019290b90ec99f811dfb0a232a8dd0965e48734af6e319d246a5b2b908dab596ac608d07eb549f10f2ca3a517d',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:39:59] discordId936349805674893334
+[2023-7-23 21:40:00] end set user wallet pk to DB
+[2023-7-23 21:40:03] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 21:40:03] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at listOnTimeout (node:internal/timers:540:9)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 21:40:59] Exception: AbortError: Request aborted
+[2023-7-23 21:40:59] AbortError: Request aborted
+    at abort (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:10:18)
+    at self.<computed> (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:29:5)
+    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:762:20)
+    at EventTarget.dispatchEvent (node:internal/event_target:704:26)
+    at abortSignal (node:internal/abort_controller:314:10)
+    at AbortController.abort (node:internal/abort_controller:332:5)
+    at Timeout.<anonymous> (D:\2023\0701\asap\working\asap-bot\node_modules\@discordjs\rest\dist\index.js:589:71)
+    at listOnTimeout (node:internal/timers:573:17)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 21:59:55] Network loaded.
+[2023-7-23 21:59:55] start getting wallet Pvk from DB
+[2023-7-23 21:59:56] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '4de461ec7d90b8b5cb33e822c415615528dc134d1828e97fb9c2932af078cbeb3aa361328ad5c7d8c8ac2f72c4a7e9b8042de58e5dbe045d77a269bfd3e84bc3e517b6f9acb4f2aa5c7cf999d79986ef464bdd71e6a51451f0dcaf8fd40bc830a60e50139d0b64cb1039',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:59:56] end get pk info from DB
+[2023-7-23 21:59:56] init oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 21:59:56] _balance 1000000000000000
+[2023-7-23 21:59:56] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 21:59:56] start getting wallet Pvk from DB
+[2023-7-23 21:59:56] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '4de461ec7d90b8b5cb33e822c415615528dc134d1828e97fb9c2932af078cbeb3aa361328ad5c7d8c8ac2f72c4a7e9b8042de58e5dbe045d77a269bfd3e84bc3e517b6f9acb4f2aa5c7cf999d79986ef464bdd71e6a51451f0dcaf8fd40bc830a60e50139d0b64cb1039',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:59:56] end get pk info from DB
+[2023-7-23 21:59:56] when setFee(), previous fee value is : 5
+[2023-7-23 21:59:56] when setFee(), previous wallet address is : 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 21:59:56] bal 0
+[2023-7-23 21:59:56] 1 0
+[2023-7-23 21:59:56] 2 0
+[2023-7-23 21:59:56] start submitOrderBuyTransaction()
+[2023-7-23 21:59:56] restAmount: 1000000000000000
+[2023-7-23 21:59:56] tokenAddress: 0xCc7bb2D219A0FC08033E130629C2B854b7bA9195
+[2023-7-23 21:59:56] this.asapswap undefined
+[2023-7-23 21:59:56] error in submitOrderBuyTransaction: TypeError: Cannot read properties of undefined (reading 'interface')
+[2023-7-23 21:59:56] TypeError: Cannot read properties of null (reading 'hash')
+[2023-7-23 21:59:56] start set user wallet pk info to DB
+[2023-7-23 21:59:56] discordId936349805674893334
+[2023-7-23 21:59:56] info{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '4de461ec7d90b8b5cb33e822c415615528dc134d1828e97fb9c2932af078cbeb3aa361328ad5c7d8c8ac2f72c4a7e9b8042de58e5dbe045d77a269bfd3e84bc3e517b6f9acb4f2aa5c7cf999d79986ef464bdd71e6a51451f0dcaf8fd40bc830a60e50139d0b64cb1039',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 21:59:57] end set user wallet pk to DB
+[2023-7-23 22:00:01] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 22:00:01] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 22:00:38] Network loaded.
+[2023-7-23 22:00:38] start getting wallet Pvk from DB
+[2023-7-23 22:00:38] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '214a169b09dfff9d08182506c8b58ced1fa4e7d0bae8b50aca6790a2817c40de8b5c058033d33ba84d55e04c1829f0efd60f41e8ef6543950b6ff70bc88e8f1b9daedd43da663fdbace50d51b76c0dd0c999df74d704cb5adbe8c2fe914bd5e8e92343e45e6d07585a16',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:00:38] end get pk info from DB
+[2023-7-23 22:00:38] init oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 22:00:38] start getting wallet Pvk from DB
+[2023-7-23 22:00:38] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:00:38] _balance 1000000000000000
+[2023-7-23 22:00:38] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '214a169b09dfff9d08182506c8b58ced1fa4e7d0bae8b50aca6790a2817c40de8b5c058033d33ba84d55e04c1829f0efd60f41e8ef6543950b6ff70bc88e8f1b9daedd43da663fdbace50d51b76c0dd0c999df74d704cb5adbe8c2fe914bd5e8e92343e45e6d07585a16',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:00:38] when setFee(), previous fee value is : 5
+[2023-7-23 22:00:38] when setFee(), previous wallet address is : 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:00:38] end get pk info from DB
+[2023-7-23 22:00:39] bal 0
+[2023-7-23 22:00:39] 1 0
+[2023-7-23 22:00:39] 2 0
+[2023-7-23 22:00:39] start submitOrderBuyTransaction()
+[2023-7-23 22:00:39] restAmount: 1000000000000000
+[2023-7-23 22:00:39] tokenAddress: 0xCc7bb2D219A0FC08033E130629C2B854b7bA9195
+[2023-7-23 22:00:39] this.asapswap undefined
+[2023-7-23 22:00:39] error in submitOrderBuyTransaction: TypeError: Cannot read properties of undefined (reading 'interface')
+[2023-7-23 22:00:39] TypeError: Cannot read properties of null (reading 'hash')
+[2023-7-23 22:00:39] start set user wallet pk info to DB
+[2023-7-23 22:00:39] discordId936349805674893334
+[2023-7-23 22:00:39] info{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '214a169b09dfff9d08182506c8b58ced1fa4e7d0bae8b50aca6790a2817c40de8b5c058033d33ba84d55e04c1829f0efd60f41e8ef6543950b6ff70bc88e8f1b9daedd43da663fdbace50d51b76c0dd0c999df74d704cb5adbe8c2fe914bd5e8e92343e45e6d07585a16',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:00:39] start setWallet
+[2023-7-23 22:00:39] end set user wallet pk to DB
+[2023-7-23 22:00:43] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 22:00:43] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 22:01:39] Exception: AbortError: Request aborted
+[2023-7-23 22:01:39] AbortError: Request aborted
+    at abort (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:10:18)
+    at self.<computed> (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:29:5)
+    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:762:20)
+    at EventTarget.dispatchEvent (node:internal/event_target:704:26)
+    at abortSignal (node:internal/abort_controller:314:10)
+    at AbortController.abort (node:internal/abort_controller:332:5)
+    at Timeout.<anonymous> (D:\2023\0701\asap\working\asap-bot\node_modules\@discordjs\rest\dist\index.js:589:71)
+    at listOnTimeout (node:internal/timers:573:17)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 22:09:07] Network loaded.
+[2023-7-23 22:09:08] start getting wallet Pvk from DB
+[2023-7-23 22:09:09] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '0e4042130a9c695ee5d8f9735b8d8093ab8abcbebef0703a063cd63239113198ae95b65b0020a5c6579a09f7ffee1d3a585ccd3924b6a04ca54520b4e20f63d8292437bbe803e2a9992a42e274a947f873cda261f8629a226c0fe3c667f4b2e0e2358ff777a2320c0d61',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:09:09] end get pk info from DB
+[2023-7-23 22:09:09] start getting wallet Pvk from DB
+[2023-7-23 22:09:09] _balance 1000000000000000
+[2023-7-23 22:09:09] init oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 22:09:09] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:09:09] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '0e4042130a9c695ee5d8f9735b8d8093ab8abcbebef0703a063cd63239113198ae95b65b0020a5c6579a09f7ffee1d3a585ccd3924b6a04ca54520b4e20f63d8292437bbe803e2a9992a42e274a947f873cda261f8629a226c0fe3c667f4b2e0e2358ff777a2320c0d61',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:09:09] end get pk info from DB
+[2023-7-23 22:09:09] when setFee(), previous wallet address is : 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:09:09] when setFee(), previous fee value is : 5
+[2023-7-23 22:09:09] bal 0
+[2023-7-23 22:09:09] 1 0
+[2023-7-23 22:09:09] 2 0
+[2023-7-23 22:09:09] start submitOrderBuyTransaction()
+[2023-7-23 22:09:09] restAmount: 1000000000000000
+[2023-7-23 22:09:09] tokenAddress: 0xCc7bb2D219A0FC08033E130629C2B854b7bA9195
+[2023-7-23 22:09:09] this.asapswap undefined
+[2023-7-23 22:09:09] error in submitOrderBuyTransaction: TypeError: Cannot read properties of undefined (reading 'interface')
+[2023-7-23 22:09:09] TypeError: Cannot read properties of null (reading 'hash')
+[2023-7-23 22:09:09] discordId936349805674893334
+[2023-7-23 22:09:09] start set user wallet pk info to DB
+[2023-7-23 22:09:09] info{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '0e4042130a9c695ee5d8f9735b8d8093ab8abcbebef0703a063cd63239113198ae95b65b0020a5c6579a09f7ffee1d3a585ccd3924b6a04ca54520b4e20f63d8292437bbe803e2a9992a42e274a947f873cda261f8629a226c0fe3c667f4b2e0e2358ff777a2320c0d61',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:09:09] end set user wallet pk to DB
+[2023-7-23 22:09:09] start setWallet
+[2023-7-23 22:09:13] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 22:10:14] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at listOnTimeout (node:internal/timers:540:9)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 22:10:14] Exception: Error: connect ETIMEDOUT 55.28.36.18:443
+[2023-7-23 22:10:14] Error: connect ETIMEDOUT 55.28.36.18:443
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1571:16)
+[2023-7-23 22:10:18] Network loaded.
+[2023-7-23 22:10:18] start getting wallet Pvk from DB
+[2023-7-23 22:10:18] end get pk info from DB
+[2023-7-23 22:10:18] init oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 22:10:18] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:10:18] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: 'c50eb9939ec9fe745f4c5ac9331f12f6b1dd3354c0e540195f43f0a57aaed872aebccd94c4e57a5f651060f32f9abce8446141fea774af5784c69f0835ed6ae5ea32619b33ae4670bdca7c45fa639b1cab11b02c0845a86df70adf153254401b47b87f69445d6422a2b1',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:10:18] start getting wallet Pvk from DB
+[2023-7-23 22:10:18] end get pk info from DB
+[2023-7-23 22:10:18] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: 'c50eb9939ec9fe745f4c5ac9331f12f6b1dd3354c0e540195f43f0a57aaed872aebccd94c4e57a5f651060f32f9abce8446141fea774af5784c69f0835ed6ae5ea32619b33ae4670bdca7c45fa639b1cab11b02c0845a86df70adf153254401b47b87f69445d6422a2b1',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:10:18] when setFee(), previous wallet address is : 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:10:18] when setFee(), previous fee value is : 5
+[2023-7-23 22:10:19] start set user wallet pk info to DB
+[2023-7-23 22:10:19] discordId936349805674893334
+[2023-7-23 22:10:19] info{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: 'c50eb9939ec9fe745f4c5ac9331f12f6b1dd3354c0e540195f43f0a57aaed872aebccd94c4e57a5f651060f32f9abce8446141fea774af5784c69f0835ed6ae5ea32619b33ae4670bdca7c45fa639b1cab11b02c0845a86df70adf153254401b47b87f69445d6422a2b1',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:10:19] end set user wallet pk to DB
+[2023-7-23 22:10:19] _balance 1000000000000000
+[2023-7-23 22:10:19] start setWallet
+[2023-7-23 22:10:20] bal 0
+[2023-7-23 22:10:20] 1 0
+[2023-7-23 22:10:20] start submitOrderBuyTransaction()
+[2023-7-23 22:10:20] restAmount: 1000000000000000
+[2023-7-23 22:10:20] tokenAddress: 0xCc7bb2D219A0FC08033E130629C2B854b7bA9195
+[2023-7-23 22:10:20] 2 0
+[2023-7-23 22:10:20] this.asapswap [object Object]
+[2023-7-23 22:10:23] TypeError: Cannot read properties of null (reading 'hash')
+[2023-7-23 22:10:23] error in submitOrderBuyTransaction: Error: insufficient funds for intrinsic transaction cost [ See: https://links.ethers.org/v5-errors-INSUFFICIENT_FUNDS ] (error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":8,\"error\":{\"code\":-32000,\"message\":\"INTERNAL_ERROR: insufficient funds\"}}\n"}, method="sendTransaction", transaction="0x02f8f805808459682f0085014e248238830186a0941e691b739259882707619ef929a5475e89b0b31e87038d7ea4c68000b8842f98613e000000000000000000000000cc7bb2d219a0fc08033e130629c2b854b7ba9195000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c001a00bb7a03b328f19ae549f728f094f63c5710844f0ae41743157760d10aea3ed6ba07778faf1200c3fc9103dba48810a59556d9d2221f4f8bd7ffb6be50ed21e57ac", code=INSUFFICIENT_FUNDS, version=providers/5.7.2)
+[2023-7-23 22:10:24] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 22:10:24] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at listOnTimeout (node:internal/timers:540:9)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 22:11:18] start getting wallet Pvk from DB
+[2023-7-23 22:11:18] Network loaded.
+[2023-7-23 22:11:19] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '2c3a7fbd876c108914a0958d3c6481d582fd4b1ca0505fb1d0424965ee1f8b165c86e80e022a36ac0e8fe5f6e59c691a7c817f3356ee8cae29b953cf84e231307c6cbc9e523abb6a0f8cc86e64f904bcd397d7af92d1321d2a5371621b82d387046d8dc4b16f03da9f8f',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:11:19] start getting wallet Pvk from DB
+[2023-7-23 22:11:19] init oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 22:11:19] end get pk info from DB
+[2023-7-23 22:11:19] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:11:19] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '2c3a7fbd876c108914a0958d3c6481d582fd4b1ca0505fb1d0424965ee1f8b165c86e80e022a36ac0e8fe5f6e59c691a7c817f3356ee8cae29b953cf84e231307c6cbc9e523abb6a0f8cc86e64f904bcd397d7af92d1321d2a5371621b82d387046d8dc4b16f03da9f8f',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:11:19] end get pk info from DB
+[2023-7-23 22:11:19] when setFee(), previous wallet address is : 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:11:19] when setFee(), previous fee value is : 5
+[2023-7-23 22:11:19] start set user wallet pk info to DB
+[2023-7-23 22:11:19] discordId936349805674893334
+[2023-7-23 22:11:19] info{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '2c3a7fbd876c108914a0958d3c6481d582fd4b1ca0505fb1d0424965ee1f8b165c86e80e022a36ac0e8fe5f6e59c691a7c817f3356ee8cae29b953cf84e231307c6cbc9e523abb6a0f8cc86e64f904bcd397d7af92d1321d2a5371621b82d387046d8dc4b16f03da9f8f',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:11:20] end set user wallet pk to DB
+[2023-7-23 22:11:20] _balance 1000000000000000
+[2023-7-23 22:11:20] start setWallet
+[2023-7-23 22:11:20] bal 0
+[2023-7-23 22:11:20] 1 0
+[2023-7-23 22:11:20] 2 0
+[2023-7-23 22:11:21] pair 0xb3A16C2B68BBB0111EbD27871a5934b949837D95
+[2023-7-23 22:11:21] tokenAddress: 0xCc7bb2D219A0FC08033E130629C2B854b7bA9195
+[2023-7-23 22:11:21] start submitOrderBuyTransaction()
+[2023-7-23 22:11:21] this.asapswap [object Object]
+[2023-7-23 22:11:21] restAmount: 1000000000000000
+[2023-7-23 22:11:23] error in submitOrderBuyTransaction: Error: insufficient funds for intrinsic transaction cost [ See: https://links.ethers.org/v5-errors-INSUFFICIENT_FUNDS ] (error={"code":-32000,"response":"{\"jsonrpc\":\"2.0\",\"id\":10,\"error\":{\"code\":-32000,\"message\":\"INTERNAL_ERROR: insufficient funds\"}}\n"}, method="sendTransaction", transaction="0x02f8f805808459682f0085013ebb0b0a830186a0941e691b739259882707619ef929a5475e89b0b31e87038d7ea4c68000b8842f98613e000000000000000000000000cc7bb2d219a0fc08033e130629c2b854b7ba9195000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c080a03013aa94c356abaf2c9cf49de77fafa5038a2d2fc97f02e357589d30aba905fda0332312c4fbe6f73edbc14f7aeb865021ce12bc99cadcfca3fcaa19cf9886fb02", code=INSUFFICIENT_FUNDS, version=providers/5.7.2)
+[2023-7-23 22:11:23] TypeError: Cannot read properties of null (reading 'hash')
+[2023-7-23 22:11:23] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 22:11:23] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at listOnTimeout (node:internal/timers:540:9)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 22:12:23] Exception: AbortError: Request aborted
+[2023-7-23 22:12:23] AbortError: Request aborted
+    at abort (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:10:18)
+    at self.<computed> (D:\2023\0701\asap\working\asap-bot\node_modules\undici\lib\api\abort-signal.js:29:5)
+    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:762:20)
+    at EventTarget.dispatchEvent (node:internal/event_target:704:26)
+    at abortSignal (node:internal/abort_controller:314:10)
+    at AbortController.abort (node:internal/abort_controller:332:5)
+    at Timeout.<anonymous> (D:\2023\0701\asap\working\asap-bot\node_modules\@discordjs\rest\dist\index.js:589:71)
+    at listOnTimeout (node:internal/timers:573:17)
+    at process.processTimers (node:internal/timers:514:7)
+[2023-7-23 22:13:53] Network loaded.
+[2023-7-23 22:13:53] start getting wallet Pvk from DB
+[2023-7-23 22:13:54] end get pk info from DB
+[2023-7-23 22:13:54] init oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 22:13:54] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '9bdbc1b5969842c56628296fb33c2e3dca2326e63840cbb038f8012d919ed4bc624a4d36a0834ac361726d9364b22b9c07275eeee6a70c4ee715380a033ffc852354cf278807a92bf8b1feb924997708b4b11cdbf89f2b3c42ef03ef04c09674167dc177448954098812',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:13:54] start getting wallet Pvk from DB
+[2023-7-23 22:13:54] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:13:55] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '9bdbc1b5969842c56628296fb33c2e3dca2326e63840cbb038f8012d919ed4bc624a4d36a0834ac361726d9364b22b9c07275eeee6a70c4ee715380a033ffc852354cf278807a92bf8b1feb924997708b4b11cdbf89f2b3c42ef03ef04c09674167dc177448954098812',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:13:55] end get pk info from DB
+[2023-7-23 22:13:55] when setFee(), previous fee value is : 5
+[2023-7-23 22:13:55] when setFee(), previous wallet address is : 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:13:55] start set user wallet pk info to DB
+[2023-7-23 22:13:55] discordId936349805674893334
+[2023-7-23 22:13:55] info{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: '9bdbc1b5969842c56628296fb33c2e3dca2326e63840cbb038f8012d919ed4bc624a4d36a0834ac361726d9364b22b9c07275eeee6a70c4ee715380a033ffc852354cf278807a92bf8b1feb924997708b4b11cdbf89f2b3c42ef03ef04c09674167dc177448954098812',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:13:55] end set user wallet pk to DB
+[2023-7-23 22:13:55] start setWallet
+[2023-7-23 22:13:56] 0
+[2023-7-23 22:13:59] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 22:13:59] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-23 22:14:28] Network loaded.
+[2023-7-23 22:14:28] start getting wallet Pvk from DB
+[2023-7-23 22:14:29] init oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-23 22:14:29] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: 'd5bd211d2af362d9d96779fe672e22eb642f09e750cb0435f4adba909f98df38fedb3edb716ab2a08d5da9a95000505046291e0fb483267c382e8a174c59b8c54a59bd02680bd1b265d6bbbf70dd7bec84f248038fa4d2d1762c8aee494807fb21444806816280245d6c',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:14:29] start getting wallet Pvk from DB
+[2023-7-23 22:14:29] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:14:29] end get pk info from DB
+[2023-7-23 22:14:30] pk info is{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: 'd5bd211d2af362d9d96779fe672e22eb642f09e750cb0435f4adba909f98df38fedb3edb716ab2a08d5da9a95000505046291e0fb483267c382e8a174c59b8c54a59bd02680bd1b265d6bbbf70dd7bec84f248038fa4d2d1762c8aee494807fb21444806816280245d6c',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:14:30] end get pk info from DB
+[2023-7-23 22:14:30] when setFee(), previous fee value is : 5
+[2023-7-23 22:14:30] when setFee(), previous wallet address is : 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-23 22:14:30] start set user wallet pk info to DB
+[2023-7-23 22:14:30] discordId936349805674893334
+[2023-7-23 22:14:30] info{
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: 'd5bd211d2af362d9d96779fe672e22eb642f09e750cb0435f4adba909f98df38fedb3edb716ab2a08d5da9a95000505046291e0fb483267c382e8a174c59b8c54a59bd02680bd1b265d6bbbf70dd7bec84f248038fa4d2d1762c8aee494807fb21444806816280245d6c',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-23 22:14:30] end set user wallet pk to DB
+[2023-7-23 22:14:30] start setWallet
+[2023-7-23 22:14:31] xx 0
+[2023-7-23 22:14:34] Exception: TypeError: Cannot read properties of undefined (reading 'send')
+[2023-7-23 22:14:34] TypeError: Cannot read properties of undefined (reading 'send')
+    at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)

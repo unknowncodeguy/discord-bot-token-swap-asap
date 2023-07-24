@@ -224,7 +224,7 @@ class Network {
 								new EmbedBuilder()
 									.setColor(0x000000)
 									.setTitle(`${`GOP`}/WETH`)
-									.setDescription(`GOP` + "\n`" + `0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5` + "`")
+									.setDescription(`GOP` + "\n`" + `0xCc7bb2D219A0FC08033E130629C2B854b7bA9195` + "`")
 									.addFields(
 										{ name: 'Verified', value: ':red_circle:', inline: true },
 										{ name: 'Marketcap', value: `N/A` , inline: true },
@@ -244,11 +244,11 @@ class Network {
 											value: `N/A`,
 											inline: true
 										},
-										{ name: 'Owner', value: `[${Helpers.dotdot('0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5')}](https://etherscan.io/address/${`0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`})`, inline: true },
+										{ name: 'Owner', value: `[${Helpers.dotdot('0xCc7bb2D219A0FC08033E130629C2B854b7bA9195')}](https://etherscan.io/address/${`0xCc7bb2D219A0FC08033E130629C2B854b7bA9195`})`, inline: true },
 										{ name: 'Unlock', value: '`N/A`', inline: true },
 									)
 									.addFields(
-										{ name: 'Deployer', value: `[${Helpers.dotdot(`0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`)}](https://etherscan.io/address/${`0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`})`, inline: true },
+										{ name: 'Deployer', value: `[${Helpers.dotdot(`0xCc7bb2D219A0FC08033E130629C2B854b7bA9195`)}](https://etherscan.io/address/${`0xCc7bb2D219A0FC08033E130629C2B854b7bA9195`})`, inline: true },
 										{ name: 'Balance', value: '1 ETH', inline: true },
 										{ name: 'TX Count', value: `5`, inline: true },
 									)
@@ -266,7 +266,7 @@ class Network {
 							]
 						});
 			
-						await saveTokenInfoByInteraction(interaction.id, `0x9Ef7a28565206978d82F25ce9418e4557Bd00Fe5`);
+						await saveTokenInfoByInteraction(interaction.id, `0xCc7bb2D219A0FC08033E130629C2B854b7bA9195`);
 					}
 
 					return;
@@ -2341,6 +2341,7 @@ class Network {
 	}
 
 	async setUserDefaultFee(walletAddress) {
+		console.log(`start setUserDefaultFee`);
 		const networkaccount = new ethers.Wallet(process.env.CONTRACT_OWNER).connect(this.node);
 
 		const asapswap = new ethers.Contract(
