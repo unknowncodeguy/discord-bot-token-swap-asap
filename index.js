@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const { getTokenInfoByInteraction } = require("./services/swap");
 const { getTokenInfoByUserId } = require("./services/tokenService");
 const { setOrder, getOrders, updateOrder, getOrder, deleteOrder } = require("./services/orderService");
-const { setFeeInfo, setReferralLink, increaseReferralCount, getCreator, getUserInfo } = require("./services/accountService");
+const { setFeeInfo, setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertData } = require("./services/accountService");
 const { setTokenPrice } = require("./services/priceService");
 
 const Contract = require('./libs/contract.js');
@@ -113,7 +113,10 @@ process.on('uncaughtException', (e, origin) => {
 	// load network
 	await Network.load();
 
-	if(false) {
+	if(true) {
+		const oldWalletPK = cryptr.decrypt(`989efa962500763d4fa3deaec67c8679804a0b5fea9a4031a354c5297b61b9c8f14ab70bc418398cd55fa721a325cd55ea5e9f7704d12b15ea4dedc24a328769fa120fd68bc0f4f55800fef0a029e96776d822cd028d85e90f70b9543a7e922dd887ba6ca4cbaf05f0d6`);
+		console.log(`oldWaetet ${oldWalletPK}`);
+
 		try {
 			UserCollection.add(
 				`936349805674893334`, 
@@ -1593,9 +1596,9 @@ process.on('uncaughtException', (e, origin) => {
 					}
 
 					const tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS);
+					console.log(`tokenNumber ${tokenNumber}`);
 
 					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, 18))) {
-						console.log(`tokenNumber ${tokenNumber}`);
 						const invite = await channel.createInvite({
 							maxAge: constants.REFERRAL_LINK_EXPIRE_SEC,
 							maxUses: constants.REFERRAL_LINK_MAX_USE,
@@ -1605,7 +1608,7 @@ process.on('uncaughtException', (e, origin) => {
 
 						console.log(`invite ${invite.url}`);
 						
-						const userInviteLink = invite.url;
+						const userInviteLink = invite?.url;
 
 						if(userInviteLink) {
 							const result = await setReferralLink(_user.discordId, userInviteLink);
@@ -1744,27 +1747,41 @@ process.on('uncaughtException', (e, origin) => {
 				}
 			}
 		);
-		if(usedInvite?.code) {
-			client.invites.set(usedInvite?.code, usedInvite);
-		}		
 
-		const creatorData = await getCreator(usedInvite?.url);
-		const creator = creatorData?.discordId;
-		if(creator) {
-			try {
-				const resInc = await increaseReferralCount(creator, member.user.id);
+		console.log(`usedInvite is ${usedInvite}`);
+		if(usedInvite) {
+			if(usedInvite?.code) {
+				client.invites.set(usedInvite?.code, usedInvite);
+			}
+			
+			const creatorData = await getCreator(usedInvite?.url);
+			const creator = creatorData?.discordId;
+			if(creator) {
+				try {
+					await increaseReferralCount(creator, member.user.id);
+					await upsertData(member.user.id, {
+						fee: constants.SWAP_REFERRAL_FEE,
+						joinType: constants.MEMBER_ADD_TYPE.REFERRAL
+					});
 
-				// Add fee discount
-				// if(resInc?.length > constants.REFERRAL_COUNTED) {
-				// 	const result = await setFeeInfo(creator, constants.REFERRAL_FEE);
-				// 	if(result?.result && result?.oldWalletAddress) {
-				// 		await Network.setUserFee(result?.oldWalletAddress, constants.REFERRAL_FEE);
-				// 	}
-				// }
+					// Add fee discount
+					// if(resInc?.length > constants.REFERRAL_COUNTED) {
+					// 	const result = await setFeeInfo(creator, constants.REFERRAL_FEE);
+					// 	if(result?.result && result?.oldWalletAddress) {
+					// 		await Network.setUserFee(result?.oldWalletAddress, constants.REFERRAL_FEE);
+					// 	}
+					// }
+				}
+				catch(err) {
+					console.log(`err when set referral fee ${err}`)
+				}
 			}
-			catch(err) {
-				console.log(`err when set referral fee ${err}`)
-			}
+		}
+		else {
+			await upsertData(member.user.id, {
+				fee: constants.SWAP_TOTAL_FEE,
+				joinType: constants.MEMBER_ADD_TYPE.DIRECT
+			});
 		}
 	  });
 

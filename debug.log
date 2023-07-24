@@ -1014,3 +1014,22 @@
 [2023-7-23 22:14:34] Exception: TypeError: Cannot read properties of undefined (reading 'send')
 [2023-7-23 22:14:34] TypeError: Cannot read properties of undefined (reading 'send')
     at WebSocketProvider.<anonymous> (D:\2023\0701\asap\working\asap-bot\libs\network.js:221:58)
+[2023-7-24 12:02:15] Network loaded.
+[2023-7-24 12:02:15] oldWaetet f60128acc5462173e80df99d685330cf2298077305b685eb06bc2ebb5b855463
+[2023-7-24 12:02:15] start getting wallet Pvk from DB
+[2023-7-24 12:02:17] pk info is{
+  joinType: 'direct',
+  _id: new ObjectId("64b942ad2bc44f90c08ce7a7"),
+  discordId: '936349805674893334',
+  fee: 5,
+  __v: 0,
+  walletAddress: '0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220',
+  walletPrivateKey: 'de003ac3505a83ec82a123ee5053fbb5802716fe9eda710ba545f0d38b8fe3465fe51e4b3b0045f693eaa695d98131eed439bc042faf6865061934523ecdf3b48eb7d4dc112aafbfbb82cebe4f0cacba89ecd2d8086e454374ac2168996bc090d989d58ac149166d63de',
+  refferalLink: 'https://discord.gg/PgEqRT6M',
+  referralLink: 'https://discord.gg/ZnJCFMbA',
+  inviteCount: [ '3' ]
+}
+[2023-7-24 12:02:17] end get pk info from DB
+[2023-7-24 12:02:17] init oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
+[2023-7-24 12:02:17] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
+[2023-7-24 12:02:17] start getting wallet Pvk from DB

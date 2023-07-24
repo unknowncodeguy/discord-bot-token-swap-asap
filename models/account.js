@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const constants = require("./../libs/constants");
 
 const AccountSchema = new mongoose.Schema({
     discordId: {
@@ -19,6 +20,11 @@ const AccountSchema = new mongoose.Schema({
     },
     inviteCount: {
         type: [String]
+    },
+    joinType: {
+        type: String,
+        enum: [constants.MEMBER_ADD_TYPE.DIRECT, constants.MEMBER_ADD_TYPE.REFERRAL],
+        default: constants.MEMBER_ADD_TYPE.DIRECT
     }
 })
 

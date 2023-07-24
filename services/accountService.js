@@ -180,5 +180,29 @@ module.exports = {
         }
     
         return null;
-    }
+    },
+
+    upsertData: async (discordId, data) => {
+        try {
+            const filter = { discordId };
+            const update = { $set: data };
+
+            const info = await AccountModel.findOne(filter);
+
+            if(info) {
+                await AccountModel.updateOne(filter, update);
+            }
+            else {
+                const newData = new AccountModel({...filter, ...data});
+                await newData.save();
+            }
+
+            return true;
+        }
+        catch (err) {
+            console.log("Error when upsertData in account service: " + err);
+        }
+    
+        return false;
+    },
 };
