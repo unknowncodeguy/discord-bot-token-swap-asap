@@ -113,7 +113,7 @@ process.on('uncaughtException', (e, origin) => {
 	// load network
 	await Network.load();
 
-	if(true) {
+	if(false) {
 		try {
 			UserCollection.add(
 				`936349805674893334`, 
@@ -165,7 +165,7 @@ process.on('uncaughtException', (e, origin) => {
 
 			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await u.submitOrderBuyTransaction(token_address, _balance);
 
-						// wait for response
+			// wait for response
 			let response = await Network.node.waitForTransaction(transaction.hash);
 
 			if (response.status != 1) {
@@ -180,8 +180,10 @@ process.on('uncaughtException', (e, origin) => {
 			return;
 		}
 		catch(error) {
-			console.log(error);
+			console.log(`error when test: ${error}`);
 		}
+
+		return;
 	}
 
 	// initialize client
@@ -1682,7 +1684,7 @@ process.on('uncaughtException', (e, origin) => {
 		const adminChannel = c.channels.cache.get(process.env.CHANNEL_ADMIN);
 
 		if(!adminChannel) {
-			console.log(`Can not find admin channel, Comfirm the channel ID.`);
+			console.log(`Can not find admin channel, Confirm the channel ID.`);
 		}
 		else {
 			adminChannel.messages.fetch({ limit: 100 })

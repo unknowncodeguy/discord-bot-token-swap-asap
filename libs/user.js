@@ -540,14 +540,10 @@ class User {
 			};
 			console.log(`define`);
 	
-			if (update) {
-				await interaction.update(content);
-			} else {
-				await interaction.reply(content);
-			}
+			await interaction.reply(content);
 		}
 		catch(err) {
-			console.log("WHAT :" + err);
+			console.log("error in showOrderSetting: " + err);
 		}
 	}
 
