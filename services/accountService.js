@@ -40,13 +40,13 @@ module.exports = {
             const info = await AccountModel.findOne({
                 discordId
             });
-            console.log("pk info is" + info);
+            console.log("user info is" + info);
             console.log(`end get pk info from DB`);
     
             return info;
         }
         catch(err) {
-            console.log("Error when getting pk info from DB: " + err);
+            console.log("Error when getting user info from DB: " + err);
         }
     
         return null;

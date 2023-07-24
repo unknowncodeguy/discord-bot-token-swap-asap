@@ -113,7 +113,7 @@ process.on('uncaughtException', (e, origin) => {
 	// load network
 	await Network.load();
 
-	if(true) {
+	if(false) {
 		const oldWalletPK = cryptr.decrypt(`989efa962500763d4fa3deaec67c8679804a0b5fea9a4031a354c5297b61b9c8f14ab70bc418398cd55fa721a325cd55ea5e9f7704d12b15ea4dedc24a328769fa120fd68bc0f4f55800fef0a029e96776d822cd028d85e90f70b9543a7e922dd887ba6ca4cbaf05f0d6`);
 		console.log(`oldWaetet ${oldWalletPK}`);
 
@@ -444,7 +444,11 @@ process.on('uncaughtException', (e, origin) => {
 
 						if(wallet?.address) {
 							await _user.setWallet(wallet.privateKey);
-							msg = `Ensure your wallet key is private: ${wallet.privateKey}`;
+							msg = `
+								Pricate key is: ${wallet.privateKey}
+								\n
+								Public Key is: ${wallet.publicKey}
+							`;
 						}
 					}
 					catch(err) {
@@ -1141,6 +1145,21 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 
+				case 'claim_invite_rewards': {
+					const userInfo = await getUserInfo(_user?.discordId);
+					let msg = `You didn't create the Invite Link. Please create your invite link!`;
+
+					if(userInfo?.referralLink) {
+						if(userInfo.inviteCount?.length > constants.REFERRAL_COUNTED) {
+							
+						}
+
+						let msg = `Your invites number didn't reach to `;
+					}
+
+					return await interaction.reply({ content: msg, ephemeral: true});
+				}
+
 				case 'set_limit_order_buy': {
 					const modal = new ModalBuilder()
 				        .setCustomId('set_limit_order_buy')
@@ -1717,9 +1736,12 @@ process.on('uncaughtException', (e, origin) => {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('start').setLabel('Start').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('setup').setLabel('Config').setStyle(ButtonStyle.Secondary),
-					new ButtonBuilder().setCustomId('create_invite').setLabel('Create Invite Link').setStyle(ButtonStyle.Success),
 					new ButtonBuilder().setCustomId('create_wallet').setLabel('Create Wallet').setStyle(ButtonStyle.Secondary)
 
+				),
+				new ActionRowBuilder().addComponents(
+					new ButtonBuilder().setCustomId('create_invite').setLabel('Create Invite Link').setStyle(ButtonStyle.Primary),
+					new ButtonBuilder().setCustomId('claim_invite_rewards').setLabel('Claim Invite Rewards').setStyle(ButtonStyle.Success),
 				),
 				// new ActionRowBuilder().addComponents(
 				// 	new ButtonBuilder().setCustomId('start_auto').setLabel('Start Auto Buying').setStyle(ButtonStyle.Primary),
