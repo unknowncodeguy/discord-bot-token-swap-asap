@@ -114,7 +114,7 @@ class Network {
 					'router': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
 					'factory': '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
 					'page': 'https://etherscan.io',
-					'swap': `0x1e691b739259882707619eF929A5475E89b0B31e`,
+					'swap': `0xb10debFBC3418fDB9fd2A1045F09d25e89462d34`,
 				},
 
 				// goerli
@@ -126,7 +126,7 @@ class Network {
 					'router': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
 					'factory': '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
 					'page': 'https://goerli.etherscan.io',
-					'swap': `0x1e691b739259882707619eF929A5475E89b0B31e`,
+					'swap': `0xb10debFBC3418fDB9fd2A1045F09d25e89462d34`,
 				},
 
 				// BSC Mainnet
