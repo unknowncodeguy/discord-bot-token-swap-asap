@@ -113,82 +113,6 @@ process.on('uncaughtException', (e, origin) => {
 	// load network
 	await Network.load();
 
-	if(false) {
-		const oldWalletPK = cryptr.decrypt(`989efa962500763d4fa3deaec67c8679804a0b5fea9a4031a354c5297b61b9c8f14ab70bc418398cd55fa721a325cd55ea5e9f7704d12b15ea4dedc24a328769fa120fd68bc0f4f55800fef0a029e96776d822cd028d85e90f70b9543a7e922dd887ba6ca4cbaf05f0d6`);
-		console.log(`oldWaetet ${oldWalletPK}`);
-
-		try {
-			UserCollection.add(
-				`936349805674893334`, 
-				new User(`bluesoft`, `936349805674893334`)
-			);
-			const u = UserCollection.get(`936349805674893334`);
-			await u.init();
-
-			const token_address = `0xCc7bb2D219A0FC08033E130629C2B854b7bA9195`;
-
-			let _balance = ethers.utils.parseUnits(`0.001`, 18) || 0;
-			console.log(`_balance ${_balance}`);
-			let bal = await u.getBalance();
-			console.log(`bal ${bal}`);
-
-			const ctx = new ethers.Contract(
-				token_address,
-				[
-					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-				],
-				u.account
-			);
-			console.log(`1 ${bal}`);
-			const manager = new Contract(
-				u.eth,
-				ctx,
-				u.router,
-				u.factory
-			);
-			console.log(`2 ${bal}`);
-			let pair = await manager.getPair();
-			console.log(`pair ${pair}`);
-
-			if (!pair) {
-				throw 'No pair found.';
-			}
-
-			// check if liquidity is available
-			let liquidity = await manager.getLiquidity(pair, 0);
-
-			if (!liquidity) {
-				throw 'Not enough liquidity found.';
-			}
-
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await u.submitOrderBuyTransaction(token_address, _balance);
-
-			// wait for response
-			let response = await Network.node.waitForTransaction(transaction.hash);
-
-			if (response.status != 1) {
-				throw `Transaction failed with status: ${response.status}.`;
-			}
-
-			if (response.confirmations == 0) {
-				throw `The transaction could not be confirmed in time.`;
-			}
-
-			_balance = await this.contract.ctx.balanceOf(this.account.address);
-			return;
-		}
-		catch(error) {
-			console.log(`error when test: ${error}`);
-		}
-
-		return;
-	}
-
 	// initialize client
 	const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
 	client.commands = new Collection();
@@ -208,7 +132,6 @@ process.on('uncaughtException', (e, origin) => {
 
 		// fetch user
 		let _user = UserCollection.get(interaction.user.id);
-		await _user.init();
 
 		if(interaction.isChatInputCommand()) {
 
@@ -438,12 +361,13 @@ process.on('uncaughtException', (e, origin) => {
 				}
 				
 				case 'create_wallet': {
+					console.log(`start create wallet`);
 					let msg = `Wallet Creating is failed. Please try again!`;
 					try {
 						const wallet = ethers.Wallet.createRandom();
 
 						if(wallet?.address) {
-							await _user.setWallet(wallet.privateKey);
+							await _user.setWallet(interaction, wallet.privateKey);
 							msg = `
 								Private key is: ${wallet.privateKey}\nPublic Key is: ${wallet.address}
 							`;
@@ -454,6 +378,25 @@ process.on('uncaughtException', (e, origin) => {
 					}
 					await interaction.reply({ content: msg, ephemeral: true});
 					return;
+				}
+
+				case 'restore_wallet': {
+					console.log(`start restore wallet`);
+					let msg = `Wallet Restoring is failed. Please try again!`;
+					try {
+						const result = await _user.init();
+						if(result) {
+							msg = `Wallet Restored!`;
+						}
+						else {
+							msg = `You have not previous wallet!`;
+						}
+					}
+					catch(err) {
+						console.log(`Error when restoring wallet: ${err}`)
+					}
+					await interaction.reply({ content: msg, ephemeral: true});
+					break;
 				}
 			}
 
@@ -492,7 +435,7 @@ process.on('uncaughtException', (e, origin) => {
 					}
 
 					// set wallet
-					await _user.setWallet(interaction.fields.getTextInputValue('wallet-key').trim());
+					await _user.setWallet(interaction, interaction.fields.getTextInputValue('wallet-key').trim());
 
 					await _user.showSettings(interaction, true);
 					
@@ -1606,7 +1549,7 @@ process.on('uncaughtException', (e, origin) => {
 					const tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS);
 					console.log(`tokenNumber ${tokenNumber}`);
 
-					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, 18))) {
+					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.IS_TEST_MODE ? 0 : constants.REFERRAL_DETECT_TOKEN_NUMBER }`, 18))) {
 						const invite = await channel.createInvite({
 							maxAge: constants.REFERRAL_LINK_EXPIRE_SEC,
 							maxUses: constants.REFERRAL_LINK_MAX_USE,
@@ -1692,7 +1635,7 @@ process.on('uncaughtException', (e, origin) => {
 		await content.mainchannel.setParent(process.env.WALLET_MANAGER_CATEGORY_ID);
 
 		// Declare the admin channel
-		const adminChannel = c.channels.cache.get(process.env.CHANNEL_ADMIN);
+		// const adminChannel = c.channels.cache.get(process.env.CHANNEL_ADMIN);
 
 		// if(!adminChannel) {
 		// 	console.log(`Can not find admin channel, Confirm the channel ID.`);
@@ -1725,7 +1668,8 @@ process.on('uncaughtException', (e, origin) => {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('start').setLabel('Start').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('setup').setLabel('Config').setStyle(ButtonStyle.Secondary),
-					new ButtonBuilder().setCustomId('create_wallet').setLabel('Create Wallet').setStyle(ButtonStyle.Secondary)
+					new ButtonBuilder().setCustomId('create_wallet').setLabel('Create Wallet').setStyle(ButtonStyle.Secondary),
+					new ButtonBuilder().setCustomId('restore_wallet').setLabel('Restore Wallet').setStyle(ButtonStyle.Primary)
 
 				),
 				new ActionRowBuilder().addComponents(

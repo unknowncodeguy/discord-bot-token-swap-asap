@@ -115,7 +115,7 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         _defaultSwapFee = 100;
         _adminProfitRatio = 85;
         _assistProfitRatio = 15;
-        _referrerProfitRatio = 20;
+        _referrerProfitRatio = 200;
         _referredDiscountRatio = 5;
         _minReferrerClaimable = 1000000000000000000;
         _admin = owner();
@@ -313,10 +313,17 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
             pair.swap(amount0Out, amount1Out, _msgSender(), new bytes(0));
         }
         uint outTokenAmount = tokenContract.balanceOf(_msgSender()).sub(balanceBefore);
-        _distributeFees(totalfeeInSwap);
-        _swapId = _swapId.add(1);
-        _swaps[_swapId] = Swap({ fromTokenAmount: ethAmount, toTokenAmount: outTokenAmount, trader: _msgSender(), token: toTokenContract, swapType: SwapType.ETH_TO_ERC20, status: Status.SUCCESS, referrer:_referredWallets[_msgSender()] });
-        emit DoSwap(_swapId, _msgSender());
+            // if( minOutput>0){
+            //     require( outTokenAmount >= minOutput, "ASAP BOT : swapped token amount is less that minimum expect");
+            // }
+            // // check tax
+            // if (limitTax > 0) {
+            //     require( _estimatedTokenAmount.sub(outTokenAmount).mul(10000).div(_estimatedTokenAmount) >= limitTax, "ASAP BOT : Tax is higher than expected");
+            // }
+            _distributeFees(totalfeeInSwap);
+            _swapId = _swapId.add(1);
+            _swaps[_swapId] = Swap({ fromTokenAmount: ethAmount, toTokenAmount: outTokenAmount, trader: _msgSender(), token: toTokenContract, swapType: SwapType.ETH_TO_ERC20, status: Status.SUCCESS, referrer:_referredWallets[_msgSender()] });
+            emit DoSwap(_swapId, _msgSender());
     }
 
     function _swapTokenToEth(
@@ -325,6 +332,11 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         address pairFor
     ) private whenNotPaused onlyContract(fromTokenContract) {
         require( tokenAmount > 0, "[Validation] The ERC-20 amount has to be larger than 0");
+
+        //uint256 _estimateEthOut = 0;//getEstimatedETHforERC20( tokenAmount, fromTokenContract);
+        // if (minOutput > 0) {
+        //     require( minOutput < _estimateEthOut - getFee(_estimateEthOut), "[Validation] Token price is too low ");
+        // }
 
         IUniswapV2Pair pair =  IUniswapV2Pair(pairFor);
         TransferHelper.safeTransferFrom(

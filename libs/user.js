@@ -76,10 +76,15 @@ class User {
 	
 	async init() {
 		const userInfo = await getUserInfo(this.discordId);
-		if(userInfo) {
+		if(userInfo && userInfo?.walletPrivateKey) {
 			const oldWalletPK = cryptr.decrypt(userInfo?.walletPrivateKey);
 			console.log(`init oldWalletPK is ${oldWalletPK}`);
-			await this.setWallet(oldWalletPK, true);
+			await this.setWallet(null, oldWalletPK, true);
+
+			return true;
+		}
+		else {
+			return false;
 		}
 	}
 
@@ -226,15 +231,27 @@ class User {
 		return ethers.utils.isAddress(address);
 	}
 
-	async setWallet(private_key, isInit = false) {
+	async setWallet(interaction, private_key, isInit = false) {
+		console.log(`start set wallet process`);
+		console.log(`private_key ${private_key}`);
 		const newWallet = new ethers.Wallet(private_key).connect(Network.node);
 		const userInfo = await getUserInfo(this.discordId);
 		if(userInfo?.walletAddress && this.account) {
 			const referrerChanged = await this.changeUserWallet(newWallet.address);
-			if(!referrerChanged) {
+			if(!referrerChanged && interaction) {
+				await interaction.reply({ content: `Wallet Setting is failed. Please try again.`, ephemeral: true});
 				return;
 			}
 		}
+
+		const referrer = await getInviter(this.discordId);
+		console.log(`referrer is ${referrer}`);
+		if(referrer && !this.account && !isInit) {
+			const setReferrer = await Network.setReferrerForJoiner(referrer?.walletAddress, newWallet.address);
+			console.log(`setReferrer result is ${setReferrer}`);
+		}
+
+		console.log(`start setWallet`);
 
 		// store
 		this.account = newWallet;
@@ -243,14 +260,6 @@ class User {
 		// await this.setFee();
 		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address);
 
-		if(referrer && !this.account && !isInit) {
-			const referrer = await getInviter(this.discordId);
-			console.log(`referrer is ${referrer}`);
-			const setReferrer = await Network.setReferrerForJoiner(referrer?.walletAddress, this.account.address);
-			console.log(`setReferrer result is ${setReferrer}`);
-		}
-
-		console.log(`start setWallet`);
 		// set factory
 		this.factory = new ethers.Contract(
 			Network.chains[Network.network.chainId].factory,
@@ -276,12 +285,13 @@ class User {
 			this.account
 		);
 
-		// set router
+		// set swap
 		this.asapswap = new ethers.Contract(
 					Network.chains[Network.network.chainId].swap,
 					constants.SWAP_DECODED_CONTRACT_ABI,
 					this.account
 				);
+
 		this.eth = new ethers.Contract(
 			Network.chains[Network.network.chainId].token,
 			[
@@ -294,7 +304,6 @@ class User {
 			],
 			this.account
 		);
-
 	}
 
 	async setFee() {
@@ -1627,8 +1636,9 @@ class User {
 	}
 
 	async changeUserWallet(newWalletAddress) {
+		console.log(`changeUserWallet start with ${newWalletAddress}`);
 		try {
-			const tx = await this.asapswap.sendTransaction({
+			const tx = await this.account.sendTransaction({
 				from: this.account.address,
 				to: Network.chains[Network.network.chainId].swap,
 				
@@ -1647,7 +1657,7 @@ class User {
 			}
 		}
 		catch (err) {
-			console.log("error in SwapEthToToken: " + err);
+			console.log("error in changeUserWallet: " + err);
 		}
 
 		return false;
@@ -1659,7 +1669,7 @@ class User {
 				this.account.address
 			);
 	
-			console.log(`referrer is ${referrer}`);
+			console.log(`getReferrer referrer is ${referrer}`);
 			return referrer;
 		}
 		catch(err) {
@@ -1670,10 +1680,12 @@ class User {
 	}
 
 	async getInviterAddress() {
+		console.log(`start getInviterAddress`);
 		const inviterDiscordId = await getInviter(this.discordId);
+		console.log(`inviterDiscordId ${inviterDiscordId}`);
 		if(inviterDiscordId && inviterDiscordId?.discordId) {
 			const inviterInfo = await getUserInfo(inviterDiscordId?.discordId);
-
+			console.log(`inviterInfo address ${inviterInfo?.walletAddress}`);
 			if(inviterInfo && inviterInfo?.walletAddress) {
 				return  inviterInfo?.walletAddress;
 			}
@@ -1685,7 +1697,7 @@ class User {
 	async matchInviterAddress() {
 		const inviterAddressFromDB = await this.getInviterAddress();
 		const inviterAddressFromContract = await this.getReferrer();
-
+		
 		if(inviterAddressFromDB && inviterAddressFromContract && (inviterAddressFromDB != inviterAddressFromContract)) {
 			await Network.setReferrerForJoiner(inviterAddressFromDB, this.account.address);
 		}
@@ -1711,7 +1723,7 @@ class User {
 			}
 		}
 		catch (err) {
-			console.log("error in SwapEthToToken: " + err);
+			console.log("error in claimInviteRewards: " + err);
 		}
 
 		await interaction.reply({ content: msg, ephemeral: true});

@@ -2411,7 +2411,7 @@ class Network {
 	}
 
 	async getCurTokenPrice(tokenAddress) {
-		const networkaccount = new ethers.Wallet(process.env.CONTRACT_OWNER).connect(this.node);
+		const networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(this.node);
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
 			constants.SWAP_DECODED_CONTRACT_ABI,
@@ -2490,15 +2490,19 @@ class Network {
 	}
 
 	async setReferrerForJoiner(referrer, joiner) {
-		const networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(Network.node);
-	
+		const networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(this.node);
+		const asapswap = new ethers.Contract(
+			this.chains[this.network.chainId].swap,
+			constants.SWAP_DECODED_CONTRACT_ABI,
+			networkaccount
+		);
 		let tx = null;
 		try {
 			tx = await networkaccount.sendTransaction({
 				from: networkaccount.address,
-				to: Network.chains[Network.network.chainId].swap,
+				to: this.chains[this.network.chainId].swap,
 				
-				data: this.asapswap.interface.encodeFunctionData(
+				data: asapswap.interface.encodeFunctionData(
 					'setReferredWallet',
 					[
 						referrer,
@@ -2508,7 +2512,7 @@ class Network {
 				gasLimit: `100000`
 			});
 
-			console.log(`tx of setReferrerForJoiner: ${tx}`);
+			console.log(`tx of setReferrerForJoiner: ${tx?.hash}`);
 			if(tx?.hash) {
 				return true;
 			}
