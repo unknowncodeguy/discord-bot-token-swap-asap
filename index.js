@@ -445,9 +445,7 @@ process.on('uncaughtException', (e, origin) => {
 						if(wallet?.address) {
 							await _user.setWallet(wallet.privateKey);
 							msg = `
-								Pricate key is: ${wallet.privateKey}
-								\n
-								Public Key is: ${wallet.publicKey}
+								Private key is: ${wallet.privateKey}\nPublic Key is: ${wallet.address}
 							`;
 						}
 					}
