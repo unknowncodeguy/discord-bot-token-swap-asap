@@ -239,8 +239,8 @@ class User {
 		// store
 		this.account = newWallet;
 
-		//store in DB
-		await this.setFee();
+		// store in DB
+		// await this.setFee();
 		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address);
 
 		if(referrer && !this.account && !isInit) {

@@ -1694,27 +1694,27 @@ process.on('uncaughtException', (e, origin) => {
 		// Declare the admin channel
 		const adminChannel = c.channels.cache.get(process.env.CHANNEL_ADMIN);
 
-		if(!adminChannel) {
-			console.log(`Can not find admin channel, Confirm the channel ID.`);
-		}
-		else {
-			adminChannel.messages.fetch({ limit: 100 })
-							.then(messages => {
-								adminChannel.bulkDelete(messages);
-							})
-  							.catch((err) => {
-								console.log(`Error in clearing in the admin channel: ${err}`);
-							});
+		// if(!adminChannel) {
+		// 	console.log(`Can not find admin channel, Confirm the channel ID.`);
+		// }
+		// else {
+		// 	adminChannel.messages.fetch({ limit: 100 })
+		// 					.then(messages => {
+		// 						adminChannel.bulkDelete(messages);
+		// 					})
+  		// 					.catch((err) => {
+		// 						console.log(`Error in clearing in the admin channel: ${err}`);
+		// 					});
 
-			await adminChannel.send({
-				content: 'Welcome, This is the admin channel.',
-				components: [
-					new ActionRowBuilder().addComponents(
-						new ButtonBuilder().setCustomId('set_user_fee').setLabel('Set User Fee').setStyle(ButtonStyle.Primary)
-					),
-				]
-			});
-		}
+		// 	await adminChannel.send({
+		// 		content: 'Welcome, This is the admin channel.',
+		// 		components: [
+		// 			new ActionRowBuilder().addComponents(
+		// 				new ButtonBuilder().setCustomId('set_user_fee').setLabel('Set User Fee').setStyle(ButtonStyle.Primary)
+		// 			),
+		// 		]
+		// 	});
+		// }
 
 		// save config
 		await fs.writeFileSync('conf.json', JSON.stringify(content));
