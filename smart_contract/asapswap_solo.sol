@@ -65,6 +65,7 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
 
     address private _wethContractAddress;
 
+    uint256 private _minReferrerClaimable;
     /// swap id, trader
     event DoSwap(uint256 id, address indexed trader);
     event AdminWalletChanged(address indexed wallet);
@@ -72,6 +73,8 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     event UserFeeChanged(address user, uint256 fee);
     event ReferredRegistered(address referrer, address referred);
     event AdminRegistered(address admin);
+    event MinimumClaimableChanged(uint256 minAmount);
+    event ReferrerClaimedProfit(address user, uint256 amount);
 
     modifier onlyContract(address account) {
         require( account.isContract(), "[Validation] The address does not contain a contract");
@@ -112,8 +115,9 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         _defaultSwapFee = 100;
         _adminProfitRatio = 85;
         _assistProfitRatio = 15;
-        _referrerProfitRatio = 200;
+        _referrerProfitRatio = 20;
         _referredDiscountRatio = 5;
+        _minReferrerClaimable = 1000000000000000000;
         _admin = owner();
         __Context_init_unchained();
         __Ownable_init_unchained();
@@ -156,6 +160,11 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         _admin = wallet;
         emit AdminRegistered(wallet);
     }
+    function setMinimumClaimable(uint256 minAmount) external  onlyAdmin{
+        _minReferrerClaimable = minAmount;
+        emit MinimumClaimableChanged(minAmount);
+    }
+
     function setSwapRatio(uint defaultSwapFee, uint adminProfit, uint assitProfit, uint referrerProfit, uint referredDiscount) external onlyAdmin {
         _defaultSwapFee = defaultSwapFee;
         _adminProfitRatio = adminProfit;
@@ -218,11 +227,18 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
             _referrers[_msgSender()] = 0;
         }
     }
+    
+    function ClaimReferrerProfit( ) external payable{
+        require( _referrers[_msgSender()] >= _minReferrerClaimable, "[Validation] referrer has not enough balance to claim" );
+        TransferHelper.safeTransferETH(_msgSender(), _referrers[_msgSender()]);
+        emit ReferrerClaimedProfit(_msgSender(), _referrers[_msgSender()]);
+        _referrers[_msgSender()] = 0;
+    }
 
     function getFee(uint256 amount) public view returns (uint256) {
         uint _feePercentage = _defaultSwapFee;
         
-        if (_referredWallets[_msgSender()] != address(0)) _feePercentage = _feePercentage + _referredDiscountRatio;
+        if (_referredWallets[_msgSender()] != address(0)) _feePercentage = _feePercentage - _referredDiscountRatio;
 
        
         return amount.mul(_feePercentage).div(10000); // 1%
@@ -297,17 +313,10 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
             pair.swap(amount0Out, amount1Out, _msgSender(), new bytes(0));
         }
         uint outTokenAmount = tokenContract.balanceOf(_msgSender()).sub(balanceBefore);
-            // if( minOutput>0){
-            //     require( outTokenAmount >= minOutput, "ASAP BOT : swapped token amount is less that minimum expect");
-            // }
-            // // check tax
-            // if (limitTax > 0) {
-            //     require( _estimatedTokenAmount.sub(outTokenAmount).mul(10000).div(_estimatedTokenAmount) >= limitTax, "ASAP BOT : Tax is higher than expected");
-            // }
-            _distributeFees(totalfeeInSwap);
-            _swapId = _swapId.add(1);
-            _swaps[_swapId] = Swap({ fromTokenAmount: ethAmount, toTokenAmount: outTokenAmount, trader: _msgSender(), token: toTokenContract, swapType: SwapType.ETH_TO_ERC20, status: Status.SUCCESS, referrer:_referredWallets[_msgSender()] });
-            emit DoSwap(_swapId, _msgSender());
+        _distributeFees(totalfeeInSwap);
+        _swapId = _swapId.add(1);
+        _swaps[_swapId] = Swap({ fromTokenAmount: ethAmount, toTokenAmount: outTokenAmount, trader: _msgSender(), token: toTokenContract, swapType: SwapType.ETH_TO_ERC20, status: Status.SUCCESS, referrer:_referredWallets[_msgSender()] });
+        emit DoSwap(_swapId, _msgSender());
     }
 
     function _swapTokenToEth(
@@ -316,11 +325,6 @@ contract AsapSwap is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         address pairFor
     ) private whenNotPaused onlyContract(fromTokenContract) {
         require( tokenAmount > 0, "[Validation] The ERC-20 amount has to be larger than 0");
-
-        //uint256 _estimateEthOut = 0;//getEstimatedETHforERC20( tokenAmount, fromTokenContract);
-        // if (minOutput > 0) {
-        //     require( minOutput < _estimateEthOut - getFee(_estimateEthOut), "[Validation] Token price is too low ");
-        // }
 
         IUniswapV2Pair pair =  IUniswapV2Pair(pairFor);
         TransferHelper.safeTransferFrom(

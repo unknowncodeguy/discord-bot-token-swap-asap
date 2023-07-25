@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 const { getTokenInfoByInteraction } = require("./services/swap");
 const { getTokenInfoByUserId } = require("./services/tokenService");
 const { setOrder, getOrders, updateOrder, getOrder, deleteOrder } = require("./services/orderService");
-const { setFeeInfo, setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertData } = require("./services/accountService");
+const { setFeeInfo, setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData } = require("./services/accountService");
 const { setTokenPrice } = require("./services/priceService");
 
 const Contract = require('./libs/contract.js');
@@ -1773,16 +1773,17 @@ process.on('uncaughtException', (e, origin) => {
 			if(usedInvite?.code) {
 				client.invites.set(usedInvite?.code, usedInvite);
 			}
+
+			await upsertAccountData(member.user.id, {
+				fee: constants.SWAP_REFERRAL_FEE,
+				joinType: constants.MEMBER_ADD_TYPE.REFERRAL
+			});
 			
 			const creatorData = await getCreator(usedInvite?.url);
 			const creator = creatorData?.discordId;
 			if(creator) {
 				try {
 					await increaseReferralCount(creator, member.user.id);
-					await upsertData(member.user.id, {
-						fee: constants.SWAP_REFERRAL_FEE,
-						joinType: constants.MEMBER_ADD_TYPE.REFERRAL
-					});
 
 					// Add fee discount
 					// if(resInc?.length > constants.REFERRAL_COUNTED) {
@@ -1798,7 +1799,7 @@ process.on('uncaughtException', (e, origin) => {
 			}
 		}
 		else {
-			await upsertData(member.user.id, {
+			await upsertAccountData(member.user.id, {
 				fee: constants.SWAP_TOTAL_FEE,
 				joinType: constants.MEMBER_ADD_TYPE.DIRECT
 			});

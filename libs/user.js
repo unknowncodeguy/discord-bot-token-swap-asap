@@ -1,13 +1,11 @@
 const Cryptr = require('cryptr');
 
 const Network = require('./network.js');
-const Helpers = require('./helpers.js');
 const Contract = require('./contract.js');
 const ethers = require('ethers');
 const constants = require('./constants.js');
 
 const { setUserWallet, getUserInfo, setFeeInfo } = require("./../services/accountService");
-const { saveTokenInfoByInteraction } = require("./../services/swap");
 const { saveTokenInfoById } = require("./../services/tokenService");
 
 const {
@@ -15,8 +13,7 @@ const {
 	ButtonBuilder,
 	EmbedBuilder,
 	ActionRowBuilder,
-	SelectMenuBuilder,
-	hyperlink,
+	SelectMenuBuilder
 } = require('discord.js');
 
 const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
@@ -267,19 +264,7 @@ class User {
 		// set router
 		this.asapswap = new ethers.Contract(
 					Network.chains[Network.network.chainId].swap,
-					[
-						'function pause() external  ',
-						'function unpause() external  ',
-						'function setAdminFeeWallet(address payable wallet) external ',
-						'function setAssistWallet(address payable wallet) external ',
-						'function setUserFee(address wallet, uint256 fee) external  ',
-						'function getFee(uint256 amount) public view returns (uint256) ',
-						'function SwapEthToToken( address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable ',
-						'function SwapTokenToEth( uint256 tokenAmount,address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable  ',
-						'function check(uint256 id) external view returns (uint256 fromTokenAmount,address fromContractAddress,address trader,uint256 toTokenAmount,address toContractAddress,SwapType swapType,Status status)',
-						'function getEstimatedETHforERC20( uint256 erc20Amount, address tokenAddress ) public view returns (uint256) ',
-						'function getEstimatedERC20forETH( uint256 etherAmount, address tokenAddress ) public view returns (uint256)',
-					],
+					constants.SWAP_DECODED_CONTRACT_ABI,
 					this.account
 				);
 		this.eth = new ethers.Contract(
@@ -763,7 +748,7 @@ class User {
 			}
 
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction() : this.submitBuyTransaction());
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction(pair) : this.submitBuyTransaction());
 
 			// show tx to user
 			await msgsent.edit({
@@ -1039,7 +1024,7 @@ class User {
 			}
 
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction() : this.submitBuyTransaction());
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction(pair) : this.submitBuyTransaction());
 
 			// show tx to user
 			await msgsent.edit({
@@ -1153,7 +1138,8 @@ class User {
 		// 		limitValue = 0;
 		// 	}
 		// }
-
+		
+		const pair = await this.contract.manager.getPair();
 		let tx = null;
 		try {
 			
@@ -1165,12 +1151,11 @@ class User {
 					'SwapEthToToken',
 					[
 						this.contract.ctx.address,
-						limitValue, 0 , 0
+						pair
 					]
 				),
 
 				value: restAmount,
-
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
 				//maxFeePerGas: maxFeePergas,
 			});
@@ -1189,7 +1174,7 @@ class User {
 		}
 	}
 
-	async submitSellTransaction() {
+	async submitSellTransaction(pair) {
 		console.log("start submitSellTransaction()");
 
 		let amountIn = await this.contract.ctx.balanceOf(this.account.address);
@@ -1212,9 +1197,7 @@ class User {
 					[
 						amountIn,
 						this.contract.ctx.address,
-						limitValue, 
-						0, 
-						0
+						pair
 					]
 				),
 
@@ -1327,7 +1310,7 @@ class User {
 			});
 
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await this.submitOrderBuyTransaction(token_address, _balance);
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await this.submitOrderBuyTransaction(token_address, _balance, pair);
 
 			this.addTokenToBoughtList({
 				address: token_address,
@@ -1372,7 +1355,7 @@ class User {
 		}
 	}
 
-	async submitOrderBuyTransaction(token_address, amount) {
+	async submitOrderBuyTransaction(token_address, pair) {
 		console.log("start submitOrderBuyTransaction()");
 		let restAmount = amount;
 
@@ -1394,7 +1377,7 @@ class User {
 					'SwapEthToToken',
 					[
 						token_address,
-						limitValue, 0 , 0
+						pair
 					]
 				),
 
@@ -1509,7 +1492,7 @@ class User {
 			}
 
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await submitOrderSellTransaction(token_address, percentage)
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await submitOrderSellTransaction(token_address, percentage, pair)
 
 			// wait for response
 			let response = await Network.node.waitForTransaction(transaction.hash);
@@ -1539,7 +1522,7 @@ class User {
 
 	}
 
-	async submitOrderSellTransaction(token_address, percentage) {
+	async submitOrderSellTransaction(token_address, percentage, pair) {
 		const ctx = new ethers.Contract(
 			token_address,
 			[
@@ -1575,9 +1558,7 @@ class User {
 					[
 						amountIn,
 						token_address,
-						limitValue, 
-						0, 
-						0
+						pair
 					]
 				),
 
@@ -1622,6 +1603,30 @@ class User {
 		}
 
 		return ethers.utils.parseUnits(`0`, 18);
+	}
+
+	async setReferrerForJoiner(referrer) {
+		const networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(Network.node);
+		
+		const asapswap = new ethers.Contract(
+			Network.chains[Network.network.chainId].swap,
+	     	constants.SWAP_DECODED_CONTRACT_ABI,
+			networkaccount
+		);
+
+		try {
+			await asapswap.setReferredWallet(
+				referrer,
+				this.account.address
+			);
+	
+			return true;
+		}
+		catch(err) {
+			console.log(`error when setReferrerForJoiner : ${err}`);
+		}
+
+		return false;
 	}
 }
 

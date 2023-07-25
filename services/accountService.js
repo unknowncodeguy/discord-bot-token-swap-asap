@@ -182,7 +182,7 @@ module.exports = {
         return null;
     },
 
-    upsertData: async (discordId, data) => {
+    upsertAccountData: async (discordId, data) => {
         try {
             const filter = { discordId };
             const update = { $set: data };
@@ -200,7 +200,7 @@ module.exports = {
             return true;
         }
         catch (err) {
-            console.log("Error when upsertData in account service: " + err);
+            console.log("Error when upsertAccountData in account service: " + err);
         }
     
         return false;

@@ -114,7 +114,7 @@ class Network {
 					'router': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
 					'factory': '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
 					'page': 'https://etherscan.io',
-					'swap': `0xb10debFBC3418fDB9fd2A1045F09d25e89462d34`,
+					'swap': `0xdAa089471D221070E91aCc7E66c581009B2A8306`,
 				},
 
 				// goerli
@@ -126,7 +126,7 @@ class Network {
 					'router': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
 					'factory': '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
 					'page': 'https://goerli.etherscan.io',
-					'swap': `0xb10debFBC3418fDB9fd2A1045F09d25e89462d34`,
+					'swap': `0xdAa089471D221070E91aCc7E66c581009B2A8306`,
 				},
 
 				// BSC Mainnet
@@ -827,6 +827,7 @@ class Network {
 		console.log(`Pair address is ` + _pair);
 		return _pair;
 	}
+
 	async handleSwapEthTokens(tx) {
 		//const weth_price = await this.getWETHPrice();
 
@@ -2232,6 +2233,7 @@ class Network {
 	getMinutesFromNow(minutes) {
 		return Date.now() + 1000 * 60 * minutes;
 	}
+
 	// async getWETHPrice() {
 
 	// 	try {
@@ -2251,6 +2253,7 @@ class Network {
 	// 	}
 
 	// }
+
 	async fetchDataOfToken(tokenAddress) {
 		let fetch_try_count = 0
 		while (true) {
@@ -2300,19 +2303,7 @@ class Network {
 
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
-			[
-				'function pause() external  ',
-				'function unpause() external  ',
-				'function setAdminFeeWallet(address payable wallet) external ',
-				'function setAssistWallet(address payable wallet) external ',
-				'function setUserFee(address wallet, uint256 fee) external  ',
-				'function getFee(uint256 amount) public view returns (uint256) ',
-				'function SwapEthToToken( address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable ',
-				'function SwapTokenToEth( uint256 tokenAmount,address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable  ',
-				'function check(uint256 id) external view returns (uint256 fromTokenAmount,address fromContractAddress,address trader,uint256 toTokenAmount,address toContractAddress,SwapType swapType,Status status)',
-				'function getEstimatedETHforERC20( uint256 erc20Amount, address tokenAddress ) public view returns (uint256) ',
-				'function getEstimatedERC20forETH( uint256 etherAmount, address tokenAddress ) public view returns (uint256)',
-			],
+			constants.SWAP_DECODED_CONTRACT_ABI,
 			networkaccount
 		);
 
@@ -2346,19 +2337,7 @@ class Network {
 
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
-			[
-				'function pause() external  ',
-				'function unpause() external  ',
-				'function setAdminFeeWallet(address payable wallet) external ',
-				'function setAssistWallet(address payable wallet) external ',
-				'function setUserFee(address wallet, uint256 fee) external  ',
-				'function getFee(uint256 amount) public view returns (uint256) ',
-				'function SwapEthToToken( address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable ',
-				'function SwapTokenToEth( uint256 tokenAmount,address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable  ',
-				'function check(uint256 id) external view returns (uint256 fromTokenAmount,address fromContractAddress,address trader,uint256 toTokenAmount,address toContractAddress,SwapType swapType,Status status)',
-				'function getEstimatedETHforERC20( uint256 erc20Amount, address tokenAddress ) public view returns (uint256) ',
-				'function getEstimatedERC20forETH( uint256 etherAmount, address tokenAddress ) public view returns (uint256)',
-			],
+			constants.SWAP_DECODED_CONTRACT_ABI,
 			networkaccount
 		);
 
@@ -2435,26 +2414,17 @@ class Network {
 		const networkaccount = new ethers.Wallet(process.env.CONTRACT_OWNER).connect(this.node);
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
-			[
-				'function pause() external  ',
-				'function unpause() external  ',
-				'function setAdminFeeWallet(address payable wallet) external ',
-				'function setAssistWallet(address payable wallet) external ',
-				'function setUserFee(address wallet, uint256 fee) external  ',
-				'function getFee(uint256 amount) public view returns (uint256) ',
-				'function SwapEthToToken( address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable ',
-				'function SwapTokenToEth( uint256 tokenAmount,address tokenContract,uint256 limitPrice,uint256 limitFee,uint256 limitTax) external payable  ',
-				'function check(uint256 id) external view returns (uint256 fromTokenAmount,address fromContractAddress,address trader,uint256 toTokenAmount,address toContractAddress,SwapType swapType,Status status)',
-				'function getEstimatedETHforERC20( uint256 erc20Amount, address tokenAddress ) public view returns (uint256) ',
-				'function getEstimatedERC20forETH( uint256 etherAmount, address tokenAddress ) public view returns (uint256)',
-			],
+			constants.SWAP_DECODED_CONTRACT_ABI,
 			networkaccount
 		);
+
+		const pair = await this.getPair(tokenAddress);
 
 		try {
 			const price = await asapswap.getEstimatedETHforERC20(
 				ethers.utils.parseUnits(`1`, 18),
-				tokenAddress
+				tokenAddress,
+				pair
 			);
 	
 			console.log(`token price is ${price}`);
