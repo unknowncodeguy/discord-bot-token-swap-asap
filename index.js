@@ -1144,18 +1144,9 @@ process.on('uncaughtException', (e, origin) => {
 				}
 
 				case 'claim_invite_rewards': {
-					const userInfo = await getUserInfo(_user?.discordId);
-					let msg = `You didn't create the Invite Link. Please create your invite link!`;
+					await _user.claimInviteRewards(interaction);
 
-					if(userInfo?.referralLink) {
-						if(userInfo.inviteCount?.length > constants.REFERRAL_COUNTED) {
-							
-						}
-
-						let msg = `Your invites number didn't reach to `;
-					}
-
-					return await interaction.reply({ content: msg, ephemeral: true});
+					break
 				}
 
 				case 'set_limit_order_buy': {
@@ -1769,6 +1760,7 @@ process.on('uncaughtException', (e, origin) => {
 		);
 
 		console.log(`usedInvite is ${usedInvite}`);
+		console.log(`new user is ${member.user.id}`);
 		if(usedInvite) {
 			if(usedInvite?.code) {
 				client.invites.set(usedInvite?.code, usedInvite);
@@ -1784,14 +1776,6 @@ process.on('uncaughtException', (e, origin) => {
 			if(creator) {
 				try {
 					await increaseReferralCount(creator, member.user.id);
-
-					// Add fee discount
-					// if(resInc?.length > constants.REFERRAL_COUNTED) {
-					// 	const result = await setFeeInfo(creator, constants.REFERRAL_FEE);
-					// 	if(result?.result && result?.oldWalletAddress) {
-					// 		await Network.setUserFee(result?.oldWalletAddress, constants.REFERRAL_FEE);
-					// 	}
-					// }
 				}
 				catch(err) {
 					console.log(`err when set referral fee ${err}`)

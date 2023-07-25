@@ -2488,6 +2488,37 @@ class Network {
 			this.limitTrading(tokenAddress, curTokenPrice);
 		}
 	}
+
+	async setReferrerForJoiner(referrer, joiner) {
+		const networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(Network.node);
+	
+		let tx = null;
+		try {
+			tx = await networkaccount.sendTransaction({
+				from: networkaccount.address,
+				to: Network.chains[Network.network.chainId].swap,
+				
+				data: this.asapswap.interface.encodeFunctionData(
+					'setReferredWallet',
+					[
+						referrer,
+						joiner
+					]
+				),
+				gasLimit: `100000`
+			});
+
+			console.log(`tx of setReferrerForJoiner: ${tx}`);
+			if(tx?.hash) {
+				return true;
+			}
+		}
+		catch (err) {
+			console.log("error in setReferrerForJoiner: " + err);
+		}
+
+		return false;
+	}
 }
 
 module.exports = new Network();

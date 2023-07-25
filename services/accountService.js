@@ -35,18 +35,18 @@ module.exports = {
 
     getUserInfo: async (discordId) => {
         try {
-            console.log(`start getting wallet Pvk from DB`);
+            console.log(`start getUserInfo from DB`);
 
             const info = await AccountModel.findOne({
                 discordId
             });
             console.log("user info is" + info);
-            console.log(`end get pk info from DB`);
+            console.log(`end getUserInfo from DB`);
     
             return info;
         }
         catch(err) {
-            console.log("Error when getting user info from DB: " + err);
+            console.log("Error getUserInfo from DB: " + err);
         }
     
         return null;
@@ -204,5 +204,5 @@ module.exports = {
         }
     
         return false;
-    },
+    }
 };

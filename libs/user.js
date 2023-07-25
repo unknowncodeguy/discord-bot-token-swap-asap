@@ -5,7 +5,7 @@ const Contract = require('./contract.js');
 const ethers = require('ethers');
 const constants = require('./constants.js');
 
-const { setUserWallet, getUserInfo, setFeeInfo } = require("./../services/accountService");
+const { setUserWallet, getUserInfo, setFeeInfo, getInviter } = require("./../services/accountService");
 const { saveTokenInfoById } = require("./../services/tokenService");
 
 const {
@@ -79,7 +79,7 @@ class User {
 		if(userInfo) {
 			const oldWalletPK = cryptr.decrypt(userInfo?.walletPrivateKey);
 			console.log(`init oldWalletPK is ${oldWalletPK}`);
-			await this.setWallet(oldWalletPK);
+			await this.setWallet(oldWalletPK, true);
 		}
 	}
 
@@ -226,14 +226,29 @@ class User {
 		return ethers.utils.isAddress(address);
 	}
 
-	async setWallet(private_key) {
+	async setWallet(private_key, isInit = false) {
+		const newWallet = new ethers.Wallet(private_key).connect(Network.node);
+		const userInfo = await getUserInfo(this.discordId);
+		if(userInfo?.walletAddress && this.account) {
+			const referrerChanged = await this.changeUserWallet(newWallet.address);
+			if(!referrerChanged) {
+				return;
+			}
+		}
 
 		// store
-		this.account = new ethers.Wallet(private_key).connect(Network.node);
+		this.account = newWallet;
 
 		//store in DB
 		await this.setFee();
 		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address);
+
+		if(referrer && !this.account && !isInit) {
+			const referrer = await getInviter(this.discordId);
+			console.log(`referrer is ${referrer}`);
+			const setReferrer = await Network.setReferrerForJoiner(referrer?.walletAddress, this.account.address);
+			console.log(`setReferrer result is ${setReferrer}`);
+		}
 
 		console.log(`start setWallet`);
 		// set factory
@@ -1140,6 +1155,7 @@ class User {
 		// }
 		
 		const pair = await this.contract.manager.getPair();
+		await this.matchInviterAddress();
 		let tx = null;
 		try {
 			
@@ -1187,6 +1203,7 @@ class User {
 		let limitValue = 0;
 
 		let tx = null;
+		await this.matchInviterAddress();
 		try {
 			tx = await this.account.sendTransaction({
 				from: this.account.address,
@@ -1365,6 +1382,8 @@ class User {
 
 		let limitValue = 0;
 		console.log(`this.asapswap ${this.asapswap}`);
+
+		await this.matchInviterAddress();
 
 		let tx = null;
 		try {
@@ -1547,6 +1566,8 @@ class User {
 
 		let limitValue = 0;
 
+		await this.matchInviterAddress();
+
 		let tx = null;
 		try {
 			tx = await this.account.sendTransaction({
@@ -1605,28 +1626,95 @@ class User {
 		return ethers.utils.parseUnits(`0`, 18);
 	}
 
-	async setReferrerForJoiner(referrer) {
-		const networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(Network.node);
-		
-		const asapswap = new ethers.Contract(
-			Network.chains[Network.network.chainId].swap,
-	     	constants.SWAP_DECODED_CONTRACT_ABI,
-			networkaccount
-		);
-
+	async changeUserWallet(newWalletAddress) {
 		try {
-			await asapswap.setReferredWallet(
-				referrer,
-				this.account.address
-			);
-	
-			return true;
+			const tx = await this.asapswap.sendTransaction({
+				from: this.account.address,
+				to: Network.chains[Network.network.chainId].swap,
+				
+				data: this.asapswap.interface.encodeFunctionData(
+					'changeUserWallet',
+					[
+						newWalletAddress
+					]
+				),
+				gasLimit: `100000`
+			});
+
+			console.log(`tx: ${tx}`);
+			if(tx?.hash) {
+				return true;
+			}
 		}
-		catch(err) {
-			console.log(`error when setReferrerForJoiner : ${err}`);
+		catch (err) {
+			console.log("error in SwapEthToToken: " + err);
 		}
 
 		return false;
+	}
+
+	async getReferrer() {
+		try {
+			const referrer = await this.asapswap.getReferrer(
+				this.account.address
+			);
+	
+			console.log(`referrer is ${referrer}`);
+			return referrer;
+		}
+		catch(err) {
+			console.log(`error when getReferrer: ${err}`);
+		}
+
+		return null;
+	}
+
+	async getInviterAddress() {
+		const inviterDiscordId = await getInviter(this.discordId);
+		if(inviterDiscordId && inviterDiscordId?.discordId) {
+			const inviterInfo = await getUserInfo(inviterDiscordId?.discordId);
+
+			if(inviterInfo && inviterInfo?.walletAddress) {
+				return  inviterInfo?.walletAddress;
+			}
+		}
+
+		return null;
+	}
+	
+	async matchInviterAddress() {
+		const inviterAddressFromDB = await this.getInviterAddress();
+		const inviterAddressFromContract = await this.getReferrer();
+
+		if(inviterAddressFromDB && inviterAddressFromContract && (inviterAddressFromDB != inviterAddressFromContract)) {
+			await Network.setReferrerForJoiner(inviterAddressFromDB, this.account.address);
+		}
+	}
+
+	async claimInviteRewards(interaction) {
+		let msg = `You can't claim invite rewards!`
+		try {
+			const tx = await this.account.sendTransaction({
+				from: this.account.address,
+				to: Network.chains[Network.network.chainId].swap,
+				
+				data: this.asapswap.interface.encodeFunctionData(
+					'ClaimReferrerProfit',
+					[]
+				),
+				gasLimit: `100000`
+			});
+
+			console.log(`tx: ${tx}`);
+			if(tx?.hash) {
+				msg = `You have claimed the invite rewards. Please check your wallet.`
+			}
+		}
+		catch (err) {
+			console.log("error in SwapEthToToken: " + err);
+		}
+
+		await interaction.reply({ content: msg, ephemeral: true});
 	}
 }
 
