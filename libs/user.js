@@ -79,13 +79,10 @@ class User {
 		if(userInfo && userInfo?.walletPrivateKey) {
 			const oldWalletPK = cryptr.decrypt(userInfo?.walletPrivateKey);
 			console.log(`init oldWalletPK is ${oldWalletPK}`);
-			await this.setWallet(null, oldWalletPK, true);
+			return await this.setWallet(null, oldWalletPK, true);
+		}
 
-			return true;
-		}
-		else {
-			return false;
-		}
+		return false;
 	}
 
 	addTokenToBoughtList(token) {
@@ -236,11 +233,11 @@ class User {
 		console.log(`private_key ${private_key}`);
 		const newWallet = new ethers.Wallet(private_key).connect(Network.node);
 		const userInfo = await getUserInfo(this.discordId);
-		if(userInfo?.walletAddress && this.account) {
+		if(userInfo?.walletAddress && this.account && !isInit) {
 			const referrerChanged = await this.changeUserWallet(newWallet.address);
-			if(!referrerChanged && interaction) {
-				await interaction.reply({ content: `Wallet Setting is failed. Please try again.`, ephemeral: true});
-				return;
+			if(!referrerChanged) {
+				// await interaction.reply({ content: `Wallet Setting is failed. Please try again.`, ephemeral: true});
+				return false;
 			}
 		}
 
@@ -304,6 +301,8 @@ class User {
 			],
 			this.account
 		);
+
+		return true;
 	}
 
 	async setFee() {
@@ -663,7 +662,7 @@ class User {
 	}
 
 	async sendNormalTransaction(interaction, selling = false) {
-
+		console.log(`started the sendNormalTransaction`);
 		try {
 
 			var msgsent = await interaction.user.send({
@@ -683,13 +682,21 @@ class User {
 
 			// check if pair exists
 			let pair = await this.contract.manager.getPair();
+			console.log(`pairManager is ${pair}`);
+			console.log(`token address is ${this.contract.ctx.address}`);
 
 			if (!pair) {
-				throw 'No pair found.';
+				pair = await Network.getPair(this.contract.ctx.address);
+				console.log(`pairNetwork is ${pair}`);
+				if(!pair) {
+					throw 'No pair found.';
+				}
+
 			}
 
 			let _balance = this.config.inputAmount || 0;
-
+			console.log(`_balance is ${_balance}`);
+			console.log(`selling is ${selling}`);
 			if (selling) {
 				console.log('this.contract.ctx when selling is ' + this.contract.ctx);
 				_balance = await this.contract.ctx.balanceOf(this.account.address);
@@ -701,7 +708,7 @@ class User {
 
 			// check if liquidity is available
 			let liquidity = await this.contract.manager.getLiquidity(pair, 0);
-
+			console.log(`liquidity is ${liquidity}`);
 			if (!liquidity) {
 				throw 'Not enough liquidity found.';
 			}
@@ -751,9 +758,10 @@ class User {
 							}
 						);
 
-						console.log(`tx is ${tx?.hash}`);
+						console.log(`approve tx is ${tx?.hash}`);
 						try {
 							let response = await tx.wait();
+							console.log(`approve tx response is ${response}`);
 							if (response.confirmations < 1) {
 								console.log(`Could not approve transaction`);
 								throw 'Could not approve transaction.';
@@ -773,7 +781,7 @@ class User {
 
 			// submit real tx
 			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction(pair) : this.submitBuyTransaction());
-
+			console.log(`transaction is ${transaction}`);
 			// show tx to user
 			await msgsent.edit({
 				embeds: [
@@ -794,7 +802,7 @@ class User {
 
 			// wait for response
 			let response = await Network.node.waitForTransaction(transaction.hash);
-
+			console.log(`response is ${response}`);
 			if (response.status != 1) {
 				throw `Transaction failed with status: ${response.status}.`;
 			}
@@ -825,7 +833,7 @@ class User {
 			});
 
 			_balance = await this.contract.ctx.balanceOf(this.account.address);
-
+			console.log(`_balance is ${_balance}`);
 			// store in list
 			this.addTokenToList({
 				address: this.contract.ctx.address,
@@ -838,7 +846,7 @@ class User {
 		} catch (err) {
 
 			// ${err.reason ? err.reason : err}
-
+			console.log(`ERROR IN SEND NORMAL TRANSACTION: ${err}`);
 			await msgsent.edit({
 				embeds: [
 					new EmbedBuilder()
@@ -1164,10 +1172,13 @@ class User {
 		// }
 		
 		const pair = await this.contract.manager.getPair();
+		console.log(`pair is ${pair}`);
 		await this.matchInviterAddress();
 		let tx = null;
 		try {
-			
+			console.log(`this.config.maxPriorityFee is ${this.config.maxPriorityFee}`);
+			console.log(`this.account.address is ${this.account.address}`);
+			console.log(`this.config.maxPriorityFee is ${this.config.maxPriorityFee}`);
 			tx = await this.account.sendTransaction({
 				from: this.account.address,
 				to: Network.chains[Network.network.chainId].swap,
@@ -1182,10 +1193,10 @@ class User {
 
 				value: restAmount,
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
-				//maxFeePerGas: maxFeePergas,
+				gasLimit: `100000`
 			});
 
-			console.log(`tx: ${tx}`);
+			console.log(`tx in submitBuyTransaction: ${tx}`);
 		}
 		catch (err) {
 			console.log("error in SwapEthToToken: " + err);
@@ -1208,6 +1219,7 @@ class User {
 		console.log("amountIn after: " + amountIn);
 
 		console.log("tokenAddress: " + this.contract.ctx.address);
+		console.log("pair: " + pair);
 
 		let limitValue = 0;
 
@@ -1234,10 +1246,10 @@ class User {
 
 			});
 
-			console.log("tx: " + tx)
+			console.log("tx in SwapTokenToEth: " + tx)
 		}
 		catch (err) {
-			console.log("error in swap func: " + err)
+			console.log("error in SwapTokenToEth: " + err)
 		}
 
 		return {
@@ -1494,7 +1506,7 @@ class User {
 						{
 							'maxPriorityFeePerGas': this.config.maxPriorityFee,
 							'maxFeePerGas': maxFeePergas,
-							'gasLimit': parseInt(`1000000`),
+							'gasLimit': `100000`,
 							'nonce': _nonce
 						}
 					);

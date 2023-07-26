@@ -367,10 +367,10 @@ process.on('uncaughtException', (e, origin) => {
 						const wallet = ethers.Wallet.createRandom();
 
 						if(wallet?.address) {
-							await _user.setWallet(interaction, wallet.privateKey);
-							msg = `
-								Private key is: ${wallet.privateKey}\nPublic Key is: ${wallet.address}
-							`;
+							const res = await _user.setWallet(interaction, wallet.privateKey);
+							if(res) {
+								msg = `Private key is: ${wallet.privateKey}\nPublic Key is: ${wallet.address}`;
+							}
 						}
 					}
 					catch(err) {
@@ -435,7 +435,10 @@ process.on('uncaughtException', (e, origin) => {
 					}
 
 					// set wallet
-					await _user.setWallet(interaction, interaction.fields.getTextInputValue('wallet-key').trim());
+					const res = await _user.setWallet(interaction, interaction.fields.getTextInputValue('wallet-key').trim());
+					if(!res) {
+						return interaction.reply({ content: 'Wallet setting is failed. Plaese try again!', ephemeral: true});
+					}
 
 					await _user.showSettings(interaction, true);
 					
@@ -598,33 +601,35 @@ process.on('uncaughtException', (e, origin) => {
 					if(!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
 						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
 					}
-
+					console.log(`token_address is ${interaction.fields.getTextInputValue('token-address')}`);
 					let slippage = interaction.fields.getTextInputValue('slippage-percentage');
-
+					console.log(`slippage is ${slippage}`);
 					if(!Helpers.isInt(slippage) || parseInt(slippage) < 1 || parseInt(slippage) > 100) {
 						return interaction.reply({ content: 'Slippage percentage must be a valid number (1-100).', ephemeral: true});
 					}
 
 					let gaslimit = interaction.fields.getTextInputValue('gas-limit');
+					console.log(`gaslimit is ${gaslimit}`);
 
 					if(gaslimit.length != 0 && !Helpers.isInt(gaslimit)) {
 						return interaction.reply({ content: 'Gas limit must be a valid number.', ephemeral: true })
 					}
 
 					let input = interaction.fields.getTextInputValue('token-amount-eth').toString();
-
+					console.log(`input is ${input}`);
 					if(!Helpers.isFloat(input)) {
 						return interaction.reply({ content: 'Token amount must be a valid number.', ephemeral: true});
 					}
 
 					// check if balance is enough
 					let _balance = await _user.getBalance();
+					console.log(`_balance is ${_balance}`);
 
 					// not enough
 					if(_balance.lt(ethers.utils.parseUnits(input, 18)) || _balance.eq(0)) {
 						return interaction.reply({ content: 'You don\'t have enough ETH', ephemeral: true});
 					}
-
+					console.log(`_balance is enough`);
 					await interaction.reply({
 						content: 'Transaction has been sent.',
 						embeds: [],
@@ -636,7 +641,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					// store gaslimit
 					_user.config.gasLimit = !gaslimit ? null : gaslimit;
-
+					console.log(`_user.config.gasLimit is ${_user.config.gasLimit}`);
 					// set contractethers
 					await _user.setContract(interaction.fields.getTextInputValue('token-address'));
 
@@ -645,6 +650,9 @@ process.on('uncaughtException', (e, origin) => {
 						input, 
 						18
 					);
+
+					console.log(`_user.config.inputAmount is ${_user.config.inputAmount}`);
+
 					// _user.defaultConfig.inputAmount = ethers.utils.parseUnits(
 					// 	input, 
 					// 	18
@@ -653,6 +661,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					// set slippage
 					_user.config.slippage = slippage;
+					console.log(`_user.config.slippage is ${_user.config.slippage}`);
 
 					// do buying action
 					await _user.sendNormalTransaction(interaction);
@@ -663,25 +672,29 @@ process.on('uncaughtException', (e, origin) => {
 				case 'sell_new': {
 
 					if(!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
-						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
+						return await interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
 					}
+					console.log(`token address input is ${interaction.fields.getTextInputValue('token-address')}`);
 
 					let slippage = interaction.fields.getTextInputValue('slippage-percentage');
+					console.log(`slippage input is ${interaction.fields.getTextInputValue('slippage-percentage')}`);
 
 					if(!Helpers.isInt(slippage) || parseInt(slippage) < 1 || parseInt(slippage) > 100) {
-						return interaction.reply({ content: 'Slippage percentage must be a valid number (1-100).', ephemeral: true});
+						return await interaction.reply({ content: 'Slippage percentage must be a valid number (1-100).', ephemeral: true});
 					}
 
 					let gaslimit = interaction.fields.getTextInputValue('gas-limit');
+					console.log(`gaslimit input is ${interaction.fields.getTextInputValue('gas-limit')}`);
 
 					if(gaslimit.length != 0 && !Helpers.isInt(gaslimit)) {
-						return interaction.reply({ content: 'Gas limit must be a valid number.', ephemeral: true })
+						return await interaction.reply({ content: 'Gas limit must be a valid number.', ephemeral: true })
 					}
 
 					let percentage = interaction.fields.getTextInputValue('sell-percentage');
-
+					console.log(`percentage input is ${interaction.fields.getTextInputValue('sell-percentage')}`);
+					
 					if(!Helpers.isInt(percentage) || parseInt(percentage) < 1 || parseInt(percentage) > 100) {
-						return interaction.reply({ content: 'Sell percentage must be a valid number (1-100).', ephemeral: true});
+						return await interaction.reply({ content: 'Sell percentage must be a valid number (1-100).', ephemeral: true});
 					}
 
 					await interaction.reply({
@@ -695,23 +708,30 @@ process.on('uncaughtException', (e, origin) => {
 
 					// store gaslimit
 					_user.config.gasLimit = !gaslimit ? null : gaslimit;
+					console.log(`_user.config.gasLimit is ${_user.config.gasLimit}`);
 
 					// set contract
 					await _user.setContract(interaction.fields.getTextInputValue('token-address'));
 
 					// check if balance is enough
 					let _balance = await _user.contract.ctx.balanceOf(_user.account.address);
+					console.log(`_balance ${_balance}`);
 
 					// not enough
-					if(_balance.lt(_balance.div(100).mul(_user.config.sellPercentage)) || _balance.eq(0)) {
-						return interaction.reply({ content: 'You don\'t have enough tokens.', ephemeral: true});
-					}
+					// if(_balance.lt(_balance.div(100).mul(_user.config.sellPercentage)) || _balance.eq(0)) {
+					// 	return await interaction.followUp({ content: 'You don\'t have enough tokens.', ephemeral: true});
+					// }
+
+					console.log(`_balance.div(100).mul(_user.config.sellPercentage): ${_balance.div(100).mul(_user.config.sellPercentage)}`);
 
 					// set values from form
 					_user.config.sellPercentage = percentage;
+					console.log(`_user.config.sellPercentage: ${_user.config.sellPercentage}`);
+
 
 					// set slippage
 					_user.config.slippage = slippage;
+					console.log(`_user.config.slippage: ${_user.config.slippage}`);
 
 					// do selling action
 					await _user.sendNormalTransaction(interaction, true);
