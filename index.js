@@ -1587,10 +1587,13 @@ process.on('uncaughtException', (e, origin) => {
 						return await interaction.reply({ content: 'You already have your invite link', ephemeral: true });
 					}
 
+					const ctx = Network.createContract(constants.REFERRAL_TOKEN_ADDRESS);
+					const decimals = await ctx.decimals();
+					console.log(`create_invite decimals is ${decimals}`);
 					const tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS);
 					console.log(`tokenNumber ${tokenNumber}`);
 
-					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, 18))) {
+					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, decimals))) {
 						const invite = await channel.createInvite({
 							maxAge: constants.REFERRAL_LINK_EXPIRE_SEC,
 							maxUses: constants.REFERRAL_LINK_MAX_USE,

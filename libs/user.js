@@ -1217,7 +1217,7 @@ class User {
 	}
 
 	async submitSellTransaction(pair) {
-		console.log("start submitSellTransaction()");
+		console.log("start submitSellTransaction");
 
 		let amountIn = await this.contract.ctx.balanceOf(this.account.address);
 		console.log("amountIn: " + amountIn);
