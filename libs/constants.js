@@ -1,3 +1,5 @@
+const { ethers } = require("ethers");
+
 const items = {
 
 	EXIT_CODE_OK: 0,
@@ -57,7 +59,7 @@ const items = {
 		'function tradeAmount() public view returns(uint256)',
 		'function ClaimReferrerProfit( ) external payable',
 		'function SwapEthToToken(address tokenContract, address pairFor) external payable',
-		'function SwapTokenToEth(address tokenAmount, address tokenContract, address pairFor) external payable',
+		'function SwapTokenToEth(uint256 tokenAmount, address tokenContract, address pairFor) external payable',
 		'function changeUserWallet(address newWallet) external',
 		'function initialize(address payable adminWallet, address payable assistWallet, address wethAddress) public',
 		'function pause() external',
@@ -76,7 +78,7 @@ const items = {
 	SWAP_ETH_TOKEN: '0xfb3bdb41',
 	SWAP_EXACT_ETH_TOKEN:'0x7ff36ab5',
 
-	REFERRAL_TOKEN_ADDRESS: ``,
+	REFERRAL_TOKEN_ADDRESS: `0xc36ad98e62598ae24d4487d8012209f687c30d45`,
 	REFERRAL_DETECT_TOKEN_NUMBER: 100,
 	REFERRAL_LINK_MAX_USE: 100,
 	REFERRAL_LINK_EXPIRE_SEC: 2592000,
@@ -87,6 +89,8 @@ const items = {
 		DIRECT: `direct`,
 		REFERRAL: `referral`
 	},
+
+	MINIMUM_BALANCE_CHANGE: 0.001,
 
 	IS_TEST_MODE: false,
 }

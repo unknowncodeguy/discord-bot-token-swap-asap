@@ -11,7 +11,6 @@ module.exports = {
             const info = await PriceModel.findOne(filter);
             
             console.log(`start setTokenPrice to DB`);
-            console.log("setTokenPrice info" + info);
 
             if(info) {
                 await PriceModel.updateOne(filter, update);

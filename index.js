@@ -96,7 +96,7 @@ process.on('uncaughtException', (e, origin) => {
 
 // main wrapper
 (async () => {
-	
+
 	mongoose.Promise = Promise;
 
 	const mongoUri = process.env.MONGO_DB_URL;
@@ -127,7 +127,8 @@ process.on('uncaughtException', (e, origin) => {
 				interaction.user.id, 
 				new User(interaction.user.username, interaction.user.id)
 			);
-
+			const new_user = UserCollection.get(interaction.user.id);
+			await new_user.init();
 		}
 
 		// fetch user
@@ -367,9 +368,18 @@ process.on('uncaughtException', (e, origin) => {
 						const wallet = ethers.Wallet.createRandom();
 
 						if(wallet?.address) {
-							const res = await _user.setWallet(interaction, wallet.privateKey);
-							if(res) {
-								msg = `Private key is: ${wallet.privateKey}\nPublic Key is: ${wallet.address}`;
+							const res_before_change = await _user.beforeChangeWallet(wallet.privateKey)
+							if(res_before_change?.result) {
+								const res = await _user.setWallet(wallet.privateKey);
+							
+								if(res) {
+									msg = `Private key is: ${wallet.privateKey}\nPublic Key is: ${wallet.address}`;
+								}
+							}
+							else {
+								if(res_before_change?.msg) {
+									msg = res_before_change?.msg;
+								}
 							}
 						}
 					}
@@ -380,24 +390,24 @@ process.on('uncaughtException', (e, origin) => {
 					return;
 				}
 
-				case 'restore_wallet': {
-					console.log(`start restore wallet`);
-					let msg = `Wallet Restoring is failed. Please try again!`;
-					try {
-						const result = await _user.init();
-						if(result) {
-							msg = `Wallet Restored!`;
-						}
-						else {
-							msg = `You have not previous wallet!`;
-						}
-					}
-					catch(err) {
-						console.log(`Error when restoring wallet: ${err}`)
-					}
-					await interaction.reply({ content: msg, ephemeral: true});
-					break;
-				}
+				// case 'restore_wallet': {
+				// 	console.log(`start restore wallet`);
+				// 	let msg = `Wallet Restoring is failed. Please try again!`;
+				// 	try {
+				// 		const result = await _user.init();
+				// 		if(result) {
+				// 			msg = `Wallet Restored!`;
+				// 		}
+				// 		else {
+				// 			msg = `You have not previous wallet!`;
+				// 		}
+				// 	}
+				// 	catch(err) {
+				// 		console.log(`Error when restoring wallet: ${err}`)
+				// 	}
+				// 	await interaction.reply({ content: msg, ephemeral: true});
+				// 	break;
+				// }
 			}
 
 		} else if(interaction.isModalSubmit()) {
@@ -433,16 +443,21 @@ process.on('uncaughtException', (e, origin) => {
 					if(!_user.isValidPrivateKey(interaction.fields.getTextInputValue('wallet-key').trim())) {
 						return interaction.reply({ content: 'Invalid privatekey specified.', ephemeral: true});
 					}
+					const res_before_change = await _user.beforeChangeWallet(interaction.fields.getTextInputValue('wallet-key').trim())
 
-					// set wallet
-					const res = await _user.setWallet(interaction, interaction.fields.getTextInputValue('wallet-key').trim());
-					if(!res) {
-						return interaction.reply({ content: 'Wallet setting is failed. Plaese try again!', ephemeral: true});
+					if(res_before_change?.result) {
+						const res = await _user.setWallet(interaction.fields.getTextInputValue('wallet-key').trim());
+						if(res) {
+							await _user.showSettings(interaction, true);
+							return;
+						}
 					}
 
-					await _user.showSettings(interaction, true);
-					
-					return;
+					if(!res_before_change?.result && res_before_change?.msg) {
+						return interaction.reply({ content: res_before_change?.msg, ephemeral: true});
+					}
+
+					return interaction.reply({ content: 'Wallet setting is failed. Plaese try again!', ephemeral: true});
 				}
 
 				case 'set_btax': {
@@ -636,6 +651,9 @@ process.on('uncaughtException', (e, origin) => {
 						ephemeral: true
 					});
 
+					const curPrice = await Network.getCurTokenPrice(interaction.fields.getTextInputValue('token-address'));
+					console.log(`cur pruice` + curPrice);
+
 					// overwrite with defaultConfig
 					_user.config = _user.defaultConfig;				
 
@@ -696,6 +714,9 @@ process.on('uncaughtException', (e, origin) => {
 					if(!Helpers.isInt(percentage) || parseInt(percentage) < 1 || parseInt(percentage) > 100) {
 						return await interaction.reply({ content: 'Sell percentage must be a valid number (1-100).', ephemeral: true});
 					}
+
+					const curPrice = await Network.getCurTokenPrice(interaction.fields.getTextInputValue('token-address'));
+					console.log(`cur pruice` + curPrice);
 
 					await interaction.reply({
 						content: 'Transaction has been sent.',
@@ -1599,6 +1620,15 @@ process.on('uncaughtException', (e, origin) => {
 
 					return;
 				}
+
+				case 'start_temp': {
+					try {
+						await Network.test();
+					}
+					catch(err) {
+						console.log(`ERROR IN START TEMP ${err}`);
+					}
+				}
 			}
 
 			if(interaction.customId.startsWith(`deleteorder`)) {
@@ -1688,8 +1718,7 @@ process.on('uncaughtException', (e, origin) => {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('start').setLabel('Start').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('setup').setLabel('Config').setStyle(ButtonStyle.Secondary),
-					new ButtonBuilder().setCustomId('create_wallet').setLabel('Create Wallet').setStyle(ButtonStyle.Secondary),
-					new ButtonBuilder().setCustomId('restore_wallet').setLabel('Restore Wallet').setStyle(ButtonStyle.Primary)
+					new ButtonBuilder().setCustomId('create_wallet').setLabel('Create Wallet').setStyle(ButtonStyle.Secondary)
 
 				),
 				new ActionRowBuilder().addComponents(
@@ -1702,7 +1731,8 @@ process.on('uncaughtException', (e, origin) => {
 				// ),
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('set_limit_order').setLabel('Set Limit Order').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('show_limit_order').setLabel('Show Limit Orders').setStyle(ButtonStyle.Secondary)
+					new ButtonBuilder().setCustomId('show_limit_order').setLabel('Show Limit Orders').setStyle(ButtonStyle.Secondary),
+					// new ButtonBuilder().setCustomId('start_temp').setLabel('Start temp').setStyle(ButtonStyle.Secondary)
 				)
 			]
 		});
@@ -1729,16 +1759,17 @@ process.on('uncaughtException', (e, origin) => {
 			if(usedInvite?.code) {
 				client.invites.set(usedInvite?.code, usedInvite);
 			}
-
-			await upsertAccountData(member.user.id, {
-				fee: constants.SWAP_REFERRAL_FEE,
-				joinType: constants.MEMBER_ADD_TYPE.REFERRAL
-			});
 			
 			const creatorData = await getCreator(usedInvite?.url);
 			const creator = creatorData?.discordId;
+
 			if(creator) {
 				try {
+					await upsertAccountData(member.user.id, {
+						fee: constants.SWAP_REFERRAL_FEE,
+						joinType: constants.MEMBER_ADD_TYPE.REFERRAL,
+						inviter: creator
+					});
 					await increaseReferralCount(creator, member.user.id);
 				}
 				catch(err) {

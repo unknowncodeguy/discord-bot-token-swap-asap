@@ -39,7 +39,7 @@ class Network {
 
 		try {
 			try {
-				if(constants.IS_TEST_MODE) {
+				if(false) {
 					this.node = new ethers.providers.WebSocketProvider(`wss://eth-goerli.api.onfinality.io/ws?apikey=189404a8-24b1-4f0c-9790-29a3b1655d39`);
 				}
 				else {
@@ -208,12 +208,15 @@ class Network {
 
 			// this.handleLiquidityTokens({ 
 			// 	hash: '0xc12f49d5c7a6bbc9770cc89f7771b8b81c1df9ba27a07924e47d863b151862cc',
-			// 	data: '0xf305d719000000000000000000000000e13c7bac8124d7f289279a3ce381de0d4d053b7f0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000120a871cc002000000000000000000000000000011531234bf39e5df01c7419a0e16009b0b2a4613000000000000000000000000000000000000000000000000000000006460fbbf'
+			// 	data: '0xf305d719000000000000000000000000e13c7bac8124d7f289279a3ce381de0d4d053b7f0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000120a871cc002000000000000000000000000000011531234bf39e5df01c7419a0e16009b0b2a461300000000000000000000000000000000000000000000000000000006460fbbf'
 			// }, true);
+
+			console.log('Network loaded.');
 
 			// listen for tx events
 			this.node.on('pending', async (transaction) => {
-				if(constants.IS_TEST_MODE) {
+
+				if(false) {
 					await delayTime(5000);
 					if(this.executeTx) {
 						this.executeTx = false;
@@ -465,7 +468,7 @@ class Network {
 
 			});
 
-			console.log('Network loaded.');
+
 
 		} catch (e) {
 			console.log(`[error::network] ${e}`);
@@ -2321,46 +2324,13 @@ class Network {
 					]
 				),
 
-				gasLimit: `100000`
+				gasLimit: `300000`
 			});
 
 			console.log(`tx when set fee: ${tx.hash}`);
 		}
 		catch(err) {
 			console.log(`tx Error when set fee: ${err}`);
-		}
-	}
-
-	async setUserDefaultFee(walletAddress) {
-		console.log(`start setUserDefaultFee`);
-		const networkaccount = new ethers.Wallet(process.env.CONTRACT_OWNER).connect(this.node);
-
-		const asapswap = new ethers.Contract(
-			this.chains[this.network.chainId].swap,
-			constants.SWAP_DECODED_CONTRACT_ABI,
-			networkaccount
-		);
-
-		let tx = null;
-		try {
-			tx = await networkaccount.sendTransaction({
-				from: networkaccount.address,
-				to: this.chains[this.network.chainId].swap,
-				
-				data: asapswap.interface.encodeFunctionData(
-					'setUserFee',
-					[
-						walletAddress,
-						constants.SWAP_TOTAL_FEE
-					]
-				),
-
-				gasLimit: `100000`
-			});
-			console.log(`tx when old wallet fee to default: ${tx.hash}`);
-		}
-		catch(err) {
-			console.log(`tx Error when old wallet fee set to default: ${err}`);
 		}
 	}
 
@@ -2390,20 +2360,16 @@ class Network {
 				const userDiscordId = users[i]?.discordId;
 				console.log(`userDiscordId ${userDiscordId}`);
 				const user = UserCollection.users[userDiscordId];
-				const orders = await getOrders(userDiscordId, tokenAddress);
-				console.log(`orders.length ${orders.length}`);
-				for(let j = 0; j < orders.length; j++) {
-					const order = orders[j];
-					console.log(`order ${order.isBuy}`);
-					const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
-					console.log(`isMatchedWithOrder ${isMatchedWithOrder}`);
-					if(isMatchedWithOrder) {
-						if(order?.isBuy) {
-							user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount);
-						}
-						else {
-							user.sendOrderSellTransaction(tokenAddress, order?.purchaseAmount);
-						}
+				const order = users[i];
+				console.log(`order ${order.isBuy}`);
+				const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
+				console.log(`isMatchedWithOrder ${isMatchedWithOrder}`);
+				if(isMatchedWithOrder) {
+					if(order?.isBuy) {
+						user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount);
+					}
+					else {
+						user.sendOrderSellTransaction(tokenAddress, order?.purchaseAmount);
 					}
 				}
 			}
@@ -2419,7 +2385,8 @@ class Network {
 		);
 
 		const pair = await this.getPair(tokenAddress);
-
+		console.log(`in getCurTokenPrice token address is ${tokenAddress}`);
+		console.log(`in getCurTokenPricepair address is ${pair}`);
 		try {
 			const price = await asapswap.getEstimatedETHforERC20(
 				ethers.utils.parseUnits(`1`, 18),
@@ -2509,7 +2476,7 @@ class Network {
 						joiner
 					]
 				),
-				gasLimit: `100000`
+				gasLimit: `300000`
 			});
 
 			console.log(`tx of setReferrerForJoiner: ${tx?.hash}`);
@@ -2522,6 +2489,21 @@ class Network {
 		}
 
 		return false;
+	}
+
+	async getBalnaceForETH(walletAddress) {
+		console.log(`start getBalnaceForETH`);
+		try {
+			console.log(`start getBalnaceForETH`);
+			const bal = await this.node.getBalance(walletAddress);
+
+			return bal;
+		}
+		catch(err) {
+			console.log(`error in node.getBalanc is ${error}`)
+		}
+
+		return ethers.utils.parseUnits(`0`, 18);
 	}
 }
 

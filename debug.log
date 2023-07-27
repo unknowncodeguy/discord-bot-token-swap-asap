@@ -1033,3 +1033,29 @@
 [2023-7-24 12:02:17] init oldWalletPK is a3338b78dc43c258200fd40b295f47c115d13263d3d9c0a4d3ae7d17b785cb44
 [2023-7-24 12:02:17] when setFee(), set Wallet Address: 0xc38f09B83EE3ae6e2BAC8EA0aBf228E770e7F220
 [2023-7-24 12:02:17] start getting wallet Pvk from DB
+[2023-7-27 16:04:39] oldWalletPK f60128acc5462173e80df99d685330cf2298077305b685eb06bc2ebb5b855463
+[2023-7-27 16:05:20] oldWalletPK f60128acc5462173e80df99d685330cf2298077305b685eb06bc2ebb5b855463
+[2023-7-27 16:05:49] Exception: Error: Unsupported state or unable to authenticate data
+[2023-7-27 16:05:49] Error: Unsupported state or unable to authenticate data
+    at Decipheriv.final (node:internal/crypto/cipher:199:29)
+    at Cryptr.decrypt (D:\2023\0701\asap\working\asap-bot\node_modules\cryptr\index.js:70:54)
+    at D:\2023\0701\asap\working\asap-bot\index.js:99:29
+    at Object.<anonymous> (D:\2023\0701\asap\working\asap-bot\index.js:1793:3)
+    at Module._compile (node:internal/modules/cjs/loader:1255:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1309:10)
+    at Module.load (node:internal/modules/cjs/loader:1113:32)
+    at Module._load (node:internal/modules/cjs/loader:960:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:83:12)
+    at node:internal/main/run_main_module:23:47
+[2023-7-27 16:05:56] Exception: Error: Unsupported state or unable to authenticate data
+[2023-7-27 16:05:56] Error: Unsupported state or unable to authenticate data
+    at Decipheriv.final (node:internal/crypto/cipher:199:29)
+    at Cryptr.decrypt (D:\2023\0701\asap\working\asap-bot\node_modules\cryptr\index.js:70:54)
+    at D:\2023\0701\asap\working\asap-bot\index.js:99:29
+    at Object.<anonymous> (D:\2023\0701\asap\working\asap-bot\index.js:1793:3)
+    at Module._compile (node:internal/modules/cjs/loader:1255:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1309:10)
+    at Module.load (node:internal/modules/cjs/loader:1113:32)
+    at Module._load (node:internal/modules/cjs/loader:960:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:83:12)
+    at node:internal/main/run_main_module:23:47

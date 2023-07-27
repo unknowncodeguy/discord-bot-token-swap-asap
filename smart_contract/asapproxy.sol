@@ -8,6 +8,7 @@ pragma solidity 0.6.2;
 import "@openzeppelin/contracts-ethereum-package/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/utils/Pausable.sol";
 
+import "./IASAPSwap.sol";
 contract AsapProxy is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
 
     using SafeMath for uint256;
@@ -19,14 +20,17 @@ contract AsapProxy is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
 
     event ContractUpgraded(uint version, address dataContract, address swapContract);
     modifier onlyContract(address account) {
-        require( account.isContract(), "[Validation] The address does not contain a contract");
+        require( account.isContract(), "[ASAP Proxy Validation] The address does not contain a contract");
         _;
     }
     modifier onlyInitilized() {
         require( initialized, "[ASAP Proxy Validation] contract is not initialized");
         _;
     }
-
+    modifier onlyAdmin(address account) {
+        require( IWETH(_swapContracts[_version]).isAdmin(account), "[ASAP Proxy Validation] The address is not Administrator");
+        _;
+    }
     /**
      * @dev initialize
      */
@@ -88,7 +92,7 @@ contract AsapProxy is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
         emit ContractUpgraded(_version, dataContract, swapContract);
     }
 
-    function setUserFee(address wallet, uint256 fee) external onlyOwner onlyInitilized{
+    function setUserFee(address wallet, uint256 fee) external onlyInitilized{
       
     }
 

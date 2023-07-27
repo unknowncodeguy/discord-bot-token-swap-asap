@@ -25,6 +25,9 @@ const AccountSchema = new mongoose.Schema({
         type: String,
         enum: [constants.MEMBER_ADD_TYPE.DIRECT, constants.MEMBER_ADD_TYPE.REFERRAL],
         default: constants.MEMBER_ADD_TYPE.DIRECT
+    },
+    inviter: {
+        type :String
     }
 })
 

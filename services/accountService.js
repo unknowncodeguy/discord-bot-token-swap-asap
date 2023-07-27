@@ -12,7 +12,6 @@ module.exports = {
             
             console.log(`start set user wallet pk info to DB`);
             console.log("discordId" + discordId);
-            console.log("info" + info);
 
             if(info) {
                 await AccountModel.updateOne(filter, update);
@@ -40,7 +39,6 @@ module.exports = {
             const info = await AccountModel.findOne({
                 discordId
             });
-            console.log("user info is" + info);
             console.log(`end getUserInfo from DB`);
     
             return info;
@@ -62,7 +60,6 @@ module.exports = {
             const info = await AccountModel.findOne(filter);
             
             console.log(`start setting fee info from DB`);
-            console.log("info" + info);
             let oldWallet = ``;
 
             if(info) {
@@ -99,7 +96,6 @@ module.exports = {
             const info = await AccountModel.findOne(filter);
             
             console.log(`start setting referralLink info from DB`);
-            console.log("info" + info);
 
             if(info) {
                 await AccountModel.updateOne(filter, update);
@@ -127,7 +123,6 @@ module.exports = {
             const info = await AccountModel.findOne(filter);
             
             console.log(`start setting inviteCount info from DB`);
-            console.log("info" + info);
 
             if(info) {
                 const oldCnt = info?.inviteCount;
@@ -156,8 +151,6 @@ module.exports = {
             const info = await AccountModel.findOne(filter);
             
             console.log(`start getCreator info from DB`);
-            console.log("info" + info);
-
             return info;
         }
         catch (err) {

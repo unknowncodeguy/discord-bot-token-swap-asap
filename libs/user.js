@@ -35,7 +35,7 @@ class User {
 			slippage: '10',
 			autoBuying: false,
 			gasLimit: '300000',
-			maxPriorityFee: ethers.utils.parseUnits('1', 'gwei'),
+			maxPriorityFee: ethers.utils.parseUnits('10', 'gwei'),
 		};
 
 		this.autoBuySettings = {
@@ -75,11 +75,12 @@ class User {
 	}
 	
 	async init() {
+		console.log(`start init wallet for ${this.discordId}`);
 		const userInfo = await getUserInfo(this.discordId);
 		if(userInfo && userInfo?.walletPrivateKey) {
 			const oldWalletPK = cryptr.decrypt(userInfo?.walletPrivateKey);
 			console.log(`init oldWalletPK is ${oldWalletPK}`);
-			return await this.setWallet(null, oldWalletPK, true);
+			return await this.setWallet(oldWalletPK);
 		}
 
 		return false;
@@ -228,33 +229,66 @@ class User {
 		return ethers.utils.isAddress(address);
 	}
 
-	async setWallet(interaction, private_key, isInit = false) {
+	async beforeChangeWallet(newPrvKey)
+	{
+		let res = {
+			result: true,
+			msg: ``
+		};
+
+		try {
+			const newWallet = new ethers.Wallet(newPrvKey).connect(Network.node);
+			const userInfo = await getUserInfo(this.discordId);
+			if(userInfo?.walletAddress) {
+				if (userInfo.referralLink || userInfo?.inviter) {
+					console.log(`This is old user and he is referrer or referred`);
+					//check balance 
+					const balanceofOld = await Network.getBalnaceForETH(userInfo?.walletAddress);
+					console.log(`balanceofOld is: ${balanceofOld}`);
+					if(balanceofOld.gte(ethers.utils.parseUnits(`${ constants.MINIMUM_BALANCE_CHANGE}`, 18)))
+					{
+						res.result = await this.changeUserWallet(newWallet.address);
+						console.log(`changeUserWallet result is ${res.result}`);
+					}
+					else{
+						console.log(`no fund in beforeChangeWallet`);
+						res.result = false;
+						res.msg = `No enough funds in your current wallet.`
+					}
+				}
+				else {
+					console.log(`This is old user and he is direct join and no link`);
+				}
+			}
+			else{
+				if (userInfo?.inviter) {
+					console.log(`This is new user and he is referral join`);
+					const inviterInfo = await getUserInfo(userInfo?.inviter);
+					res.result = await Network.setReferrerForJoiner(inviterInfo?.walletAddress, newWallet.address);
+					console.log(`setReferrer result is ${res.result}`);
+				}
+				else {
+					console.log(`This is new user and he is direct join`);
+				}
+			}
+		}
+		catch(err) {
+			console.log(`ERROR WHEN beforeChangeWallet:  ${err}`);
+			res.result = false;
+		}
+
+		return res;
+	}
+
+	async setWallet(private_key) {
 		console.log(`start set wallet process`);
 		console.log(`private_key ${private_key}`);
 		const newWallet = new ethers.Wallet(private_key).connect(Network.node);
-		const userInfo = await getUserInfo(this.discordId);
-		if(userInfo?.walletAddress && this.account && !isInit) {
-			const referrerChanged = await this.changeUserWallet(newWallet.address);
-			if(!referrerChanged) {
-				// await interaction.reply({ content: `Wallet Setting is failed. Please try again.`, ephemeral: true});
-				return false;
-			}
-		}
-
-		const referrer = await getInviter(this.discordId);
-		console.log(`referrer is ${referrer}`);
-		if(referrer && !this.account && !isInit) {
-			const setReferrer = await Network.setReferrerForJoiner(referrer?.walletAddress, newWallet.address);
-			console.log(`setReferrer result is ${setReferrer}`);
-		}
-
-		console.log(`start setWallet`);
 
 		// store
 		this.account = newWallet;
 
 		// store in DB
-		// await this.setFee();
 		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address);
 
 		// set factory
@@ -303,36 +337,6 @@ class User {
 		);
 
 		return true;
-	}
-
-	async setFee() {
-		const walletAddress = this.account.address;
-		console.log(`when setFee(), set Wallet Address: ${walletAddress}`);
-
-		const feeInfo = await getUserInfo(this.discordId);
-		console.log(`when setFee(), previous fee value is : ${feeInfo?.fee}`);
-		console.log(`when setFee(), previous wallet address is : ${feeInfo?.walletAddress}`);
-
-		try {
-			if(!feeInfo || feeInfo?.fee == undefined) {
-				await setFeeInfo(this.discordId, constants.SWAP_TOTAL_FEE);
-				await Network.setUserFee(walletAddress, constants.SWAP_TOTAL_FEE);
-				return;
-			}
-	
-			if(feeInfo?.walletAddress != walletAddress) {
-				await Network.setUserFee(walletAddress, feeInfo?.fee);
-				if(feeInfo?.walletAddress) {
-					await Network.setUserDefaultFee(feeInfo?.walletAddress);
-				}
-				return;
-			}
-		}
-		catch(err) {
-			console.log(`error in setFee`, err);
-		}
-
-		return;
 	}
 
 	async setContract(contract) {
@@ -753,7 +757,7 @@ class User {
 							{
 								'maxPriorityFeePerGas': this.config.maxPriorityFee,
 								'maxFeePerGas': maxFeePergas,
-								'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit),
+								'gasLimit': parseInt(this.config.gasLimit == null ? '300000' : this.config.gasLimit),
 								'nonce': _nonce
 							}
 						);
@@ -1039,7 +1043,7 @@ class User {
 						{
 							'maxPriorityFeePerGas': this.config.maxPriorityFee,
 							'maxFeePerGas': maxFeePergas,
-							'gasLimit': parseInt(this.config.gasLimit == null ? '1000000' : this.config.gasLimit),
+							'gasLimit': parseInt(this.config.gasLimit == null ? '300000' : this.config.gasLimit),
 							'nonce': _nonce
 						}
 					);
@@ -1193,7 +1197,7 @@ class User {
 
 				value: restAmount,
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
-				gasLimit: `100000`
+				gasLimit: `300000`
 			});
 
 			console.log(`tx in submitBuyTransaction: ${tx}`);
@@ -1238,12 +1242,8 @@ class User {
 						pair
 					]
 				),
-
-				value: 0,
-
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
-				gasLimit: `1000000`
-
+				gasLimit: `300000`
 			});
 
 			console.log("tx in SwapTokenToEth: " + tx)
@@ -1293,11 +1293,12 @@ class User {
 	async sendOrderBuyTransaction(token_address, amount) {
 
 		try {
-
-			let _balance = ethers.utils.parseUnits(amount, 18) || 0;
-
+			console.log(`start sendOrderBuyTransaction with ${token_address} and ${amount}`);
+			let _balance = ethers.utils.parseUnits(`${amount}`, 18) || 0;
+			console.log(`_balance is  ${_balance}`);
 			// TO:DO check if user has enough balance.
 			let bal = await this.getBalance();
+			console.log(`bal is  ${bal}`);
 
 			if (bal.lt(_balance)) {
 				throw 'Not enough balance.';
@@ -1320,7 +1321,7 @@ class User {
 				],
 				this.account
 			);
-	
+			console.log(`define  ctx`);
 			const manager = new Contract(
 				this.eth,
 				ctx,
@@ -1330,6 +1331,7 @@ class User {
 
 			// check if pair exists
 			let pair = await manager.getPair();
+			console.log(`pair is  ${bal}`);
 
 			if (!pair) {
 				throw 'No pair found.';
@@ -1337,7 +1339,7 @@ class User {
 
 			// check if liquidity is available
 			let liquidity = await manager.getLiquidity(pair, 0);
-
+			console.log(`liquidity is ${liquidity}`);
 			if (!liquidity) {
 				throw 'Not enough liquidity found.';
 			}
@@ -1358,6 +1360,7 @@ class User {
 
 			// wait for response
 			let response = await Network.node.waitForTransaction(transaction.hash);
+			console.log("response: " + response);
 
 			if (response.status != 1) {
 				throw `Transaction failed with status: ${response.status}.`;
@@ -1368,6 +1371,7 @@ class User {
 			}
 
 			_balance = await this.contract.ctx.balanceOf(this.account.address);
+			console.log("_balance: " + _balance);
 
 			this.addTokenToBoughtList({
 				address: token_address,
@@ -1385,7 +1389,7 @@ class User {
 			});
 
 		} catch (err) {
-			console.log(`error in sendOrderBuyTransaction(): ${err}`);
+			console.log(`error in sendOrderBuyTransaction: ${err}`);
 			this.addTokenToBoughtList({
 				address: token_address,
 				status: err.error ? err.error : 'Could not process TX.'
@@ -1393,13 +1397,14 @@ class User {
 		}
 	}
 
-	async submitOrderBuyTransaction(token_address, pair) {
+	async submitOrderBuyTransaction(token_address, amount, pair) {
 		console.log("start submitOrderBuyTransaction()");
 		let restAmount = amount;
 
 		console.log(`restAmount: ${restAmount}`);
 
 		console.log("tokenAddress: " + token_address);
+		console.log("pair: " + pair);
 
 		let limitValue = 0;
 		console.log(`this.asapswap ${this.asapswap}`);
@@ -1420,9 +1425,9 @@ class User {
 						pair
 					]
 				),
-
+				
 				value: restAmount,
-				gasLimit: `100000`
+				gasLimit: `300000`
 			});
 
 			console.log(`submitOrderBuyTransaction tx: ${tx}`);
@@ -1440,7 +1445,9 @@ class User {
 	}
 
 	async sendOrderSellTransaction(token_address, percentage) {
-
+		console.log("start sendOrderSellTransaction");
+		console.log("token_address: " + token_address);
+		console.log("percentage: " + percentage);
 		try {
 			// check if pair exists
 			const ctx = new ethers.Contract(
@@ -1455,15 +1462,18 @@ class User {
 				],
 				this.account
 			);
-	
+			console.log("define ctx: " + "");
+				
 			const manager = new Contract(
 				this.eth,
 				ctx,
 				this.router,
 				this.factory
 			);
+			console.log("define manager: " + "");
 
 			let pair = await manager.getPair();
+			console.log("pair: " + pair);
 
 			if (!pair) {
 				throw 'No pair found.';
@@ -1506,7 +1516,7 @@ class User {
 						{
 							'maxPriorityFeePerGas': this.config.maxPriorityFee,
 							'maxFeePerGas': maxFeePergas,
-							'gasLimit': `100000`,
+							'gasLimit': `300000`,
 							'nonce': _nonce
 						}
 					);
@@ -1532,7 +1542,7 @@ class User {
 			}
 
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await submitOrderSellTransaction(token_address, percentage, pair)
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await this.submitOrderSellTransaction(token_address, percentage, pair)
 
 			// wait for response
 			let response = await Network.node.waitForTransaction(transaction.hash);
@@ -1545,19 +1555,19 @@ class User {
 				throw `The transaction could not be confirmed in time.`;
 			}
 
-			_balance = await ctx.balanceOf(this.account.address);
+			// _balance = await ctx.balanceOf(this.account.address);
 
-			// store in list
-			this.addTokenToList({
-				address: this.contract.ctx.address,
-				symbol: this.contract.symbol,
-				decimals: this.contract.decimals,
-				balance: _balance,
-				ctx: this.contract.ctx
-			});
+			// // store in list
+			// this.addTokenToList({
+			// 	address: this.contract.ctx.address,
+			// 	symbol: this.contract.symbol,
+			// 	decimals: this.contract.decimals,
+			// 	balance: _balance,
+			// 	ctx: this.contract.ctx
+			// });
 
 		} catch (err) {
-			console.log(`error in sendOrderSellTransaction(): ${err}`);
+			console.log(`error in sendOrderSellTransaction: ${err}`);
 		}
 
 	}
@@ -1584,6 +1594,7 @@ class User {
 		console.log("amountIn after in submitOrderSellTransaction: " + amountIn);
 
 		console.log("tokenAddress: " + token_address);
+		console.log("pair address is : " + pair);
 
 		let limitValue = 0;
 
@@ -1604,8 +1615,8 @@ class User {
 					]
 				),
 
-				value: 0,
-				gasLimit: `1000000`
+				gasLimit: `300000`,
+				maxPriorityFeePerGas: this.config.maxPriorityFee
 			});
 
 			console.log("tx in submitOrderSellTransaction: " + tx)
@@ -1660,7 +1671,8 @@ class User {
 						newWalletAddress
 					]
 				),
-				gasLimit: `100000`
+				maxPriorityFeePerGas: this.config.maxPriorityFee,
+				gasLimit: `300000`
 			});
 
 			console.log(`tx: ${tx}`);
@@ -1710,7 +1722,7 @@ class User {
 		const inviterAddressFromDB = await this.getInviterAddress();
 		const inviterAddressFromContract = await this.getReferrer();
 		
-		if(inviterAddressFromDB && inviterAddressFromContract && (inviterAddressFromDB != inviterAddressFromContract)) {
+		if(inviterAddressFromDB && inviterAddressFromContract && (inviterAddressFromDB.toString() != inviterAddressFromContract.toString())) {
 			await Network.setReferrerForJoiner(inviterAddressFromDB, this.account.address);
 		}
 	}
@@ -1726,7 +1738,8 @@ class User {
 					'ClaimReferrerProfit',
 					[]
 				),
-				gasLimit: `100000`
+				maxPriorityFeePerGas: this.config.maxPriorityFee,
+				gasLimit: `300000`
 			});
 
 			console.log(`tx: ${tx}`);
