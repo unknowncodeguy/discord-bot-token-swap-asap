@@ -2383,9 +2383,9 @@ class Network {
 		const pair = await this.getPair(tokenAddress);
 		console.log(`in getCurTokenPrice token address is ${tokenAddress}`);
 		console.log(`in getCurTokenPricepair address is ${pair}`);
+		const ctx = this.createContract(tokenAddress);
+		const decimals = await ctx.decimals();
 		try {
-			const ctx = this.createContract(tokenAddress);
-			const decimals = await ctx.decimals();
 			const price = await asapswap.getEstimatedETHforERC20(
 				ethers.utils.parseUnits(`1`, decimals),
 				tokenAddress,
@@ -2399,7 +2399,7 @@ class Network {
 			console.log(`error when getting token price: ${err}`);
 		}
 
-		return ethers.utils.parseUnits(`0`, 18);
+		return ethers.utils.parseUnits(`0`, decimals);
 	}
 
 	async detectPriceChange(tx, mode) {

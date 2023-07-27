@@ -1636,7 +1636,7 @@ class User {
 
 	}
 
-	async getTokenNumber(tokenAddress) {
+	async getTokenNumber(tokenAddress, decimals) {
 		try {
 			const ctx = new ethers.Contract(
 				tokenAddress,
@@ -1657,7 +1657,7 @@ class User {
 			console.log(`get error in getTokenNumber: ${err}`);
 		}
 
-		return ethers.utils.parseUnits(`0`, 18);
+		return ethers.utils.parseUnits(`0`, decimals);
 	}
 
 	async changeUserWallet(newWalletAddress) {

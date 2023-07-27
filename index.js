@@ -1590,7 +1590,7 @@ process.on('uncaughtException', (e, origin) => {
 					const ctx = Network.createContract(constants.REFERRAL_TOKEN_ADDRESS);
 					const decimals = await ctx.decimals();
 					console.log(`create_invite decimals is ${decimals}`);
-					const tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS);
+					const tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS, decimals);
 					console.log(`tokenNumber ${tokenNumber}`);
 
 					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, decimals))) {
