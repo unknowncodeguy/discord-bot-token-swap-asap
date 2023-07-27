@@ -2306,7 +2306,7 @@ class Network {
 			constants.SWAP_DECODED_CONTRACT_ABI,
 			networkaccount
 		);
-
+		
 		let tx = null;
 		try {
 			tx = await networkaccount.sendTransaction({
@@ -2321,7 +2321,7 @@ class Network {
 					]
 				),
 
-				gasLimit: `300000`
+				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
 			console.log(`tx when set fee: ${tx.hash}`);
@@ -2473,7 +2473,7 @@ class Network {
 						joiner
 					]
 				),
-				gasLimit: `300000`
+				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
 			console.log(`tx of setReferrerForJoiner: ${tx?.hash}`);

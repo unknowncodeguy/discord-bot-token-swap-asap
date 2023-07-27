@@ -1218,9 +1218,18 @@ process.on('uncaughtException', (e, origin) => {
 				        .setCustomId('show_select_order_buy')
 				        .setTitle('Set Buy Order')
 				        .addComponents([
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('cur_price').setLabel(`Current Token Price`)
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`${curPrice} ETH`)
+									.setPlaceholder('Current Token Price')
+					              	.setRequired(true)
+									.setDisabled(true)
+				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_buy_percentage').setLabel(`The % of Drops: (Price: ${curPrice}ETH)`)
+					              	.setCustomId('show_select_order_buy_percentage').setLabel(`The % of Drops`)
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and -100')
@@ -1252,9 +1261,18 @@ process.on('uncaughtException', (e, origin) => {
 				        .setCustomId('show_select_order_sell')
 				        .setTitle('Set Sell Order')
 				        .addComponents([
+							new ActionRowBuilder().addComponents(
+					            new TextInputBuilder()
+					              	.setCustomId('cur_price').setLabel(`Current Token Price`)
+					              	.setStyle(TextInputStyle.Short)
+					              	.setValue(`${curPrice} ETH`)
+									.setPlaceholder('Current Token Price')
+					              	.setRequired(true)
+									.setDisabled(true)
+				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_sell_percentage').setLabel(`The % of Increases: (Price: ${curPrice}ETH)`)
+					              	.setCustomId('show_select_order_sell_percentage').setLabel(`The % of Increases`)
 					              	.setStyle(TextInputStyle.Short)
 					              	.setValue(`0`)
 									.setPlaceholder('Enter the percentage between 0 and 100')

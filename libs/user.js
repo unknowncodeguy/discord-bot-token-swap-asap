@@ -34,7 +34,7 @@ class User {
 			sellPercentage: '10',
 			slippage: '10',
 			autoBuying: false,
-			gasLimit: '300000',
+			gasLimit: `${constants.DEFAULT_GAS_LIMIT}`,
 			maxPriorityFee: ethers.utils.parseUnits('10', 'gwei'),
 		};
 
@@ -757,7 +757,7 @@ class User {
 							{
 								'maxPriorityFeePerGas': this.config.maxPriorityFee,
 								'maxFeePerGas': maxFeePergas,
-								'gasLimit': parseInt(this.config.gasLimit == null ? '300000' : this.config.gasLimit),
+								'gasLimit': parseInt(this.config.gasLimit == null ? `${constants.DEFAULT_GAS_LIMIT}` : this.config.gasLimit),
 								'nonce': _nonce
 							}
 						);
@@ -1045,7 +1045,7 @@ class User {
 						{
 							'maxPriorityFeePerGas': this.config.maxPriorityFee,
 							'maxFeePerGas': maxFeePergas,
-							'gasLimit': parseInt(this.config.gasLimit == null ? '300000' : this.config.gasLimit),
+							'gasLimit': parseInt(this.config.gasLimit == null ? `${constants.DEFAULT_GAS_LIMIT}` : this.config.gasLimit),
 							'nonce': _nonce
 						}
 					);
@@ -1199,7 +1199,7 @@ class User {
 
 				value: restAmount,
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
-				gasLimit: `300000`
+				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
 			console.log(`tx in submitBuyTransaction: ${tx}`);
@@ -1245,7 +1245,7 @@ class User {
 					]
 				),
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
-				gasLimit: `300000`
+				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
 			console.log("tx in SwapTokenToEth: " + tx)
@@ -1429,7 +1429,7 @@ class User {
 				),
 				
 				value: restAmount,
-				gasLimit: `300000`
+				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
 			console.log(`submitOrderBuyTransaction tx: ${tx}`);
@@ -1518,7 +1518,7 @@ class User {
 						{
 							'maxPriorityFeePerGas': this.config.maxPriorityFee,
 							'maxFeePerGas': maxFeePergas,
-							'gasLimit': `300000`,
+							'gasLimit': `${constants.DEFAULT_GAS_LIMIT}`,
 							'nonce': _nonce
 						}
 					);
@@ -1617,7 +1617,7 @@ class User {
 					]
 				),
 
-				gasLimit: `300000`,
+				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`,
 				maxPriorityFeePerGas: this.config.maxPriorityFee
 			});
 
@@ -1674,7 +1674,7 @@ class User {
 					]
 				),
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
-				gasLimit: `300000`
+				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
 			console.log(`tx: ${tx}`);
@@ -1741,7 +1741,7 @@ class User {
 					[]
 				),
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
-				gasLimit: `300000`
+				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
 			console.log(`tx: ${tx}`);
