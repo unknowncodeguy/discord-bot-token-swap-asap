@@ -1590,7 +1590,7 @@ process.on('uncaughtException', (e, origin) => {
 					const tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS);
 					console.log(`tokenNumber ${tokenNumber}`);
 
-					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.IS_TEST_MODE ? 0 : constants.REFERRAL_DETECT_TOKEN_NUMBER }`, 18))) {
+					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, 18))) {
 						const invite = await channel.createInvite({
 							maxAge: constants.REFERRAL_LINK_EXPIRE_SEC,
 							maxUses: constants.REFERRAL_LINK_MAX_USE,

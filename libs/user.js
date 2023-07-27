@@ -773,11 +773,13 @@ class User {
 						}
 						catch (err) {
 							onsole.log("error in tx.wait of this.contract.ctx.approve(): " + err);
+							throw 'Could not approve transaction.';
 						}
 
 					}
 					catch (err) {
 						console.log("error in this.contract.ctx.approve(): " + err);
+						throw 'Could not approve transaction.';
 					}
 				}
 

@@ -88,10 +88,6 @@ class Network {
 				'0x293230b8'
 			];
 
-			// this.channel_new_liquidity = "1124104245386428549";
-			// this.channel_locked_liquidity = "1124104245386428549";
-			// this.channel_open_trading = "1124104245386428549";
-
 			this.availableTokens = [];
 
 			// get network id for later use
@@ -148,7 +144,8 @@ class Network {
 
 			// store
 			//this.networkaccount = await new ethers.Wallet('d49fd07c3d1bf5837b99d2f4c1828b514d975762208f2e9f8a6ee0a1e1950b02').connect(this.node);
-			this.networkaccount = await new ethers.Wallet('fd8ec65d517c4046dbcb94f574d9cd6f029ed89b1c986e4c447c72f7d5b8af73').connect(this.node);
+			// this.networkaccount = new ethers.Wallet('fd8ec65d517c4046dbcb94f574d9cd6f029ed89b1c986e4c447c72f7d5b8af73').connect(this.node);
+			this.networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(this.node);
 
 			this.router = new ethers.Contract(
 				this.chains[this.network.chainId].router,
@@ -2377,19 +2374,20 @@ class Network {
 	}
 
 	async getCurTokenPrice(tokenAddress) {
-		const networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(this.node);
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
 			constants.SWAP_DECODED_CONTRACT_ABI,
-			networkaccount
+			this.networkaccount
 		);
 
 		const pair = await this.getPair(tokenAddress);
 		console.log(`in getCurTokenPrice token address is ${tokenAddress}`);
 		console.log(`in getCurTokenPricepair address is ${pair}`);
 		try {
+			const ctx = this.createContract(tokenAddress);
+			const decimals = await ctx.decimals();
 			const price = await asapswap.getEstimatedETHforERC20(
-				ethers.utils.parseUnits(`1`, 18),
+				ethers.utils.parseUnits(`1`, decimals),
 				tokenAddress,
 				pair
 			);
@@ -2457,16 +2455,15 @@ class Network {
 	}
 
 	async setReferrerForJoiner(referrer, joiner) {
-		const networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(this.node);
 		const asapswap = new ethers.Contract(
 			this.chains[this.network.chainId].swap,
 			constants.SWAP_DECODED_CONTRACT_ABI,
-			networkaccount
+			this.networkaccount
 		);
 		let tx = null;
 		try {
-			tx = await networkaccount.sendTransaction({
-				from: networkaccount.address,
+			tx = await this.networkaccount.sendTransaction({
+				from: this.networkaccount.address,
 				to: this.chains[this.network.chainId].swap,
 				
 				data: asapswap.interface.encodeFunctionData(
