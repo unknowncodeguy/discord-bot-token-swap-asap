@@ -1222,10 +1222,9 @@ process.on('uncaughtException', (e, origin) => {
 					            new TextInputBuilder()
 					              	.setCustomId('cur_price').setLabel(`Current Token Price`)
 					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`${curPrice} ETH`)
+					              	.setValue(`${curPrice || `0`} ETH`)
 									.setPlaceholder('Current Token Price')
-					              	.setRequired(true)
-									.setDisabled(true)
+					              	.setRequired(false)
 				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
@@ -1265,10 +1264,9 @@ process.on('uncaughtException', (e, origin) => {
 					            new TextInputBuilder()
 					              	.setCustomId('cur_price').setLabel(`Current Token Price`)
 					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`${curPrice} ETH`)
+					              	.setValue(`${curPrice || `0`} ETH`)
 									.setPlaceholder('Current Token Price')
-					              	.setRequired(true)
-									.setDisabled(true)
+					              	.setRequired(false)
 				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()

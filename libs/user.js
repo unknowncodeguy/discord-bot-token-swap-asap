@@ -745,7 +745,7 @@ class User {
 
 					let _nonce = await Network.node.getTransactionCount(this.account.address);
 					let maxFeePergas = await this.computeOptimalGas();
-
+					const decimals = await this.contract.ctx.decimals();
 					console.log(`_nonce is ${_nonce}`);
 					console.log(`maxFeePergas is ${maxFeePergas}`);
 
@@ -753,7 +753,8 @@ class User {
 					try {
 						tx = await this.contract.ctx.approve(
 							Network.chains[Network.network.chainId].swap, // out contract
-							(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+							// (ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+							ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
 							{
 								'maxPriorityFeePerGas': this.config.maxPriorityFee,
 								'maxFeePerGas': maxFeePergas,
@@ -1041,7 +1042,8 @@ class User {
 
 					let tx = await this.contract.ctx.approve(
 						Network.chains[Network.network.chainId].router,
-						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+						// (ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+						ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
 						{
 							'maxPriorityFeePerGas': this.config.maxPriorityFee,
 							'maxFeePerGas': maxFeePergas,
@@ -1514,7 +1516,8 @@ class User {
 				try {
 					tx = await this.contract.ctx.approve(
 						Network.chains[Network.network.chainId].swap, // out contract
-						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+						// (ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+						ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
 						{
 							'maxPriorityFeePerGas': this.config.maxPriorityFee,
 							'maxFeePerGas': maxFeePergas,
