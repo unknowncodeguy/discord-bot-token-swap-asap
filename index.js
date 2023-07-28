@@ -1615,12 +1615,12 @@ process.on('uncaughtException', (e, origin) => {
 							maxUses: constants.REFERRAL_LINK_MAX_USE,
 							unique: true,
 							inviter: user,
-							reason: `Created by ${interaction.user.username}`
+							reason: `Created by ${interaction.guild.name}`
 						  });
 
 						console.log(`invite ${invite.url}`);
 						
-						const userInviteLink = `${invite?.url}#${interaction.user.username}`;
+						const userInviteLink = `${invite?.url}#${interaction.guild.name}`;
 
 						if(invite?.url) {
 							const result = await setReferralLink(_user.discordId, userInviteLink);
