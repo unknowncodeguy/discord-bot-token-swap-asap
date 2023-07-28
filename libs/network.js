@@ -150,15 +150,7 @@ class Network {
 
 			this.router = new ethers.Contract(
 				this.chains[this.network.chainId].router,
-				[
-					'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
-					'function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',
-					'function addLiquidity( address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline ) external returns (uint amountA, uint amountB, uint liquidity)',
-					'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable',
-					'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external',
-					'function addLiquidityETH( address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH, uint liquidity)',
-					'function removeLiquidityETH( address token, uint liquidity, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH)'
-				],
+				constants.UNISWAP_ABI,
 				this.networkaccount
 			);
 
@@ -236,81 +228,22 @@ class Network {
 					// router
 					case this.chains[this.network.chainId].router.toLowerCase(): {
 						
+						console.log(`detected router with ${tx.data.toLowerCase()}`);
+						
 						// process new liquidity added channel
 						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_ETH_FUNC.toLowerCase())) {
 							this.handleLiquidityTokens(tx);
-						}
-						
 
-						break;
-					}
-
-					// router
-					case this.chains[this.network.chainId].router.toLowerCase(): {
-						
-						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_BURNT_FUNC.toLowerCase())) {
-							this.handleBurntLiquidityTokens(tx);
-						}
-						
-
-						break;
-					}
-
-					// factory
-					case this.chains[this.network.chainId].factory.toLowerCase(): {
-
-						console.log('factory tx');
-						console.log(tx.hash);
-
-						if (tx.data.toLowerCase().startsWith(constants.CREATE_PAIR_FUNC.toLowerCase())) {
 							try {
-								this.handleNewTokens(tx);
+								this.detectPriceChange(tx, `addLiquidityETH`);
 							}
 							catch (e) {
-								console.log("handleNewTokens error : " + e)
+
 							}
+
+							break;
 						}
-
-						break;
-					}
-
-					case constants.TEAM_FINANCE_LOCKER_ADDRESS.toLowerCase(): {
-
-						console.log('liquidity locked tx (team.finance)');
-						console.log(tx.hash);
-
-						if (tx.data.toLowerCase().startsWith(constants.TEAM_FINANCE_LOCK.toLowerCase())) {
-							try {
-								this.handleLiquidityLocked(tx);
-							}
-							catch (e) {
-								console.log("handleLiquidityLocked error : " + e)
-							}
-						}
-
-						break;
-					}
-
-					case constants.UNICRYPT_LOCKER_ADDRESS.toLowerCase(): {
-
-						console.log('liquidity locked tx (unicrypt)');
-						console.log(tx.hash);
-
-						if (tx.data.toLowerCase().startsWith(constants.UNICRYPT_LOCK.toLowerCase())) {
-							try {
-								this.handleLiquidityLocked(tx,true);
-							}
-							catch (e) {
-								console.log("handleLiquidityLocked error : " + e)
-							}
-						}
-
-						break;
-					}
-
-					// detect price change in uniswap router
-					case this.chains[this.network.chainId].router.toLowerCase(): {
-
+						
 						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactETHForTokens.toLowerCase())) {
 							try {
 								this.detectPriceChange(tx, `swapExactETHForTokens`);
@@ -421,15 +354,62 @@ class Network {
 							break;
 						}
 
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.addLiquidityETH.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `addLiquidityETH`);
-							}
-							catch (e) {
-
-							}
+						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_BURNT_FUNC.toLowerCase())) {
+							this.handleBurntLiquidityTokens(tx);
 
 							break;
+						}
+
+						break;
+					}
+
+					// factory
+					case this.chains[this.network.chainId].factory.toLowerCase(): {
+
+						console.log('factory tx');
+						console.log(tx.hash);
+
+						if (tx.data.toLowerCase().startsWith(constants.CREATE_PAIR_FUNC.toLowerCase())) {
+							try {
+								this.handleNewTokens(tx);
+							}
+							catch (e) {
+								console.log("handleNewTokens error : " + e)
+							}
+						}
+
+						break;
+					}
+
+					case constants.TEAM_FINANCE_LOCKER_ADDRESS.toLowerCase(): {
+
+						console.log('liquidity locked tx (team.finance)');
+						console.log(tx.hash);
+
+						if (tx.data.toLowerCase().startsWith(constants.TEAM_FINANCE_LOCK.toLowerCase())) {
+							try {
+								this.handleLiquidityLocked(tx);
+							}
+							catch (e) {
+								console.log("handleLiquidityLocked error : " + e)
+							}
+						}
+
+						break;
+					}
+
+					case constants.UNICRYPT_LOCKER_ADDRESS.toLowerCase(): {
+
+						console.log('liquidity locked tx (unicrypt)');
+						console.log(tx.hash);
+
+						if (tx.data.toLowerCase().startsWith(constants.UNICRYPT_LOCK.toLowerCase())) {
+							try {
+								this.handleLiquidityLocked(tx,true);
+							}
+							catch (e) {
+								console.log("handleLiquidityLocked error : " + e)
+							}
 						}
 
 						break;

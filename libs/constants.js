@@ -45,6 +45,22 @@ const items = {
 		addLiquidityETH: `0xf305d719`
 	},
 
+	UNISWAP_ABI: [
+		'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
+		'function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',
+		'function addLiquidity( address tokenA, address tokenB, uint amountADesired, uint amountBDesired, uint amountAMin, uint amountBMin, address to, uint deadline ) external returns (uint amountA, uint amountB, uint liquidity)',
+		'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable',
+		'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external',
+		'function addLiquidityETH( address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH, uint liquidity)',
+		'function removeLiquidityETH( address token, uint liquidity, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH)',
+		'function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external virtual override payable ensure(deadline) returns (uint[] memory amounts)',
+		'function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) external virtual override payable ensure(deadline) returns (uint[] memory amounts)',
+		'function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external virtual override ensure(deadline) returns (uint[] memory amounts)',
+		'function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline ) external virtual override ensure(deadline) returns (uint[] memory amounts)',
+		'function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline) external virtual override ensure(deadline) returns (uint[] memory amounts)',
+		'function swapTokensForExactTokens( uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline ) external virtual override ensure(deadline) returns (uint[] memory amounts)'
+	],
+
 	ADD_LIQUIDITY_UNK_FUNC: '0x267dd102',
 	ADD_LIQUIDITY_UNK2_FUNC: '0xe8078d94',
 
@@ -94,7 +110,7 @@ const items = {
 	],
 
 	REFERRAL_TOKEN_ADDRESS: `0xc36ad98e62598ae24d4487d8012209f687c30d45`,
-	REFERRAL_DETECT_TOKEN_NUMBER: 100,
+	REFERRAL_DETECT_TOKEN_NUMBER: 0,
 	REFERRAL_LINK_MAX_USE: 0,
 	REFERRAL_LINK_EXPIRE_SEC: 0,
 	REFERRAL_START_MEMBER: 10,
