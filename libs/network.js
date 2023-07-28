@@ -110,7 +110,7 @@ class Network {
 					'router': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
 					'factory': '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
 					'page': 'https://etherscan.io',
-					'swap': `0x7e1ce077dAC25bC5647b35c32110a67182a81348`,
+					'swap': process.env.CONTRACT_ADDRESS,
 				},
 
 				// goerli
@@ -122,7 +122,7 @@ class Network {
 					'router': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
 					'factory': '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
 					'page': 'https://goerli.etherscan.io',
-					'swap': `0x7e1ce077dAC25bC5647b35c32110a67182a81348`,
+					'swap': process.env.CONTRACT_ADDRESS,
 				},
 
 				// BSC Mainnet
@@ -133,7 +133,8 @@ class Network {
 					'token': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
 					'router': '0x10ED43C718714eb63d5aA57B78B54704E256024E',
 					'factory': '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73',
-					'page': 'https://bscscan.com'
+					'page': 'https://bscscan.com',
+					'swap': process.env.CONTRACT_ADDRESS,
 				},
 
 			};
@@ -158,6 +159,12 @@ class Network {
 					'function addLiquidityETH( address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH, uint liquidity)',
 					'function removeLiquidityETH( address token, uint liquidity, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH)'
 				],
+				this.networkaccount
+			);
+
+			this.asapswap = new ethers.Contract(
+				this.chains[this.network.chainId].swap,
+				constants.SWAP_DECODED_CONTRACT_ABI,
 				this.networkaccount
 			);
 
@@ -213,65 +220,6 @@ class Network {
 			// listen for tx events
 			this.node.on('pending', async (transaction) => {
 
-				if(false) {
-					await delayTime(5000);
-					if(this.executeTx) {
-						this.executeTx = false;
-						const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-						let interaction = await this.channel_new_liquidity.send({
-							content: `${`GOP`}/WETH`,
-							embeds: [
-								new EmbedBuilder()
-									.setColor(0x000000)
-									.setTitle(`${`GOP`}/WETH`)
-									.setDescription(`GOP` + "\n`" + `0xCc7bb2D219A0FC08033E130629C2B854b7bA9195` + "`")
-									.addFields(
-										{ name: 'Verified', value: ':red_circle:', inline: true },
-										{ name: 'Marketcap', value: `N/A` , inline: true },
-									)
-									.addFields(
-										{ name: 'Holder', value: `N/A`, inline: true },
-										{ name: 'Amount', value: `N/A`, inline: true },
-									)
-									.addFields(
-										{ name: 'Honeypot', value: true ? ':red_circle: True' : ':green_circle: False', inline: true },
-										{ name: 'Taxes', value: `N/A`, inline: true },
-									)
-									.addFields(
-										{
-											name: 'Liquidity',
-											// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
-											value: `N/A`,
-											inline: true
-										},
-										{ name: 'Owner', value: `[${Helpers.dotdot('0xCc7bb2D219A0FC08033E130629C2B854b7bA9195')}](https://etherscan.io/address/${`0xCc7bb2D219A0FC08033E130629C2B854b7bA9195`})`, inline: true },
-										{ name: 'Unlock', value: '`N/A`', inline: true },
-									)
-									.addFields(
-										{ name: 'Deployer', value: `[${Helpers.dotdot(`0xCc7bb2D219A0FC08033E130629C2B854b7bA9195`)}](https://etherscan.io/address/${`0xCc7bb2D219A0FC08033E130629C2B854b7bA9195`})`, inline: true },
-										{ name: 'Balance', value: '1 ETH', inline: true },
-										{ name: 'TX Count', value: `5`, inline: true },
-									)
-									.addFields(
-										{ name: 'Description', value: 'N/A', inline: true }
-									)
-							],
-							components: [
-								new ActionRowBuilder().addComponents(
-									new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
-									new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-									new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-									orderButton
-								),
-							]
-						});
-			
-						await saveTokenInfoByInteraction(interaction.id, `0xCc7bb2D219A0FC08033E130629C2B854b7bA9195`);
-					}
-
-					return;
-				}
-
 				if (transaction == null) return;
 
 				let tx = transaction;
@@ -291,7 +239,6 @@ class Network {
 						// process new liquidity added channel
 						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_ETH_FUNC.toLowerCase())) {
 							this.handleLiquidityTokens(tx);
-							this.detectPriceChange(tx, `add`);
 						}
 						
 
@@ -303,7 +250,6 @@ class Network {
 						
 						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_BURNT_FUNC.toLowerCase())) {
 							this.handleBurntLiquidityTokens(tx);
-							this.detectPriceChange(tx, `burnt`);
 						}
 						
 
@@ -336,7 +282,6 @@ class Network {
 						if (tx.data.toLowerCase().startsWith(constants.TEAM_FINANCE_LOCK.toLowerCase())) {
 							try {
 								this.handleLiquidityLocked(tx);
-								this.detectPriceChange(tx, `locked`);
 							}
 							catch (e) {
 								console.log("handleLiquidityLocked error : " + e)
@@ -363,43 +308,157 @@ class Network {
 						break;
 					}
 
+					// detect price change in uniswap router
 					case this.chains[this.network.chainId].router.toLowerCase(): {
 
-						if (tx.data.toLowerCase().startsWith(constants.SWAP_ETH_TO_TOKEN.toLowerCase())) {
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactETHForTokens.toLowerCase())) {
 							try {
-								this.detectPriceChange(tx, `buy`);
+								this.detectPriceChange(tx, `swapExactETHForTokens`);
 							}
 							catch (e) {
 
 							}
+
+							break;
+						}
+
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapETHForExactTokens.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `swapETHForExactTokens`);
+							}
+							catch (e) {
+
+							}
+
+							break;
+						}
+
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactETHForTokensSupportingFeeOnTransferTokens.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `swapExactETHForTokensSupportingFeeOnTransferTokens`);
+							}
+							catch (e) {
+
+							}
+
+							break;
+						}
+
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactTokensForETH.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `swapExactTokensForETH`);
+							}
+							catch (e) {
+
+							}
+
+							break;
+						}
+
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactTokensForETHSupportingFeeOnTransferTokens.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `swapExactTokensForETHSupportingFeeOnTransferTokens`);
+							}
+							catch (e) {
+
+							}
+
+							break;
+						}
+
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactTokensForTokens.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `swapExactTokensForTokens`);
+							}
+							catch (e) {
+
+							}
+
+							break;
+						}
+
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactTokensForTokensSupportingFeeOnTransferTokens.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `swapExactTokensForTokensSupportingFeeOnTransferTokens`);
+							}
+							catch (e) {
+
+							}
+
+							break;
+						}
+
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapTokensForExactETH.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `swapTokensForExactETH`);
+							}
+							catch (e) {
+
+							}
+
+							break;
+						}
+
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapTokensForExactTokens.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `swapTokensForExactTokens`);
+							}
+							catch (e) {
+
+							}
+
+							break;
+						}
+
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.addLiquidity.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `addLiquidity`);
+							}
+							catch (e) {
+
+							}
+
+							break;
+						}
+
+						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.addLiquidityETH.toLowerCase())) {
+							try {
+								this.detectPriceChange(tx, `addLiquidityETH`);
+							}
+							catch (e) {
+
+							}
+
+							break;
 						}
 
 						break;
 					}
 
-					case this.chains[this.network.chainId].router.toLowerCase(): {
-
-						if (tx.data.toLowerCase().startsWith(constants.SWAP_ETH_FOR_ETH.toLowerCase())) {
+					case this.chains[this.network.chainId].swap.toLowerCase(): {
+						console.log(`swap start with ${tx.data.toLowerCase()}`);
+						if (tx.data.toLowerCase().startsWith(constants.SWAP_BUY_BY_BOT.toLowerCase())) {
+							console.log(`swap buy with ${tx.data.toLowerCase()}`);
 							try {
-								this.detectPriceChange(tx, `buy_for`);
+								this.detectPriceChange(tx, `buy_bot`);
 							}
 							catch (e) {
 								
 							}
+
+							break;
 						}
 
-						break;
-					}
-
-					case this.chains[this.network.chainId].router.toLowerCase(): {
-
-						if (tx.data.toLowerCase().startsWith(constants.SWAP_TOKEN_FOR_ETH.toLowerCase())) {
+						if (tx.data.toLowerCase().startsWith(constants.SWAP_SELL_BY_BOT.toLowerCase())) {
+							console.log(`swap sell with ${tx.data.toLowerCase()}`);
 							try {
-								this.detectPriceChange(tx, `sell`);
+								this.detectPriceChange(tx, `sell_bot`);
 							}
 							catch (e) {
 								
 							}
+
+							break;
 						}
 
 						break;
@@ -452,7 +511,6 @@ class Network {
 						// show
 						try {
 							this.handleOpenTrading(tx);
-							this.detectPriceChange(tx, `trade`);
 						}
 						catch (e) {
 							console.log("handleOpenTrading error : " + e)
@@ -2298,38 +2356,38 @@ class Network {
 		}
 	}
 
-	async setUserFee(walletAddress, fee) {
-		const networkaccount = new ethers.Wallet(process.env.CONTRACT_OWNER).connect(this.node);
+	// async setUserFee(walletAddress, fee) {
+	// 	const networkaccount = new ethers.Wallet(process.env.CONTRACT_OWNER).connect(this.node);
 
-		const asapswap = new ethers.Contract(
-			this.chains[this.network.chainId].swap,
-			constants.SWAP_DECODED_CONTRACT_ABI,
-			networkaccount
-		);
+	// 	const asapswap = new ethers.Contract(
+	// 		this.chains[this.network.chainId].swap,
+	// 		constants.SWAP_DECODED_CONTRACT_ABI,
+	// 		networkaccount
+	// 	);
 		
-		let tx = null;
-		try {
-			tx = await networkaccount.sendTransaction({
-				from: networkaccount.address,
-				to: this.chains[this.network.chainId].swap,
+	// 	let tx = null;
+	// 	try {
+	// 		tx = await networkaccount.sendTransaction({
+	// 			from: networkaccount.address,
+	// 			to: this.chains[this.network.chainId].swap,
 				
-				data: asapswap.interface.encodeFunctionData(
-					'setUserFee',
-					[
-						walletAddress,
-						fee
-					]
-				),
+	// 			data: asapswap.interface.encodeFunctionData(
+	// 				'setUserFee',
+	// 				[
+	// 					walletAddress,
+	// 					fee
+	// 				]
+	// 			),
 
-				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
-			});
+	// 			gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
+	// 		});
 
-			console.log(`tx when set fee: ${tx.hash}`);
-		}
-		catch(err) {
-			console.log(`tx Error when set fee: ${err}`);
-		}
-	}
+	// 		console.log(`tx when set fee: ${tx.hash}`);
+	// 	}
+	// 	catch(err) {
+	// 		console.log(`tx Error when set fee: ${err}`);
+	// 	}
+	// }
 
 	matchWithOrder(orderData, curTokenPrice) {
 		console.log(`orderData?.mentionedPrice ${orderData?.mentionedPrice}`);
@@ -2374,11 +2432,6 @@ class Network {
 	}
 
 	async getCurTokenPrice(tokenAddress) {
-		const asapswap = new ethers.Contract(
-			this.chains[this.network.chainId].swap,
-			constants.SWAP_DECODED_CONTRACT_ABI,
-			this.networkaccount
-		);
 
 		const pair = await this.getPair(tokenAddress);
 		console.log(`in getCurTokenPrice token address is ${tokenAddress}`);
@@ -2386,7 +2439,7 @@ class Network {
 		const ctx = this.createContract(tokenAddress);
 		const decimals = await ctx.decimals();
 		try {
-			const price = await asapswap.getEstimatedETHforERC20(
+			const price = await this.asapswap.getEstimatedETHforERC20(
 				ethers.utils.parseUnits(`1`, decimals),
 				tokenAddress,
 				pair
@@ -2403,44 +2456,73 @@ class Network {
 	}
 
 	async detectPriceChange(tx, mode) {
+		console.log(`start detected tokenprice transaction with ${mode}`);
 		let tokenAddress = ``;
 		let data;
 		switch(mode) {
-			case `add`:
-				data = this.router.interface.decodeFunctionData('addLiquidityETH', tx.data);
-				tokenAddress = data[0];
-				break;
-			
-			case `burnt`:
-				data = this.router.interface.decodeFunctionData('removeLiquidityETH', tx.data);
-				tokenAddress = data[0];
-				break;
-
-			case `buy`:
-				data = this.router.interface.decodeFunctionData('addLiquidityETH', tx.data);
+			case `swapExactETHForTokens`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
 				tokenAddress = data[1][1];
 				break;
 
-			case `buy_for`:
-				data = this.router.interface.decodeFunctionData('addLiquidityETH', tx.data);
+			case `swapETHForExactTokens`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
 				tokenAddress = data[1][1];
 				break;
-				
-			case `sell`:
-				data = this.router.interface.decodeFunctionData('addLiquidityETH', tx.data);
+
+			case `swapExactETHForTokensSupportingFeeOnTransferTokens`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				tokenAddress = data[1][1];
+				break;
+
+			case `swapExactTokensForETH`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
 				tokenAddress = data[2][0];
 				break;
 
-			case `trade`:
+			case `swapExactTokensForETHSupportingFeeOnTransferTokens`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				tokenAddress = data[2][0];
 				break;
 
-			case `locked`:
-				data = ethers.utils.defaultAbiCoder.decode(
-					['address', 'uint256', 'uint256', 'address', 'bool', 'address'],
-					ethers.utils.hexDataSlice(tx.data, 4)
-				);
-		
+			case `swapExactTokensForTokens`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				tokenAddress = data[2][1];
+				break;
+
+			case `swapExactTokensForTokensSupportingFeeOnTransferTokens`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				tokenAddress = data[2][1];
+				break;
+
+			case `swapTokensForExactETH`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				tokenAddress = data[2][0];
+				break;
+
+			case `swapTokensForExactTokens`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				tokenAddress = data[2][2];
+				break;
+
+			case `addLiquidity`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				tokenAddress = data[1];
+				break;
+
+			case `addLiquidityETH`:
+				data = this.router.interface.decodeFunctionData(mode, tx.data);
 				tokenAddress = data[0];
+				break;
+			
+			case `buy_bot`:
+				data = this.asapswap.interface.decodeFunctionData('SwapEthToToken', tx.data);
+				tokenAddress = data[0];
+				break;
+
+			case `sell_bot`:
+				data = this.asapswap.interface.decodeFunctionData('SwapTokenToEth', tx.data);
+				tokenAddress = data[1];
 				break;
 
 			default:
@@ -2455,18 +2537,13 @@ class Network {
 	}
 
 	async setReferrerForJoiner(referrer, joiner) {
-		const asapswap = new ethers.Contract(
-			this.chains[this.network.chainId].swap,
-			constants.SWAP_DECODED_CONTRACT_ABI,
-			this.networkaccount
-		);
 		let tx = null;
 		try {
 			tx = await this.networkaccount.sendTransaction({
 				from: this.networkaccount.address,
 				to: this.chains[this.network.chainId].swap,
 				
-				data: asapswap.interface.encodeFunctionData(
+				data: this.asapswap.interface.encodeFunctionData(
 					'setReferredWallet',
 					[
 						referrer,

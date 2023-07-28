@@ -158,31 +158,31 @@ process.on('uncaughtException', (e, origin) => {
 		if(interaction.isButton()) {
 
 			switch(interaction.customId) {
-				case `set_user_fee`: {					
-					const modal = new ModalBuilder()
-									.setCustomId('set_user_fee')
-									.setTitle('Set User Fee')
-									.addComponents([
-										new ActionRowBuilder().addComponents(
-											new TextInputBuilder()
-												.setCustomId('discord_id_user').setLabel('Discord Id')
-												.setStyle(TextInputStyle.Short)
-												.setValue(``)
-												.setPlaceholder("Enter User's Discord ID")
-												.setRequired(true),
-										),
-										new ActionRowBuilder().addComponents(
-											new TextInputBuilder()
-												.setCustomId('user_fee').setLabel('Fee value of Discord User')
-												.setStyle(TextInputStyle.Short)
-												.setValue(`0`)
-												.setPlaceholder('Enter the fee percentage between 0 and 100')
-												.setRequired(true),
-										)
-									]);
+				// case `set_user_fee`: {					
+				// 	const modal = new ModalBuilder()
+				// 					.setCustomId('set_user_fee')
+				// 					.setTitle('Set User Fee')
+				// 					.addComponents([
+				// 						new ActionRowBuilder().addComponents(
+				// 							new TextInputBuilder()
+				// 								.setCustomId('discord_id_user').setLabel('Discord Id')
+				// 								.setStyle(TextInputStyle.Short)
+				// 								.setValue(``)
+				// 								.setPlaceholder("Enter User's Discord ID")
+				// 								.setRequired(true),
+				// 						),
+				// 						new ActionRowBuilder().addComponents(
+				// 							new TextInputBuilder()
+				// 								.setCustomId('user_fee').setLabel('Fee value of Discord User')
+				// 								.setStyle(TextInputStyle.Short)
+				// 								.setValue(`0`)
+				// 								.setPlaceholder('Enter the fee percentage between 0 and 100')
+				// 								.setRequired(true),
+				// 						)
+				// 					]);
 
-					await interaction.showModal(modal);
-				}
+				// 	await interaction.showModal(modal);
+				// }
 
 				case 'setup': {
 
@@ -414,29 +414,29 @@ process.on('uncaughtException', (e, origin) => {
 
 			switch(interaction.customId) {
 
-				case `set_user_fee`: {
-					let feepercentage = interaction.fields.getTextInputValue('user_fee').toString();
-					console.log(`feepercentage: ${feepercentage}`);
-					if(!Helpers.isInt(feepercentage) || feepercentage > 100 || feepercentage < 1) {
-						return interaction.reply({ content: 'Fee percentage must be a valid number between 0 and 100.', ephemeral: true});
-					}
+				// case `set_user_fee`: {
+				// 	let feepercentage = interaction.fields.getTextInputValue('user_fee').toString();
+				// 	console.log(`feepercentage: ${feepercentage}`);
+				// 	if(!Helpers.isInt(feepercentage) || feepercentage > 100 || feepercentage < 1) {
+				// 		return interaction.reply({ content: 'Fee percentage must be a valid number between 0 and 100.', ephemeral: true});
+				// 	}
 
-					let userID = interaction.fields.getTextInputValue('discord_id_user').toString();
-					if(!Helpers.isValidDiscordUserId(userID)) {
-						return interaction.reply({ content: `User ID ${userID} is invalid!`, ephemeral: true});
-					}
+				// 	let userID = interaction.fields.getTextInputValue('discord_id_user').toString();
+				// 	if(!Helpers.isValidDiscordUserId(userID)) {
+				// 		return interaction.reply({ content: `User ID ${userID} is invalid!`, ephemeral: true});
+				// 	}
 
-					const result = await setFeeInfo(userID, Number(feepercentage));
-					let msg = `Setring user fee is failed. Please check your network!`;
-					if(result?.result) {
-						if(result?.oldWalletAddress) {
-							await Network.setUserFee(result?.oldWalletAddress, feepercentage);
-						}
-						msg = `User ${userID}'s fee is set to ${feepercentage}%!`;
-					}
+				// 	const result = await setFeeInfo(userID, Number(feepercentage));
+				// 	let msg = `Setring user fee is failed. Please check your network!`;
+				// 	if(result?.result) {
+				// 		if(result?.oldWalletAddress) {
+				// 			await Network.setUserFee(result?.oldWalletAddress, feepercentage);
+				// 		}
+				// 		msg = `User ${userID}'s fee is set to ${feepercentage}%!`;
+				// 	}
 
-					await interaction.reply({ content: msg });
-				}
+				// 	await interaction.reply({ content: msg });
+				// }
 
 				case 'set_wallet_key': {	
 
@@ -1614,14 +1614,15 @@ process.on('uncaughtException', (e, origin) => {
 							maxAge: constants.REFERRAL_LINK_EXPIRE_SEC,
 							maxUses: constants.REFERRAL_LINK_MAX_USE,
 							unique: true,
-							inviter: user
+							inviter: user,
+							reason: `Created by ${interaction.user.username}`
 						  });
 
 						console.log(`invite ${invite.url}`);
 						
-						const userInviteLink = invite?.url;
+						const userInviteLink = `${invite?.url}#${interaction.user.username}`;
 
-						if(userInviteLink) {
+						if(invite?.url) {
 							const result = await setReferralLink(_user.discordId, userInviteLink);
 
 							if(result) {

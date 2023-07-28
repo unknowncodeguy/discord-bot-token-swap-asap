@@ -27,8 +27,23 @@ const items = {
 	ADD_LIQUIDITY_BURNT_FUNC: '0x02751cec',
 
 	SWAP_ETH_TO_TOKEN: `0xfb3bdb41`,
-	SWAP_ETH_FOR_ETH: `0xb6f9de95`,
-	SWAP_TOKEN_FOR_ETH: `0x791ac947`,
+
+	SWAP_BUY_BY_BOT: `0xa83d93e9`,
+	SWAP_SELL_BY_BOT: `0x8e870408`,
+
+	UNISWAP_METHODS: {
+		swapExactETHForTokens: `0x7ff36ab5`,
+		swapETHForExactTokens: `0xfb3bdb41`,
+		swapExactETHForTokensSupportingFeeOnTransferTokens: `0xb6f9de95`,
+		swapExactTokensForETH: `0x18cbafe5`,
+		swapExactTokensForETHSupportingFeeOnTransferTokens: `0x791ac947`,
+		swapExactTokensForTokens: `0x38ed1739`,
+		swapExactTokensForTokensSupportingFeeOnTransferTokens: `0x5c11d795`,
+		swapTokensForExactETH: `0x4a25d94a`,
+		swapTokensForExactTokens: `0x8803dbee`,
+		addLiquidity: `0xe8e33700`,
+		addLiquidityETH: `0xf305d719`
+	},
 
 	ADD_LIQUIDITY_UNK_FUNC: '0x267dd102',
 	ADD_LIQUIDITY_UNK2_FUNC: '0xe8078d94',
@@ -77,9 +92,6 @@ const items = {
 		//transferOwnership
 		'function unpause() external'
 	],
-
-	SWAP_ETH_TOKEN: '0xfb3bdb41',
-	SWAP_EXACT_ETH_TOKEN:'0x7ff36ab5',
 
 	REFERRAL_TOKEN_ADDRESS: `0xc36ad98e62598ae24d4487d8012209f687c30d45`,
 	REFERRAL_DETECT_TOKEN_NUMBER: 100,

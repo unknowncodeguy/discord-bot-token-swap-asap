@@ -1733,7 +1733,15 @@ class User {
 	}
 
 	async claimInviteRewards(interaction) {
-		let msg = `You can't claim invite rewards!`
+		let msg = `You can't claim invite rewards!`;
+		
+		const userInfo = await getUserInfo(this.discordId);
+
+		if(userInfo.inviteCount < constants.REFERRAL_START_MEMBER) {
+			await interaction.reply({ content: 'You can only claim the rewards when 10+ users joined with your link', ephemeral: true });
+			return;
+		}
+
 		try {
 			const tx = await this.account.sendTransaction({
 				from: this.account.address,
