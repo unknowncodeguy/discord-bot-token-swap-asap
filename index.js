@@ -1413,9 +1413,14 @@ process.on('uncaughtException', (e, origin) => {
 
 				case 'limit_order': {
 					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
-					const { tokenAddress } = tokenDataByInteraction;
-					
-					await _user.showSelectOrder(interaction, tokenAddress);
+					const tokenAddress = tokenDataByInteraction?.tokenAddress;
+
+					if(tokenAddress) {
+						await _user.showSelectOrder(interaction, tokenAddress);
+					}
+					else {
+						await interaction.reply({ content: 'Token Address is Invalid!', ephemeral: true });
+					}
 
 					break;
 				}
