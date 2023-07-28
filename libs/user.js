@@ -263,9 +263,9 @@ class User {
 			else{
 				if (userInfo?.inviter) {
 					console.log(`This is new user and he is referral join`);
-					const inviterInfo = await getUserInfo(userInfo?.inviter);
-					res.result = await Network.setReferrerForJoiner(inviterInfo?.walletAddress, newWallet.address);
-					console.log(`setReferrer result is ${res.result}`);
+					// const inviterInfo = await getUserInfo(userInfo?.inviter);
+					// res.result = await Network.setReferrerForJoiner(inviterInfo?.walletAddress, newWallet.address);
+					// console.log(`setReferrer result is ${res.result}`);
 				}
 				else {
 					console.log(`This is new user and he is direct join`);
@@ -1728,7 +1728,7 @@ class User {
 		const inviterAddressFromContract = await this.getReferrer();
 		
 		if(inviterAddressFromDB && inviterAddressFromContract && (inviterAddressFromDB.toString() != inviterAddressFromContract.toString())) {
-			await Network.setReferrerForJoiner(inviterAddressFromDB, this.account.address);
+			await this.setReferrerForJoiner(inviterAddressFromDB, this.account.address);
 		}
 	}
 
@@ -1765,6 +1765,35 @@ class User {
 		}
 
 		await interaction.reply({ content: msg, ephemeral: true});
+	}
+
+	async setReferrerForJoiner(referrer, joiner) {
+		let tx = null;
+		try {
+			tx = await this.account.sendTransaction({
+				from: this.account.address,
+				to: Network.chains[Network.network.chainId].swap,
+				
+				data: this.asapswap.interface.encodeFunctionData(
+					'setReferredWallet',
+					[
+						referrer,
+						joiner
+					]
+				),
+				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
+			});
+
+			console.log(`tx of setReferrerForJoiner: ${tx?.hash}`);
+			if(tx?.hash) {
+				return true;
+			}
+		}
+		catch (err) {
+			console.log("error in setReferrerForJoiner: " + err);
+		}
+
+		return false;
 	}
 }
 

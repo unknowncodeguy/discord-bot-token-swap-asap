@@ -2536,35 +2536,6 @@ class Network {
 		}
 	}
 
-	async setReferrerForJoiner(referrer, joiner) {
-		let tx = null;
-		try {
-			tx = await this.networkaccount.sendTransaction({
-				from: this.networkaccount.address,
-				to: this.chains[this.network.chainId].swap,
-				
-				data: this.asapswap.interface.encodeFunctionData(
-					'setReferredWallet',
-					[
-						referrer,
-						joiner
-					]
-				),
-				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
-			});
-
-			console.log(`tx of setReferrerForJoiner: ${tx?.hash}`);
-			if(tx?.hash) {
-				return true;
-			}
-		}
-		catch (err) {
-			console.log("error in setReferrerForJoiner: " + err);
-		}
-
-		return false;
-	}
-
 	async getBalnaceForETH(walletAddress) {
 		console.log(`start getBalnaceForETH`);
 		try {
