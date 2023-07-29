@@ -343,9 +343,9 @@ process.on('uncaughtException', (e, origin) => {
 						const wallet = ethers.Wallet.createRandom();
 
 						if(wallet?.address) {
-							const res_before_change = await _user.beforeChangeWallet(wallet.privateKey)
+							const res_before_change = await _user.beforeChangeWallet(wallet.privateKey, interaction)
 							if(res_before_change?.result) {
-								const res = await _user.setWallet(wallet.privateKey);
+								const res = await _user.setWallet(wallet.privateKey, true);
 							
 								if(res) {
 									msg = `Private key is: ${wallet.privateKey}\nPublic Key is: ${wallet.address}`;
@@ -373,12 +373,12 @@ process.on('uncaughtException', (e, origin) => {
 				case 'set_wallet_key': {	
 
 					if(!_user.isValidPrivateKey(interaction.fields.getTextInputValue('wallet-key').trim())) {
-						return interaction.reply({ content: 'Invalid privatekey specified.', ephemeral: true});
+						return interaction.reply({ content: 'Invalid private key specified.', ephemeral: true});
 					}
-					const res_before_change = await _user.beforeChangeWallet(interaction.fields.getTextInputValue('wallet-key').trim())
+					const res_before_change = await _user.beforeChangeWallet(interaction.fields.getTextInputValue('wallet-key').trim(), interaction)
 
 					if(res_before_change?.result) {
-						const res = await _user.setWallet(interaction.fields.getTextInputValue('wallet-key').trim());
+						const res = await _user.setWallet(interaction.fields.getTextInputValue('wallet-key').trim(), true);
 						if(res) {
 							await _user.showSettings(interaction, true);
 							return;
@@ -1588,6 +1588,30 @@ process.on('uncaughtException', (e, origin) => {
 						console.log(`ERROR IN START TEMP ${err}`);
 					}
 				}
+
+				case 'verify_claim_wallet': {
+					let msg = `Verify your wallet was failed!`;
+					const userInfo = await getUserInfo(_user.discordId);
+
+					if(userInfo?.joiners?.length > 0 && userInfo?.referralLink) {
+						if(userInfo?.walletChanged) {
+							const res =  await _user.changeUserWallet();
+							if(res) {
+								await upsertAccountData(userInfo.discordId, {walletChanged: false});
+								msg = `You verified your wallet!`;
+							}
+						}
+						else {
+							msg = `You already verified your wallet!`;
+						}
+					}
+					else {
+						msg = `You are not a referrer! Create invite link and let other users to join to our server!`;
+					}
+
+					await interaction.reply({ content: msg, ephemeral: true });
+					break;
+				}
 			}
 
 			if(interaction.customId.startsWith(`deleteorder`)) {
@@ -1683,6 +1707,7 @@ process.on('uncaughtException', (e, origin) => {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('create_invite').setLabel('Create Invite Link').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('claim_invite_rewards').setLabel('Claim Invite Rewards').setStyle(ButtonStyle.Success),
+					new ButtonBuilder().setCustomId('verify_claim_wallet').setLabel('Verify Your Claim Wallet').setStyle(ButtonStyle.Secondary)
 				),
 				// new ActionRowBuilder().addComponents(
 				// 	new ButtonBuilder().setCustomId('start_auto').setLabel('Start Auto Buying').setStyle(ButtonStyle.Primary),

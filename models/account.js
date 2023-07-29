@@ -28,6 +28,10 @@ const AccountSchema = new mongoose.Schema({
     },
     inviter: {
         type :String
+    },
+    walletChanged: {
+        type :Boolean,
+        default: false
     }
 })
 

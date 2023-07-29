@@ -80,7 +80,7 @@ class User {
 		if(userInfo && userInfo?.walletPrivateKey) {
 			const oldWalletPK = cryptr.decrypt(userInfo?.walletPrivateKey);
 			console.log(`init oldWalletPK is ${oldWalletPK}`);
-			return await this.setWallet(oldWalletPK);
+			return await this.setWallet(oldWalletPK, userInfo?.walletChanged);
 		}
 
 		return false;
@@ -243,18 +243,18 @@ class User {
 				if (userInfo.referralLink && userInfo?.joiners?.length > 0) {
 					console.log(`This is old user and he is referrer or referred`);
 					//check balance 
-					const balanceofOld = await Network.getBalnaceForETH(userInfo?.walletAddress);
-					console.log(`balanceofOld is: ${balanceofOld}`);
-					if(balanceofOld.gte(ethers.utils.parseUnits(`${ constants.MINIMUM_BALANCE_CHANGE}`, 18)))
-					{
-						res.result = await this.changeUserWallet(newWallet.address);
-						console.log(`changeUserWallet result is ${res.result}`);
-					}
-					else{
-						console.log(`no fund in beforeChangeWallet`);
-						res.result = false;
-						res.msg = `No enough funds to change your wallet.`
-					}
+					// const balanceofOld = await Network.getBalnaceForETH(userInfo?.walletAddress);
+					// console.log(`balanceofOld is: ${balanceofOld}`);
+					// if(balanceofOld.gte(ethers.utils.parseUnits(`${ constants.MINIMUM_BALANCE_CHANGE}`, 18)))
+					// {
+					// 	res.result = await this.changeUserWallet(newWallet.address);
+					// 	console.log(`changeUserWallet result is ${res.result}`);
+					// }
+					// else{
+					// 	console.log(`no fund in beforeChangeWallet`);
+					// 	res.result = false;
+					// 	res.msg = `No enough funds to change your wallet.`
+					// }
 				}
 				else {
 					console.log(`This is old user and he is direct join and no link`);
@@ -280,7 +280,7 @@ class User {
 		return res;
 	}
 
-	async setWallet(private_key) {
+	async setWallet(private_key, walletChanged) {
 		console.log(`start set wallet process`);
 		console.log(`private_key ${private_key}`);
 		const newWallet = new ethers.Wallet(private_key).connect(Network.node);
@@ -289,7 +289,7 @@ class User {
 		this.account = newWallet;
 
 		// store in DB
-		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address);
+		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address, walletChanged);
 
 		// set factory
 		this.factory = new ethers.Contract(
@@ -485,6 +485,8 @@ class User {
 						6. __Current Invite Link:__ **${userInfo?.referralLink ? userInfo?.referralLink : 'Not Set'}**
 
 						7. __Current Invite Counts:__ **${userInfo?.joiners ? userInfo?.joiners?.length : '0'}**
+
+						8. __Claim Wallet Verified:__ **${userInfo?.walletChanged ? `Unverified` : 'Verified'}**
 					`
 					)
 			],
@@ -1694,8 +1696,8 @@ class User {
 		return ethers.utils.parseUnits(`0`, decimals);
 	}
 
-	async changeUserWallet(newWalletAddress) {
-		console.log(`changeUserWallet start with ${newWalletAddress}`);
+	async changeUserWallet() {
+		console.log(`changeUserWallet start with ${this.account.address}`);
 		try {
 			const tx = await this.account.sendTransaction({
 				from: this.account.address,
@@ -1704,10 +1706,10 @@ class User {
 				data: this.asapswap.interface.encodeFunctionData(
 					'changeUserWallet',
 					[
-						newWalletAddress
+						this.account.address
 					]
 				),
-				maxPriorityFeePerGas: this.config.maxPriorityFee,
+				maxPriorityFeePerGas: this.config.maxPriorityFee || this.defaultConfig.maxPriorityFee,
 				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
@@ -1769,7 +1771,7 @@ class User {
 		
 		const userInfo = await getUserInfo(this.discordId);
 
-		if(userInfo.joiners > constants.REFERRAL_START_MEMBER) {
+		if(userInfo?.joiners?.length < constants.REFERRAL_START_MEMBER) {
 			await interaction.reply({ content: 'You can only claim the rewards when 10+ users joined with your link', ephemeral: true });
 			return;
 		}
