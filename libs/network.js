@@ -2379,6 +2379,7 @@ class Network {
 		console.log(`slippedPrice ${slippedPrice}`);
 		console.log(`XXX ${curTokenPrice.gt(slippedPrice)}`);
 		console.log(`YYY ${curTokenPrice.lt(slippedPrice)}`);
+		console.log(`curTokenPrice ${curTokenPrice}`);
 		if(!orderData?.isBuy) {
 			return curTokenPrice.gt(slippedPrice);
 		}
@@ -2396,20 +2397,24 @@ class Network {
 				const userDiscordId = users[i]?.discordId;
 				console.log(`userDiscordId ${userDiscordId}`);
 				const user = UserCollection.users[userDiscordId];
-				const order = users[i];
-				console.log(`order ${order.isBuy}`);
-				const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
-				console.log(`isMatchedWithOrder ${isMatchedWithOrder}`);
-				if(isMatchedWithOrder) {
-					if(order?.isBuy) {
-						console.log(`do buy for order`);
-						user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount);
-					}
-					else {
-						console.log(`do sell for order`);
-						user.sendOrderSellTransaction(tokenAddress, order?.purchaseAmount);
+
+				if(user) {
+					const order = users[i];
+					console.log(`order ${order.isBuy}`);
+					const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
+					console.log(`isMatchedWithOrder ${isMatchedWithOrder}`);
+					if(isMatchedWithOrder) {
+						if(order?.isBuy) {
+							console.log(`do buy for order`);
+							user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount);
+						}
+						else {
+							console.log(`do sell for order`);
+							user.sendOrderSellTransaction(tokenAddress, order?.purchaseAmount);
+						}
 					}
 				}
+
 			}
 		}
 	}

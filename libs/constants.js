@@ -120,7 +120,7 @@ const items = {
 		REFERRAL: `referral`
 	},
 
-	MINIMUM_BALANCE_CHANGE: 0.001,
+	MINIMUM_BALANCE_CHANGE: 0.07,
 
 	IS_TEST_MODE: false,
 }

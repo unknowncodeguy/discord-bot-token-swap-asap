@@ -158,31 +158,6 @@ process.on('uncaughtException', (e, origin) => {
 		if(interaction.isButton()) {
 
 			switch(interaction.customId) {
-				// case `set_user_fee`: {					
-				// 	const modal = new ModalBuilder()
-				// 					.setCustomId('set_user_fee')
-				// 					.setTitle('Set User Fee')
-				// 					.addComponents([
-				// 						new ActionRowBuilder().addComponents(
-				// 							new TextInputBuilder()
-				// 								.setCustomId('discord_id_user').setLabel('Discord Id')
-				// 								.setStyle(TextInputStyle.Short)
-				// 								.setValue(``)
-				// 								.setPlaceholder("Enter User's Discord ID")
-				// 								.setRequired(true),
-				// 						),
-				// 						new ActionRowBuilder().addComponents(
-				// 							new TextInputBuilder()
-				// 								.setCustomId('user_fee').setLabel('Fee value of Discord User')
-				// 								.setStyle(TextInputStyle.Short)
-				// 								.setValue(`0`)
-				// 								.setPlaceholder('Enter the fee percentage between 0 and 100')
-				// 								.setRequired(true),
-				// 						)
-				// 					]);
-
-				// 	await interaction.showModal(modal);
-				// }
 
 				case 'setup': {
 
@@ -389,54 +364,11 @@ process.on('uncaughtException', (e, origin) => {
 					await interaction.reply({ content: msg, ephemeral: true});
 					return;
 				}
-
-				// case 'restore_wallet': {
-				// 	console.log(`start restore wallet`);
-				// 	let msg = `Wallet Restoring is failed. Please try again!`;
-				// 	try {
-				// 		const result = await _user.init();
-				// 		if(result) {
-				// 			msg = `Wallet Restored!`;
-				// 		}
-				// 		else {
-				// 			msg = `You have not previous wallet!`;
-				// 		}
-				// 	}
-				// 	catch(err) {
-				// 		console.log(`Error when restoring wallet: ${err}`)
-				// 	}
-				// 	await interaction.reply({ content: msg, ephemeral: true});
-				// 	break;
-				// }
 			}
 
 		} else if(interaction.isModalSubmit()) {
 
 			switch(interaction.customId) {
-
-				// case `set_user_fee`: {
-				// 	let feepercentage = interaction.fields.getTextInputValue('user_fee').toString();
-				// 	console.log(`feepercentage: ${feepercentage}`);
-				// 	if(!Helpers.isInt(feepercentage) || feepercentage > 100 || feepercentage < 1) {
-				// 		return interaction.reply({ content: 'Fee percentage must be a valid number between 0 and 100.', ephemeral: true});
-				// 	}
-
-				// 	let userID = interaction.fields.getTextInputValue('discord_id_user').toString();
-				// 	if(!Helpers.isValidDiscordUserId(userID)) {
-				// 		return interaction.reply({ content: `User ID ${userID} is invalid!`, ephemeral: true});
-				// 	}
-
-				// 	const result = await setFeeInfo(userID, Number(feepercentage));
-				// 	let msg = `Setring user fee is failed. Please check your network!`;
-				// 	if(result?.result) {
-				// 		if(result?.oldWalletAddress) {
-				// 			await Network.setUserFee(result?.oldWalletAddress, feepercentage);
-				// 		}
-				// 		msg = `User ${userID}'s fee is set to ${feepercentage}%!`;
-				// 	}
-
-				// 	await interaction.reply({ content: msg });
-				// }
 
 				case 'set_wallet_key': {	
 
@@ -769,7 +701,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_buy_percentage').toString();
 					console.log(`orderPercentage when buying: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
+					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > -1) {
 						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
@@ -793,7 +725,7 @@ process.on('uncaughtException', (e, origin) => {
 						console.log(`error when saving limit values to DB: ${err}`)
 					}
 
-					await interaction.reply({ content: msg });
+					await interaction.reply({ content: msg, ephemeral: true });
 
 					break;
 				}
@@ -808,7 +740,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderPercentage = interaction.fields.getTextInputValue('set_limit_order_buy_percentage').toString();
 					console.log(`orderPercentage when buying: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
+					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > -1) {
 						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
@@ -832,7 +764,7 @@ process.on('uncaughtException', (e, origin) => {
 						console.log(`error when saving limit values to DB: ${err}`)
 					}
 
-					await interaction.reply({ content: msg });
+					await interaction.reply({ content: msg, ephemeral: true });
 
 					break;
 				}
@@ -841,13 +773,13 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderAmount = interaction.fields.getTextInputValue('show_select_order_sell_amount').toString();
 					console.log(`orderAmount when selling: ${orderAmount}`);
-					if(!Helpers.isInt(orderAmount) || orderAmount < -100 || orderAmount < 0) {
+					if(!Helpers.isInt(orderAmount) || orderAmount < -100 || orderAmount > -1) {
 						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
 					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_sell_percentage').toString();
 					console.log(`orderPercentage when selling: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > 0) {
+					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > -1) {
 						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
 					}
 
@@ -869,7 +801,7 @@ process.on('uncaughtException', (e, origin) => {
 						console.log(`error when saving limit values to DB: ${err}`)
 					}
 
-					await interaction.reply({ content: msg });
+					await interaction.reply({ content: msg, ephemeral: true });
 
 					break;
 				}
@@ -908,7 +840,7 @@ process.on('uncaughtException', (e, origin) => {
 						console.log(`error when saving limit values to DB: ${err}`)
 					}
 
-					await interaction.reply({ content: msg });
+					await interaction.reply({ content: msg, ephemeral: true });
 
 					break;
 				}
@@ -1306,7 +1238,8 @@ process.on('uncaughtException', (e, origin) => {
 						const order = orderList[i];
 						if(i == 0) {
 							await interaction.reply({
-								content: `Show Order List`,
+								content: `Show Order List`, 
+								ephemeral: true,
 								embeds: [
 									new EmbedBuilder()
 										.setColor(0x000000)
@@ -1365,6 +1298,7 @@ process.on('uncaughtException', (e, origin) => {
 						if(i == 0) {
 							await interaction.reply({
 								content: `Show Order List`,
+								ephemeral: true,
 								embeds: [
 									new EmbedBuilder()
 										.setColor(0x000000)
@@ -1419,7 +1353,7 @@ process.on('uncaughtException', (e, origin) => {
 						await _user.showSelectOrder(interaction, tokenAddress);
 					}
 					else {
-						await interaction.reply({ content: 'Token Address is Invalid!', ephemeral: true });
+						await interaction.reply({ content: 'Token Address is invalid!', ephemeral: true });
 					}
 
 					break;
@@ -1628,7 +1562,7 @@ process.on('uncaughtException', (e, origin) => {
 						const userInviteLink = `${invite?.url}#${interaction.guild.name}`;
 
 						if(invite?.url) {
-							const result = await setReferralLink(_user.discordId, invite?.url);
+							const result = await setReferralLink(_user.discordId, invite.url);
 
 							if(result) {
 								await interaction.reply({ content: `Invite Link is ${userInviteLink}`, ephemeral: true });
@@ -1800,6 +1734,12 @@ process.on('uncaughtException', (e, origin) => {
 				catch(err) {
 					console.log(`err when set referral fee ${err}`)
 				}
+			}
+			else {
+				await upsertAccountData(member.user.id, {
+					fee: constants.SWAP_TOTAL_FEE,
+					joinType: constants.MEMBER_ADD_TYPE.DIRECT
+				});
 			}
 		}
 		else {
