@@ -10,7 +10,6 @@ module.exports = {
     
             const info = await PriceModel.findOne(filter);
             
-            console.log(`start setTokenPrice to DB`);
 
             if(info) {
                 await PriceModel.updateOne(filter, update);
@@ -20,7 +19,6 @@ module.exports = {
                 await newData.save();
             }
 
-            console.log(`end setTokenPrice to DB`);
     
             return true;
         }

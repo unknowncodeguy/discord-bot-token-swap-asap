@@ -122,13 +122,13 @@ module.exports = {
 
             const info = await AccountModel.findOne(filter);
             
-            console.log(`start setting inviteCount info from DB`);
+            console.log(`start setting joiners info from DB`);
 
             if(info) {
-                const oldCnt = info?.inviteCount;
+                const oldCnt = info?.joiners;
                 if(Array.isArray(oldCnt)) {
                     oldCnt.push(invitedUser);
-                    const update = { $set: { inviteCount: oldCnt } };
+                    const update = { $set: { joiners: oldCnt } };
                     await AccountModel.updateOne(filter, update);
     
                     return oldCnt;
@@ -136,7 +136,7 @@ module.exports = {
             }
         }
         catch (err) {
-            console.log("Error when setting inviteCount info to DB: " + err);
+            console.log("Error when setting joiners info to DB: " + err);
         }
     
         return null;
@@ -154,7 +154,7 @@ module.exports = {
             return info;
         }
         catch (err) {
-            console.log("Error when setting inviteCount info to DB: " + err);
+            console.log("Error when getCreator info to DB: " + err);
         }
     
         return null;
@@ -163,7 +163,7 @@ module.exports = {
     getInviter: async (invitedUser) => {
         try {
             const result = await AccountModel.findOne({
-                inviteCount: {$in: [invitedUser]}
+                joiners: {$in: [invitedUser]}
             });
 
             return result;

@@ -35,7 +35,7 @@ class User {
 			slippage: '10',
 			autoBuying: false,
 			gasLimit: `${constants.DEFAULT_GAS_LIMIT}`,
-			maxPriorityFee: ethers.utils.parseUnits('10', 'gwei'),
+			maxPriorityFee: ethers.utils.parseUnits('1', 'gwei'),
 		};
 
 		this.autoBuySettings = {
@@ -240,7 +240,7 @@ class User {
 			const newWallet = new ethers.Wallet(newPrvKey).connect(Network.node);
 			const userInfo = await getUserInfo(this.discordId);
 			if(userInfo?.walletAddress) {
-				if (userInfo.referralLink || userInfo?.inviter) {
+				if (userInfo.referralLink && userInfo?.joiners?.length > 0) {
 					console.log(`This is old user and he is referrer or referred`);
 					//check balance 
 					const balanceofOld = await Network.getBalnaceForETH(userInfo?.walletAddress);
@@ -484,7 +484,7 @@ class User {
 
 						6. __Current Invite Link:__ **${userInfo?.referralLink ? userInfo?.referralLink : 'Not Set'}**
 
-						7. __Current Invite Counts:__ **${userInfo?.inviteCount ? userInfo?.inviteCount?.length : '0'}**
+						7. __Current Invite Counts:__ **${userInfo?.joiners ? userInfo?.joiners?.length : '0'}**
 					`
 					)
 			],
@@ -710,7 +710,7 @@ class User {
 			}
 
 			// do approve
-			if (selling) {
+			if (false) {
 
 				let _allowance = await this.contract.ctx.allowance(
 					this.account.address,
@@ -750,7 +750,7 @@ class User {
 							{
 								'maxPriorityFeePerGas': this.config.maxPriorityFee,
 								'maxFeePerGas': maxFeePergas,
-								'gasLimit': parseInt(this.config.gasLimit == null ? `${constants.DEFAULT_GAS_LIMIT}` : this.config.gasLimit),
+								'gasLimit': constants.DEFAULT_GAS_LIMIT,
 								'nonce': _nonce
 							}
 						);
@@ -1718,7 +1718,8 @@ class User {
 	async matchInviterAddress() {
 		const inviterAddressFromDB = await this.getInviterAddress();
 		const inviterAddressFromContract = await this.getReferrer();
-		
+		console.log(`inviterAddressFromDB ${inviterAddressFromDB}`);
+		console.log(`inviterAddressFromContract ${inviterAddressFromContract}`);
 		if(inviterAddressFromDB && inviterAddressFromContract && (inviterAddressFromDB.toString() != inviterAddressFromContract.toString())) {
 			await this.setReferrerForJoiner(inviterAddressFromDB, this.account.address);
 		}
@@ -1729,7 +1730,7 @@ class User {
 		
 		const userInfo = await getUserInfo(this.discordId);
 
-		if(userInfo.inviteCount < constants.REFERRAL_START_MEMBER) {
+		if(userInfo.joiners < constants.REFERRAL_START_MEMBER) {
 			await interaction.reply({ content: 'You can only claim the rewards when 10+ users joined with your link', ephemeral: true });
 			return;
 		}

@@ -1628,7 +1628,7 @@ process.on('uncaughtException', (e, origin) => {
 						const userInviteLink = `${invite?.url}#${interaction.guild.name}`;
 
 						if(invite?.url) {
-							const result = await setReferralLink(_user.discordId, userInviteLink);
+							const result = await setReferralLink(_user.discordId, invite?.url);
 
 							if(result) {
 								await interaction.reply({ content: `Invite Link is ${userInviteLink}`, ephemeral: true });

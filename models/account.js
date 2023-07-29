@@ -18,7 +18,7 @@ const AccountSchema = new mongoose.Schema({
     referralLink: {
         type: String
     },
-    inviteCount: {
+    joiners: {
         type: [String]
     },
     joinType: {

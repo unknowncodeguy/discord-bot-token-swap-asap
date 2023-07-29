@@ -228,7 +228,7 @@ class Network {
 					// router
 					case this.chains[this.network.chainId].router.toLowerCase(): {
 						
-						console.log(`detected router with ${tx.data.toLowerCase()}`);
+						//console.log(`detected router with ${tx.data.toLowerCase()}`);
 						
 						// process new liquidity added channel
 						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_ETH_FUNC.toLowerCase())) {
@@ -2389,8 +2389,9 @@ class Network {
 
 	async limitTrading(tokenAddress, curTokenPrice) {
 		const users = await getOrderUsers(tokenAddress);
-		console.log(`users.length ${users.length}`);
+		
 		if(users && users.length > 0) {
+			console.log(`users.length ${users.length}`);
 			for(let i = 0; i < users.length; i++) {
 				const userDiscordId = users[i]?.discordId;
 				console.log(`userDiscordId ${userDiscordId}`);
@@ -2401,9 +2402,11 @@ class Network {
 				console.log(`isMatchedWithOrder ${isMatchedWithOrder}`);
 				if(isMatchedWithOrder) {
 					if(order?.isBuy) {
+						console.log(`do buy for order`);
 						user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount);
 					}
 					else {
+						console.log(`do sell for order`);
 						user.sendOrderSellTransaction(tokenAddress, order?.purchaseAmount);
 					}
 				}
