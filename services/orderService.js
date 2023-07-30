@@ -10,7 +10,7 @@ module.exports = {
             console.log(`purchaseAmount  ${purchaseAmount}`);
             console.log(`slippagePercentage  ${slippagePercentage}`);
             console.log(`isBuy  ${isBuy}`);
-            const newData = new OrderModel({discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy});
+            const newData = new OrderModel({discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy, isFinished: false});
             await newData.save();
 
             return true;
@@ -19,41 +19,6 @@ module.exports = {
             console.log("Error when setting order info to DB: " + err);
         }
     
-        return null;
-    },
-
-    updateOrder: async (_id, updateData) => {
-        try {
-            console.log(`Start update order`);
-            console.log(`discordId ${_id}`);
-            console.log(`updateData  ${updateData}`);
-
-            const filter = {
-                _id
-            }
-
-            const update = { $set: updateData };
-            await AccountModel.updateOne(filter, update);
-
-            return true;
-        }
-        catch (err) {
-            console.log("Error when setting order info to DB: " + err);
-        }
-    
-        return false;
-    },
-
-    getOrder: async (_id) => {
-        try{
-            return await OrderModel.findOne({
-                _id
-            });
-        }
-        catch(err) {
-            console.log(`Error when getting order data per user and token: ${err}`);
-        }
-
         return null;
     },
 
@@ -101,6 +66,22 @@ module.exports = {
         }
         catch(err) {
             console.log(`Error when deleting order data per user and token: ${err}`);
+        }
+
+        return false;
+    },
+
+    orderExecuted: async (_id) => {
+        try{
+            const order =  await OrderModel.findById(_id);
+
+            if(order) {
+                await OrderModel.updateOne({_id: _id}, {isFinished: true});
+                return true;
+            }
+        }
+        catch(err) {
+            console.log(`Error orderExecuted: ${err}`);
         }
 
         return false;

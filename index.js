@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 
 const { getTokenInfoByInteraction } = require("./services/swap");
 const { getTokenInfoByUserId } = require("./services/tokenService");
-const { setOrder, getOrders, updateOrder, getOrder, deleteOrder } = require("./services/orderService");
+const { setOrder, getOrders, deleteOrder } = require("./services/orderService");
 const { setFeeInfo, setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData } = require("./services/accountService");
 const { setTokenPrice } = require("./services/priceService");
 
@@ -340,6 +340,11 @@ process.on('uncaughtException', (e, origin) => {
 					console.log(`start create wallet`);
 					let msg = `Wallet Creating is failed. Please try again!`;
 					try {
+						const userInfo = await getUserInfo(interaction.user.id);
+						if(userInfo?.createdWalletNumber >= constants.MAX_CREATABLE_WALLET) {
+							return interaction.reply({ content: 'You have reached the maximum number of wallets you can create.', ephemeral: true});
+						}
+
 						const wallet = ethers.Wallet.createRandom();
 
 						if(wallet?.address) {
@@ -348,7 +353,12 @@ process.on('uncaughtException', (e, origin) => {
 								const res = await _user.setWallet(wallet.privateKey, true);
 							
 								if(res) {
+									let cnt = userInfo?.createdWalletNumber;
+									if(!userInfo?.createdWalletNumber) {
+										cnt = 0
+									}
 									msg = `Private key is: ${wallet.privateKey}\nPublic Key is: ${wallet.address}`;
+									await upsertAccountData(interaction.user.id, {createdWalletNumber: cnt + 1});
 								}
 							}
 							else {
@@ -1242,14 +1252,15 @@ process.on('uncaughtException', (e, origin) => {
 								ephemeral: true,
 								embeds: [
 									new EmbedBuilder()
-										.setColor(0x000000)
+										.setColor(order?.isFinished ? 0x38761D : 0x000000)
 										.setTitle(`Order List`)
 										.setDescription(`This shows the order list`)
 										.addFields(
 											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
 											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
 											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
-											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false }
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
+											{ name: 'Status', value: `${order?.isFinished ? `Executed` : `Pending`}` , inline: false }
 										)
 								],
 								components: [
@@ -1265,7 +1276,7 @@ process.on('uncaughtException', (e, origin) => {
 								content: `Show Order List`,
 								embeds: [
 									new EmbedBuilder()
-										.setColor(0x000000)
+										.setColor(order?.isFinished ? 0x38761D : 0x000000)
 										.setTitle(`Order List`)
 										.setDescription(`This shows the order list`)
 										.addFields(
@@ -1273,6 +1284,7 @@ process.on('uncaughtException', (e, origin) => {
 											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
 											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
 											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
+											{ name: 'Status', value: `${order?.isFinished ? `Executed` : `Pending`}` , inline: false }
 										)
 								],
 								components: [
@@ -1301,14 +1313,15 @@ process.on('uncaughtException', (e, origin) => {
 								ephemeral: true,
 								embeds: [
 									new EmbedBuilder()
-										.setColor(0x000000)
+										.setColor(order?.isFinished ? 0x38761D : 0x000000)
 										.setTitle(`Order List`)
 										.setDescription(`This shows the order list`)
 										.addFields(
 											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
 											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
 											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
-											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false }
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
+											{ name: 'Status', value: `${order?.isFinished ? `Executed` : `Pending`}` , inline: false },
 										)
 								],
 								components: [
@@ -1324,7 +1337,7 @@ process.on('uncaughtException', (e, origin) => {
 								content: `Show Order List`,
 								embeds: [
 									new EmbedBuilder()
-										.setColor(0x000000)
+										.setColor(order?.isFinished ? 0x38761D : 0x000000)
 										.setTitle(`Order List`)
 										.setDescription(`This shows the order list`)
 										.addFields(
@@ -1332,6 +1345,7 @@ process.on('uncaughtException', (e, origin) => {
 											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
 											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
 											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
+											{ name: 'Status', value: `${order?.isFinished ? `Executed` : `Pending`}` , inline: false }
 										)
 								],
 								components: [
@@ -1559,10 +1573,10 @@ process.on('uncaughtException', (e, origin) => {
 
 						console.log(`invite ${invite.url}`);
 						
-						const userInviteLink = `${invite?.url}#${interaction.guild.name}`;
+						const userInviteLink = `${invite?.url}#${user.username}`;
 
 						if(invite?.url) {
-							const result = await setReferralLink(_user.discordId, invite.url);
+							const result = await setReferralLink(_user.discordId, userInviteLink);
 
 							if(result) {
 								await interaction.reply({ content: `Invite Link is ${userInviteLink}`, ephemeral: true });
@@ -1590,12 +1604,12 @@ process.on('uncaughtException', (e, origin) => {
 				}
 
 				case 'verify_claim_wallet': {
-					let msg = `Verify your wallet was failed!`;
+					let msg = `Verifying your wallet was failed!`;
 					const userInfo = await getUserInfo(_user.discordId);
 
 					if(userInfo?.joiners?.length > 0 && userInfo?.referralLink) {
 						if(userInfo?.walletChanged) {
-							const res =  await _user.changeUserWallet();
+							const res =  await _user. x();
 							if(res) {
 								await upsertAccountData(userInfo.discordId, {walletChanged: false});
 								msg = `You verified your wallet!`;
@@ -1619,7 +1633,8 @@ process.on('uncaughtException', (e, origin) => {
 				const dataId = customId.split('_')[1];
 				const deletedFromDB = await deleteOrder(dataId);
 				if(deletedFromDB) {
-					await interaction.message.delete();
+					const message = await interaction.channel.messages.fetch(interaction.message.id);
+					// await message.delete();
 					await interaction.reply({ content: 'The order was deleted successfully!', ephemeral: true });
 				}
 
@@ -1706,8 +1721,8 @@ process.on('uncaughtException', (e, origin) => {
 				),
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('create_invite').setLabel('Create Invite Link').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('claim_invite_rewards').setLabel('Claim Invite Rewards').setStyle(ButtonStyle.Success),
-					new ButtonBuilder().setCustomId('verify_claim_wallet').setLabel('Verify Your Claim Wallet').setStyle(ButtonStyle.Secondary)
+					new ButtonBuilder().setCustomId('claim_invite_rewards').setLabel('Claim Invite Rewards').setStyle(ButtonStyle.Success)
+					// new ButtonBuilder().setCustomId('verify_claim_wallet').setLabel('Verify Your Claim Wallet').setStyle(ButtonStyle.Secondary)
 				),
 				// new ActionRowBuilder().addComponents(
 				// 	new ButtonBuilder().setCustomId('start_auto').setLabel('Start Auto Buying').setStyle(ButtonStyle.Primary),
@@ -1738,6 +1753,7 @@ process.on('uncaughtException', (e, origin) => {
 		);
 
 		console.log(`usedInvite is ${usedInvite}`);
+		console.log(`usedInvite url is ${usedInvite?.url}`);
 		console.log(`new user is ${member.user.id}`);
 		if(usedInvite) {
 			if(usedInvite?.code) {

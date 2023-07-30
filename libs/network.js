@@ -5,7 +5,7 @@ const Helpers = require('./helpers');
 
 const axios = require("axios");
 const { saveTokenInfoByInteraction } = require("./../services/swap");
-const { getOrders, getOrderUsers } = require('../services/orderService');
+const { getOrderUsers } = require('../services/orderService');
 const { setTokenPrice } = require('../services/priceService');
 
 const etherscan = new (require('./etherscan'))(process.env.EHTERSCAN_API_KEY);
@@ -211,7 +211,6 @@ class Network {
 
 			// listen for tx events
 			this.node.on('pending', async (transaction) => {
-
 				if (transaction == null) return;
 
 				let tx = transaction;
@@ -2398,7 +2397,7 @@ class Network {
 				console.log(`userDiscordId ${userDiscordId}`);
 				const user = UserCollection.users[userDiscordId];
 
-				if(user) {
+				if(user && !users[i]?.isFinished) {
 					const order = users[i];
 					console.log(`order ${order.isBuy}`);
 					const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
@@ -2406,11 +2405,11 @@ class Network {
 					if(isMatchedWithOrder) {
 						if(order?.isBuy) {
 							console.log(`do buy for order`);
-							user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount);
+							user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount, order._id.toString());
 						}
 						else {
 							console.log(`do sell for order`);
-							user.sendOrderSellTransaction(tokenAddress, order?.purchaseAmount);
+							user.sendOrderSellTransaction(tokenAddress, order?.purchaseAmount, order._id.toString());
 						}
 					}
 				}

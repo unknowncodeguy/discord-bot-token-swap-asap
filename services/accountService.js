@@ -144,8 +144,9 @@ module.exports = {
 
     getCreator: async (referralLink) => {
         try {
+            const pattern = new RegExp(`.*${referralLink}.*`);
             const filter = {
-                referralLink
+                referralLink: pattern
             }
 
             const info = await AccountModel.findOne(filter);

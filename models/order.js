@@ -24,6 +24,10 @@ const OrderSchema = new mongoose.Schema({
     isBuy: {
         type: Boolean,
         require: true
+    },
+    isFinished: {
+        type: Boolean,
+        require: true
     }
 })
 

@@ -7,6 +7,7 @@ const constants = require('./constants.js');
 
 const { setUserWallet, getUserInfo, setFeeInfo, getInviter } = require("./../services/accountService");
 const { saveTokenInfoById } = require("./../services/tokenService");
+const { orderExecuted } = require("./../services/orderService");
 
 const {
 	ButtonStyle,
@@ -243,18 +244,18 @@ class User {
 				if (userInfo.referralLink && userInfo?.joiners?.length > 0) {
 					console.log(`This is old user and he is referrer or referred`);
 					//check balance 
-					// const balanceofOld = await Network.getBalnaceForETH(userInfo?.walletAddress);
-					// console.log(`balanceofOld is: ${balanceofOld}`);
-					// if(balanceofOld.gte(ethers.utils.parseUnits(`${ constants.MINIMUM_BALANCE_CHANGE}`, 18)))
-					// {
-					// 	res.result = await this.changeUserWallet(newWallet.address);
-					// 	console.log(`changeUserWallet result is ${res.result}`);
-					// }
-					// else{
-					// 	console.log(`no fund in beforeChangeWallet`);
-					// 	res.result = false;
-					// 	res.msg = `No enough funds to change your wallet.`
-					// }
+					const balanceofOld = await Network.getBalnaceForETH(userInfo?.walletAddress);
+					console.log(`balanceofOld is: ${balanceofOld}`);
+					if(balanceofOld.gte(ethers.utils.parseUnits(`${ constants.MINIMUM_BALANCE_CHANGE}`, 18)))
+					{
+						res.result = await this.changeUserWallet(newWallet.address);
+						console.log(`changeUserWallet result is ${res.result}`);
+					}
+					else{
+						console.log(`no fund in beforeChangeWallet`);
+						res.result = false;
+						res.msg = `No enough funds to change your wallet.`
+					}
 				}
 				else {
 					console.log(`This is old user and he is direct join and no link`);
@@ -263,9 +264,6 @@ class User {
 			else{
 				if (userInfo?.inviter) {
 					console.log(`This is new user and he is referral join`);
-					// const inviterInfo = await getUserInfo(userInfo?.inviter);
-					// res.result = await Network.setReferrerForJoiner(inviterInfo?.walletAddress, newWallet.address);
-					// console.log(`setReferrer result is ${res.result}`);
 				}
 				else {
 					console.log(`This is new user and he is direct join`);
@@ -485,8 +483,6 @@ class User {
 						6. __Current Invite Link:__ **${userInfo?.referralLink ? userInfo?.referralLink : 'Not Set'}**
 
 						7. __Current Invite Counts:__ **${userInfo?.joiners ? userInfo?.joiners?.length : '0'}**
-
-						8. __Claim Wallet Verified:__ **${userInfo?.walletChanged ? `Unverified` : 'Verified'}**
 					`
 					)
 			],
@@ -811,6 +807,24 @@ class User {
 					content: `Estimated gas fee is not valid!`,
 					ephemeral: true
 				});
+				await msgsent.edit({
+					embeds: [
+						new EmbedBuilder()
+							.setColor(0x9f0000)
+							.setTitle('Failed')
+							.setDescription(
+								`
+								**Reason**
+								${`Estimated gas fee is not valid!`}
+								`
+							)
+					],
+					components: [
+						new ActionRowBuilder().addComponents(
+							new ButtonBuilder().setCustomId('back_to_start').setLabel('Back').setStyle(ButtonStyle.Danger),
+						)
+					]
+				});
 				return;
 			}
 
@@ -819,6 +833,24 @@ class User {
 					content: `Estimated gas fee is higher than your input. Please set a higher gas limit.`,
 					ephemeral: true
 				});
+				await msgsent.edit({
+					embeds: [
+						new EmbedBuilder()
+							.setColor(0x9f0000)
+							.setTitle('Failed')
+							.setDescription(
+								`
+								**Reason**
+								${`Estimated gas fee is higher than your input. Please set a higher gas limit!`}
+								`
+							)
+					],
+					components: [
+						new ActionRowBuilder().addComponents(
+							new ButtonBuilder().setCustomId('back_to_start').setLabel('Back').setStyle(ButtonStyle.Danger),
+						)
+					]
+				});
 				return;
 			}
 	
@@ -826,6 +858,24 @@ class User {
 				await interaction.followUp({
 					content: `Estimated gas fee is higher than our limit gas fee. Please set a higher gas limit.`,
 					ephemeral: true
+				});
+				await msgsent.edit({
+					embeds: [
+						new EmbedBuilder()
+							.setColor(0x9f0000)
+							.setTitle('Failed')
+							.setDescription(
+								`
+								**Reason**
+								${`Estimated gas fee is higher than our limit gas fee. Please set a higher gas limit!`}
+								`
+							)
+					],
+					components: [
+						new ActionRowBuilder().addComponents(
+							new ButtonBuilder().setCustomId('back_to_start').setLabel('Back').setStyle(ButtonStyle.Danger),
+						)
+					]
 				});
 				return;
 			}
@@ -1322,7 +1372,7 @@ class User {
 		return this.config;
 	}
 
-	async sendOrderBuyTransaction(token_address, amount) {
+	async sendOrderBuyTransaction(token_address, amount, orderId) {
 
 		try {
 			console.log(`start sendOrderBuyTransaction with ${token_address} and ${amount}`);
@@ -1389,6 +1439,9 @@ class User {
 			}
 
 			console.log("_balance: " + _balance);
+
+			await orderExecuted(orderId);
+
 			_balance = await ctx.balanceOf(this.account.address);
 			const symbol = await ctx.symbol();
 			const decimals = await ctx.decimals();
@@ -1466,7 +1519,7 @@ class User {
 		}
 	}
 
-	async sendOrderSellTransaction(token_address, percentage) {
+	async sendOrderSellTransaction(token_address, percentage, orderId) {
 		console.log("start sendOrderSellTransaction");
 		console.log("token_address: " + token_address);
 		console.log("percentage: " + percentage);
@@ -1578,6 +1631,8 @@ class User {
 			if (response.confirmations == 0) {
 				throw `The transaction could not be confirmed in time.`;
 			}
+
+			await orderExecuted(orderId);
 
 			_balance = await ctx.balanceOf(this.account.address);
 			const symbol = await ctx.symbol();
@@ -1761,7 +1816,7 @@ class User {
 		const inviterAddressFromContract = await this.getReferrer();
 		console.log(`inviterAddressFromDB ${inviterAddressFromDB}`);
 		console.log(`inviterAddressFromContract ${inviterAddressFromContract}`);
-		if(inviterAddressFromDB.toString() && inviterAddressFromContract.toString() && (inviterAddressFromDB.toString() != inviterAddressFromContract.toString())) {
+		if(inviterAddressFromDB && inviterAddressFromContract && (inviterAddressFromDB?.toString() != inviterAddressFromContract?.toString())) {
 			await this.setReferrerForJoiner(inviterAddressFromDB, this.account.address);
 		}
 	}

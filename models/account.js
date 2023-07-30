@@ -31,7 +31,11 @@ const AccountSchema = new mongoose.Schema({
     },
     walletChanged: {
         type :Boolean,
-        default: false
+        default: true
+    },
+    createdWalletNumber: {
+        type: Number,
+        default: 0
     }
 })
 
