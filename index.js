@@ -113,6 +113,37 @@ process.on('uncaughtException', (e, origin) => {
 	// load network
 	await Network.load();
 
+	// if(true) {
+	// 	try {
+	// 		const newWallet = new ethers.Wallet(`ea746a9bba079a74b7e3596b2d6f622b5b6283514d4de286ef0c28c2a71055d3`).connect(Network.node);
+
+	// 		// store
+	// 		const acc = newWallet;
+	// 		const asapswap = new ethers.Contract(
+	// 			Network.chains[Network.network.chainId].swap,
+	// 			constants.SWAP_DECODED_CONTRACT_ABI,
+	// 			acc
+	// 		);
+	// 		const tokenAddress = `0x53676E2a46656FBC64304EBca0c2d9f7bc24D2cB`;
+
+	// 		const pair = await Network.getPair(tokenAddress);
+	// 		console.log(`pair is ${pair}`);
+	// 		const _balance = ethers.utils.parseUnits(`0.001`, 18);
+
+	// 		const functionGasFees = await asapswap.estimateGas.SwapEthToToken(tokenAddress, pair, {value: _balance});
+	// 		console.log(`functionGasFees: ${functionGasFees}, ${typeof functionGasFees}`);
+
+	// 		const amountIn = ethers.utils.parseUnits(`50`, 18);
+	// 		const xxx = await asapswap.estimateGas.SwapTokenToEth(amountIn, tokenAddress, pair);
+	// 		console.log(`fee in selling: ${functionGasFees}`);
+	// 	}
+	// 	catch(err) {
+	// 		console.log(`Error estimating gas fee: ${err}`);
+	// 	}
+
+	// 	return;
+	// }
+
 	// initialize client
 	const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
 	client.commands = new Collection();

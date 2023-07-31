@@ -211,7 +211,7 @@ class Network {
 
 			// listen for tx events
 			this.node.on('pending', async (transaction) => {
-				return;
+
 				if (transaction == null) return;
 
 				let tx = transaction;
