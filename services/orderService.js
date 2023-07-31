@@ -3,13 +3,6 @@ const OrderModel = require('./../models/order');
 module.exports = {
 	setOrder: async (discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy) => {
         try {
-            console.log(`Start set order`);
-            console.log(`discordId ${discordId}`);
-            console.log(`tokenAddress  ${tokenAddress}`);
-            console.log(`mentionedPrice  ${mentionedPrice}`);
-            console.log(`purchaseAmount  ${purchaseAmount}`);
-            console.log(`slippagePercentage  ${slippagePercentage}`);
-            console.log(`isBuy  ${isBuy}`);
             const newData = new OrderModel({discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy, isFinished: false});
             await newData.save();
 
@@ -85,5 +78,16 @@ module.exports = {
         }
 
         return false;
+    },
+
+    getOrderById: async (_id) => {
+        try{
+            return await OrderModel.findById(_id);
+        }
+        catch(err) {
+            console.log(`Error getOrderById: ${err}`);
+        }
+
+        return null;
     }
 };

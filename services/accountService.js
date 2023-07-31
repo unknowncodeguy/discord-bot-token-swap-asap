@@ -10,9 +10,6 @@ module.exports = {
     
             const info = await AccountModel.findOne(filter);
             
-            console.log(`start set user wallet pk info to DB`);
-            console.log("discordId" + discordId);
-
             if(info) {
                 await AccountModel.updateOne(filter, update);
             }
@@ -21,8 +18,6 @@ module.exports = {
                 await newData.save();
             }
 
-            console.log(`end set user wallet pk to DB`);
-    
             return true;
         }
         catch (err) {
@@ -34,12 +29,9 @@ module.exports = {
 
     getUserInfo: async (discordId) => {
         try {
-            console.log(`start getUserInfo from DB`);
-
             const info = await AccountModel.findOne({
                 discordId
             });
-            console.log(`end getUserInfo from DB`);
     
             return info;
         }
@@ -48,42 +40,6 @@ module.exports = {
         }
     
         return null;
-    },
-
-    setFeeInfo: async (discordId, fee) => {
-        try {
-            const filter = {
-                discordId
-            }
-            const update = { $set: { fee: fee } };
-    
-            const info = await AccountModel.findOne(filter);
-            
-            console.log(`start setting fee info from DB`);
-            let oldWallet = ``;
-
-            if(info) {
-                await AccountModel.updateOne(filter, update);
-                oldWallet = info?.walletAddress || ``;
-            }
-            else {
-                const newData = new AccountModel({...filter, fee: fee});
-                await newData.save();
-            }
-
-            return {
-                result: true,
-                oldWalletAddress: oldWallet
-            }
-        }
-        catch (err) {
-            console.log("Error when setting fee info to DB: " + err);
-        }
-    
-        return {
-            result: false,
-            oldWalletAddress: ``
-        }
     },
 
     setReferralLink: async (discordId, referralLink) => {
@@ -95,8 +51,6 @@ module.exports = {
     
             const info = await AccountModel.findOne(filter);
             
-            console.log(`start setting referralLink info from DB`);
-
             if(info) {
                 await AccountModel.updateOne(filter, update);
             }
@@ -122,8 +76,6 @@ module.exports = {
 
             const info = await AccountModel.findOne(filter);
             
-            console.log(`start setting joiners info from DB`);
-
             if(info) {
                 const oldCnt = info?.joiners;
                 if(Array.isArray(oldCnt)) {
@@ -151,7 +103,6 @@ module.exports = {
 
             const info = await AccountModel.findOne(filter);
             
-            console.log(`start getCreator info from DB`);
             return info;
         }
         catch (err) {

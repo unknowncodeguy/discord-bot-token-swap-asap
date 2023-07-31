@@ -8,8 +8,8 @@ const mongoose = require('mongoose');
 
 const { getTokenInfoByInteraction } = require("./services/swap");
 const { getTokenInfoByUserId } = require("./services/tokenService");
-const { setOrder, getOrders, deleteOrder } = require("./services/orderService");
-const { setFeeInfo, setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData } = require("./services/accountService");
+const { setOrder, getOrders, deleteOrder, getOrderById } = require("./services/orderService");
+const { setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData } = require("./services/accountService");
 const { setTokenPrice } = require("./services/priceService");
 
 const Contract = require('./libs/contract.js');
@@ -789,8 +789,8 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_sell_percentage').toString();
 					console.log(`orderPercentage when selling: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > -1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
+					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
 					}
 
 					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
@@ -1247,7 +1247,7 @@ process.on('uncaughtException', (e, origin) => {
 					for(let i = 0; i < orderList.length; i++) {
 						const order = orderList[i];
 						if(i == 0) {
-							await interaction.reply({
+							const msg = await interaction.reply({
 								content: `Show Order List`, 
 								ephemeral: true,
 								embeds: [
@@ -1270,10 +1270,13 @@ process.on('uncaughtException', (e, origin) => {
 									),
 								]
 							});
+							console.log(`msg.id is ${msg.id}`);
+
 						}
 						else {
-							await interaction.followUp({
+							const msg = await interaction.followUp({
 								content: `Show Order List`,
+								ephemeral: true,
 								embeds: [
 									new EmbedBuilder()
 										.setColor(order?.isFinished ? 0x38761D : 0x000000)
@@ -1293,6 +1296,8 @@ process.on('uncaughtException', (e, origin) => {
 									),
 								]
 							});
+							console.log(`msg.id is ${msg.id}`);
+
 						}
 					}
 					break;
@@ -1308,7 +1313,7 @@ process.on('uncaughtException', (e, origin) => {
 					for(let i = 0; i < orderList.length; i++) {
 						const order = orderList[i];
 						if(i == 0) {
-							await interaction.reply({
+							const msg = await interaction.reply({
 								content: `Show Order List`,
 								ephemeral: true,
 								embeds: [
@@ -1331,10 +1336,13 @@ process.on('uncaughtException', (e, origin) => {
 									),
 								]
 							});
+
+							console.log(`msg.id is ${msg.id}`);
 						}
 						else {
-							await interaction.followUp({
+							const msg = await interaction.followUp({
 								content: `Show Order List`,
+								ephemeral: true,
 								embeds: [
 									new EmbedBuilder()
 										.setColor(order?.isFinished ? 0x38761D : 0x000000)
@@ -1354,6 +1362,7 @@ process.on('uncaughtException', (e, origin) => {
 									),
 								]
 							});
+							console.log(`msg.id is ${msg.id}`);
 						}
 					}
 					break;
@@ -1549,7 +1558,6 @@ process.on('uncaughtException', (e, origin) => {
 
 				case 'create_invite': {
 					const user = interaction.user;
-					const channel = interaction.channel;
 
 					const userInfo = await getUserInfo(user.id);
 					if(userInfo?.referralLink) {
@@ -1563,12 +1571,10 @@ process.on('uncaughtException', (e, origin) => {
 					console.log(`tokenNumber ${tokenNumber}`);
 
 					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, decimals))) {
-						const invite = await channel.createInvite({
+						const invite = await interaction.guild.systemChannel.createInvite({
 							maxAge: constants.REFERRAL_LINK_EXPIRE_SEC,
 							maxUses: constants.REFERRAL_LINK_MAX_USE,
 							unique: true,
-							inviter: user,
-							reason: `Created by ${interaction.guild.name}`
 						  });
 
 						console.log(`invite ${invite.url}`);
@@ -1631,11 +1637,30 @@ process.on('uncaughtException', (e, origin) => {
 			if(interaction.customId.startsWith(`deleteorder`)) {
 				const customId = interaction.customId;
 				const dataId = customId.split('_')[1];
+				const orderData = await getOrderById(dataId);
 				const deletedFromDB = await deleteOrder(dataId);
 				if(deletedFromDB) {
+					await interaction.update({
+						content: `This order was deleted by user`, 
+						ephemeral: true,
+						embeds: [
+							new EmbedBuilder()
+								.setColor(0xFF0000)
+								.setTitle(`Order List`)
+								.setDescription(`This shows the order list`)
+								.addFields(
+									{ name: 'Mode', value: orderData?.isBuy ? `Buy` : `Sell`, inline: false },
+									{ name: 'Amount', value: orderData?.isBuy ? `${orderData?.purchaseAmount.toFixed(3)}ETH` : `${orderData?.purchaseAmount.toFixed(3)}%`, inline: false },
+									{ name: 'Token Address', value: `[${(Helpers.dotdot(orderData?.tokenAddress))}](https://etherscan.io/address/${orderData?.tokenAddress})` , inline: false },
+									{ name: 'Percentage', value: `${orderData?.slippagePercentage}%` , inline: false },
+									{ name: 'Status', value: `${orderData?.isFinished ? `Executed` : `Pending`}` , inline: false }
+								)
+						],
+						components: []
+					});
 					const message = await interaction.channel.messages.fetch(interaction.message.id);
 					// await message.delete();
-					await interaction.reply({ content: 'The order was deleted successfully!', ephemeral: true });
+					await interaction.followUp({ content: 'The order was deleted successfully!', ephemeral: true });
 				}
 
 				return;
@@ -1766,7 +1791,6 @@ process.on('uncaughtException', (e, origin) => {
 			if(creator) {
 				try {
 					await upsertAccountData(member.user.id, {
-						fee: constants.SWAP_REFERRAL_FEE,
 						joinType: constants.MEMBER_ADD_TYPE.REFERRAL,
 						inviter: creator
 					});
@@ -1778,14 +1802,12 @@ process.on('uncaughtException', (e, origin) => {
 			}
 			else {
 				await upsertAccountData(member.user.id, {
-					fee: constants.SWAP_TOTAL_FEE,
 					joinType: constants.MEMBER_ADD_TYPE.DIRECT
 				});
 			}
 		}
 		else {
 			await upsertAccountData(member.user.id, {
-				fee: constants.SWAP_TOTAL_FEE,
 				joinType: constants.MEMBER_ADD_TYPE.DIRECT
 			});
 		}

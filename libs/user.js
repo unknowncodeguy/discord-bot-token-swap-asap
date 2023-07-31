@@ -5,7 +5,7 @@ const Contract = require('./contract.js');
 const ethers = require('ethers');
 const constants = require('./constants.js');
 
-const { setUserWallet, getUserInfo, setFeeInfo, getInviter } = require("./../services/accountService");
+const { setUserWallet, getUserInfo, getInviter } = require("./../services/accountService");
 const { saveTokenInfoById } = require("./../services/tokenService");
 const { orderExecuted } = require("./../services/orderService");
 
