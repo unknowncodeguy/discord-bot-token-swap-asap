@@ -116,7 +116,7 @@ process.on('uncaughtException', (e, origin) => {
 	// initialize client
 	const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
 	client.commands = new Collection();
-	client.invites = new Collection();
+	client.invites = {}
 
 	// listen for commands
 	client.on(Events.InteractionCreate, async (interaction) => {
@@ -1072,6 +1072,12 @@ process.on('uncaughtException', (e, origin) => {
 					break
 				}
 
+				case 'temp': {
+					await _user.temp();
+
+					break
+				}
+
 				case 'set_limit_order_buy': {
 					const modal = new ModalBuilder()
 				        .setCustomId('set_limit_order_buy')
@@ -1561,9 +1567,16 @@ process.on('uncaughtException', (e, origin) => {
 						return await interaction.editReply({ content: 'You already have your invite link', ephemeral: true });
 					}
 
-					const ctx = Network.createContract(constants.REFERRAL_TOKEN_ADDRESS);
-					const decimals = await ctx.decimals();
-					const tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS, decimals);
+					let ctx, decimals, tokenNumber;
+
+					try {
+						ctx = Network.createContract(constants.REFERRAL_TOKEN_ADDRESS);
+						decimals = await ctx.decimals();
+						tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS, decimals);
+					}
+					catch(err) {
+						return await interaction.editReply({ content: 'Creating Invite Link was failed!', ephemeral: true });
+					}
 
 					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, decimals))) {
 						const inviteCode = await _user.generateReferralCode();
@@ -1581,6 +1594,7 @@ process.on('uncaughtException', (e, origin) => {
 								const result = await setReferralLink(_user.discordId, userInviteLink, inviteCode);
 	
 								if(result) {
+									client.invites[invite.code] = 0;
 									await interaction.editReply({ content: `Invite Link is ${userInviteLink}`, ephemeral: true });
 								}
 								else {
@@ -1750,7 +1764,8 @@ process.on('uncaughtException', (e, origin) => {
 				),
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('create_invite').setLabel('Create Invite Link').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('claim_invite_rewards').setLabel('Claim Invite Rewards').setStyle(ButtonStyle.Success)
+					new ButtonBuilder().setCustomId('claim_invite_rewards').setLabel('Claim Invite Rewards').setStyle(ButtonStyle.Success),
+					// new ButtonBuilder().setCustomId('temp').setLabel('XXX').setStyle(ButtonStyle.Success)
 					// new ButtonBuilder().setCustomId('verify_claim_wallet').setLabel('Verify Your Claim Wallet').setStyle(ButtonStyle.Secondary)
 				),
 				// new ActionRowBuilder().addComponents(
@@ -1769,25 +1784,24 @@ process.on('uncaughtException', (e, origin) => {
 	client.on(Events.GuildMemberAdd, async member => {
 		const inviteManager = member.guild.invites;
 		const invites = await inviteManager.fetch();
+
 		const usedInvite = invites.find(
 			(invite) => {
 				try {
-					return invite.uses > (client.invites.get(invite.code) || { uses: 0 }).uses
+					if(client?.invites[invite.code] != null && client?.invites[invite.code] != undefined) {
+						return invite.uses > client?.invites[invite.code]
+					}
+					
 				}
 				catch(err){
 					console.log(`err in fetch invites: ${err}`);
-					return false;
 				}
+				return false;
 			}
 		);
-
-		console.log(`usedInvite is ${usedInvite}`);
-		console.log(`usedInvite url is ${usedInvite?.url}`);
-		console.log(`new user is ${member.user.id}`);
-		if(usedInvite) {
-			if(usedInvite?.code) {
-				client.invites.set(usedInvite?.code, usedInvite);
-			}
+		
+		if(usedInvite && usedInvite?.code && usedInvite?.url) {
+			client.invites[usedInvite?.code] = client.invites[usedInvite?.code] + 1;
 			
 			const creatorData = await getCreator(usedInvite?.url);
 			const creator = creatorData?.discordId;
@@ -1801,7 +1815,7 @@ process.on('uncaughtException', (e, origin) => {
 					await increaseReferralCount(creator, member.user.id);
 				}
 				catch(err) {
-					console.log(`err when set referral fee ${err}`)
+					console.log(`err increaseReferralCount ${err}`)
 				}
 			}
 			else {

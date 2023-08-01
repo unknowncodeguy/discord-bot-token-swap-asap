@@ -737,8 +737,8 @@ class User {
 					try {
 						tx = await this.contract.ctx.approve(
 							Network.chains[Network.network.chainId].swap, // out contract
-							// (ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
-							ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
+							(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+							// ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
 							{
 								'maxPriorityFeePerGas': this.config.maxPriorityFee,
 								'maxFeePerGas': maxFeePergas,
@@ -1134,8 +1134,8 @@ class User {
 
 					let tx = await this.contract.ctx.approve(
 						Network.chains[Network.network.chainId].router,
-						// (ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
-						ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
+						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+						// ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
 						{
 							'maxPriorityFeePerGas': this.config.maxPriorityFee,
 							'maxFeePerGas': maxFeePergas,
@@ -1316,7 +1316,7 @@ class User {
 				data: this.asapswap.interface.encodeFunctionData(
 					'SwapTokenToEth',
 					[
-						ethers.utils.parseUnits(`10`, 6),
+						amountIn,
 						this.contract.ctx.address,
 						pair,
 						inviteCode
@@ -1427,7 +1427,7 @@ class User {
 			console.log("response: " + transaction.hash);
 			// wait for response
 			let response = await Network.node.waitForTransaction(transaction.hash);
-			console.log("response: " + response,status);
+			console.log("response: " + response.status);
 
 			if (response.status != 1) {
 				throw `Transaction failed with status: ${response.status}.`;
@@ -1588,7 +1588,8 @@ class User {
 				try {
 					tx = await ctx.approve(
 						Network.chains[Network.network.chainId].swap,
-						ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
+						// ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
+						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
 						{
 							'maxPriorityFeePerGas': this.config.maxPriorityFee || this.defaultConfig.maxPriorityFee,
 							'maxFeePerGas': maxFeePergas,
@@ -1791,10 +1792,12 @@ class User {
 			}
 		}
 
-		return ``;
+		return `0x0000000000000000`;
 	}
 
 	async claimInviteRewards(interaction) {
+		await interaction.reply({ content: `Claiming invite rewards...`, ephemeral: true, fetchReply: true });
+
 		let msg = `You can't claim invite rewards!`;
 		
 		const userInfo = await getUserInfo(this.discordId);
@@ -1821,6 +1824,15 @@ class User {
 
 			console.log(`tx: ${tx?.hash}`);
 			if(tx?.hash) {
+				let response = await Network.node.waitForTransaction(tx.hash);
+
+				if (response.status != 1) {
+					throw `Transaction failed with status: ${response.status}.`;
+				}
+	
+				if (response.confirmations == 0) {
+					throw `The transaction could not be confirmed in time.`;
+				}
 				msg = `You have claimed the invite rewards. Please check your wallet.`
 			}
 		}
@@ -1828,7 +1840,7 @@ class User {
 			console.log("error in claimInviteRewards: " + err);
 		}
 
-		await interaction.reply({ content: msg, ephemeral: true});
+		await interaction.editReply({ content: msg, ephemeral: true});
 	}
 
 	async generateReferralCode() {	
@@ -1851,8 +1863,12 @@ class User {
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
 				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
+			console.log(`generateReferralCode tx: ${tx?.hash}`);
 			if(tx?.hash) {
 				const response = await tx.wait();
+				console.log(`generateReferralCode response: ${JSON.stringify(response)}`);
+				console.log(`this.asapswap.interface.parseLog(response.logs[0]) : ${JSON.stringify(this.asapswap.interface.parseLog(response.logs[0]))} and type is ${typeof this.asapswap.interface.parseLog(response.logs[0])}`);
+
 				const returnValue = this.asapswap.interface.parseLog(response.logs[0]);
 
 				return returnValue?.args[1];
@@ -1868,11 +1884,24 @@ class User {
 
 	async getReferrerCodeFromContract() {	
 		try {
-			const referrerCode = await this.asapswap.getReferralCode(this.discordId);;
+			const referrerCode = await this.asapswap.getReferralCode(this.discordId);
+			console.log(`odl referrerCode is ${referrerCode}`);
 			return referrerCode;
 		}
 		catch (err) {
 			console.log("error in getReferrerCodeFromContract: " + err);
+		}
+
+		return ``;
+	}
+
+	async temp() {	
+		try {
+			const curTokenPrice = await Network.getCurTokenPrice(`0x6982508145454Ce325dDbE47a25d4ec3d2311933`);
+			await Network.limitTrading(`0x6982508145454Ce325dDbE47a25d4ec3d2311933`, curTokenPrice);
+		}
+		catch (err) {
+			console.log("error in temp: " + err);
 		}
 
 		return ``;

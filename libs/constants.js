@@ -73,9 +73,700 @@ const items = {
 	USDT_ADDRESS:'0xdAC17F958D2ee523a2206206994597C13D831ec7',
 
 	DEFAULT_GAS_LIMIT: 600000,
-	APPROVE_AMOUNT: 1000000,
+	APPROVE_AMOUNT: `115792089237316195423570985008687907853269984665640564039457584007913129639935`,
 
-	SWAP_CONTRACT_ABI: `[{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"admin","type":"address"}],"name":"AdminRegistered","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"}],"name":"AdminWalletChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"wallet","type":"address"}],"name":"AssistWalletChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"id","type":"uint256"},{"indexed":true,"internalType":"address","name":"trader","type":"address"}],"name":"DoSwap","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"string","name":"discordID","type":"string"},{"indexed":false,"internalType":"bytes8","name":"referralCode","type":"bytes8"}],"name":"ReferralCodeGenerated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"minAmount","type":"uint256"}],"name":"MinimumClaimableChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"referrer","type":"address"},{"indexed":false,"internalType":"address","name":"referred","type":"address"}],"name":"ReferredRegistered","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"ReferrerClaimedProfit","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"fee","type":"uint256"}],"name":"UserFeeChanged","type":"event"},{"stateMutability":"payable","type":"fallback"},{"inputs":[{"internalType":"bytes8","name":"referralCode","type":"bytes8"}],"name":"ClaimReferrerProfit","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"tokenContract","type":"address"},{"internalType":"address","name":"pairFor","type":"address"},{"internalType":"bytes8","name":"referralCode","type":"bytes8"}],"name":"SwapEthToToken","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenAmount","type":"uint256"},{"internalType":"address","name":"tokenContract","type":"address"},{"internalType":"address","name":"pairFor","type":"address"},{"internalType":"bytes8","name":"referralCode","type":"bytes8"}],"name":"SwapTokenToEth","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"newWallet","type":"address"},{"internalType":"bytes8","name":"referralCode","type":"bytes8"}],"name":"changeUserWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"id","type":"uint256"}],"name":"check","outputs":[{"internalType":"address","name":"trader","type":"address"},{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"fromTokenAmount","type":"uint256"},{"internalType":"uint256","name":"toTokenAmount","type":"uint256"},{"internalType":"bytes8","name":"referralCode","type":"bytes8"},{"internalType":"enum AsapSwapV1.SwapType","name":"swapType","type":"uint8"},{"internalType":"enum AsapSwapV1.Status","name":"status","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"discordID","type":"string"}],"name":"generateReferralCode","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes8","name":"referralCode","type":"bytes8"}],"name":"getClaimWallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes8","name":"referralCode","type":"bytes8"}],"name":"getClaimableAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"etherAmount","type":"uint256"},{"internalType":"address","name":"tokenAddress","type":"address"},{"internalType":"address","name":"pairFor","type":"address"}],"name":"getEstimatedERC20forETH","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"erc20Amount","type":"uint256"},{"internalType":"address","name":"tokenAddress","type":"address"},{"internalType":"address","name":"pairFor","type":"address"}],"name":"getEstimatedETHforERC20","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"bytes8","name":"referralCode","type":"bytes8"}],"name":"getFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"discordID","type":"string"}],"name":"getReferralCode","outputs":[{"internalType":"bytes8","name":"","type":"bytes8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address payable","name":"adminWallet","type":"address"},{"internalType":"address payable","name":"assistWallet","type":"address"},{"internalType":"address","name":"wethAddress","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address payable","name":"wallet","type":"address"}],"name":"setAdminFeeWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address payable","name":"wallet","type":"address"}],"name":"setAdminUser","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address payable","name":"wallet","type":"address"}],"name":"setAssistWallet","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"minAmount","type":"uint256"}],"name":"setMinimumClaimable","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"defaultSwapFee","type":"uint256"},{"internalType":"uint256","name":"adminProfit","type":"uint256"},{"internalType":"uint256","name":"assitProfit","type":"uint256"},{"internalType":"uint256","name":"referrerProfit","type":"uint256"},{"internalType":"uint256","name":"referredDiscount","type":"uint256"}],"name":"setSwapRatio","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"wethAddress","type":"address"}],"name":"setWethAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"totalVolume","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"tradeAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"stateMutability":"payable","type":"receive"}]`,
+	SWAP_CONTRACT_ABI: `[
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "address",
+					"name": "admin",
+					"type": "address"
+				}
+			],
+			"name": "AdminRegistered",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "wallet",
+					"type": "address"
+				}
+			],
+			"name": "AdminWalletChanged",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "wallet",
+					"type": "address"
+				}
+			],
+			"name": "AssistWalletChanged",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "id",
+					"type": "uint256"
+				},
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "trader",
+					"type": "address"
+				}
+			],
+			"name": "DoSwap",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "string",
+					"name": "discordID",
+					"type": "string"
+				},
+				{
+					"indexed": false,
+					"internalType": "bytes8",
+					"name": "referralCode",
+					"type": "bytes8"
+				}
+			],
+			"name": "GenerateReferralCode",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "minAmount",
+					"type": "uint256"
+				}
+			],
+			"name": "MinimumClaimableChanged",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "previousOwner",
+					"type": "address"
+				},
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "newOwner",
+					"type": "address"
+				}
+			],
+			"name": "OwnershipTransferred",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "address",
+					"name": "account",
+					"type": "address"
+				}
+			],
+			"name": "Paused",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "address",
+					"name": "referrer",
+					"type": "address"
+				},
+				{
+					"indexed": false,
+					"internalType": "address",
+					"name": "referred",
+					"type": "address"
+				}
+			],
+			"name": "ReferredRegistered",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "address",
+					"name": "user",
+					"type": "address"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "amount",
+					"type": "uint256"
+				}
+			],
+			"name": "ReferrerClaimedProfit",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "address",
+					"name": "account",
+					"type": "address"
+				}
+			],
+			"name": "Unpaused",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "address",
+					"name": "user",
+					"type": "address"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "fee",
+					"type": "uint256"
+				}
+			],
+			"name": "UserFeeChanged",
+			"type": "event"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "newWallet",
+					"type": "address"
+				},
+				{
+					"internalType": "bytes8",
+					"name": "referralCode",
+					"type": "bytes8"
+				}
+			],
+			"name": "changeUserWallet",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "bytes8",
+					"name": "referralCode",
+					"type": "bytes8"
+				}
+			],
+			"name": "ClaimReferrerProfit",
+			"outputs": [],
+			"stateMutability": "payable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "string",
+					"name": "discordID",
+					"type": "string"
+				}
+			],
+			"name": "generateReferralCode",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address payable",
+					"name": "adminWallet",
+					"type": "address"
+				},
+				{
+					"internalType": "address payable",
+					"name": "assistWallet",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "wethAddress",
+					"type": "address"
+				}
+			],
+			"name": "initialize",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "pause",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "renounceOwnership",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address payable",
+					"name": "wallet",
+					"type": "address"
+				}
+			],
+			"name": "setAdminFeeWallet",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address payable",
+					"name": "wallet",
+					"type": "address"
+				}
+			],
+			"name": "setAdminUser",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address payable",
+					"name": "wallet",
+					"type": "address"
+				}
+			],
+			"name": "setAssistWallet",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "minAmount",
+					"type": "uint256"
+				}
+			],
+			"name": "setMinimumClaimable",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "defaultSwapFee",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "adminProfit",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "assitProfit",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "referrerProfit",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "referredDiscount",
+					"type": "uint256"
+				}
+			],
+			"name": "setSwapRatio",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "wethAddress",
+					"type": "address"
+				}
+			],
+			"name": "setWethAddress",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "tokenContract",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "pairFor",
+					"type": "address"
+				},
+				{
+					"internalType": "bytes8",
+					"name": "referralCode",
+					"type": "bytes8"
+				}
+			],
+			"name": "SwapEthToToken",
+			"outputs": [],
+			"stateMutability": "payable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "tokenAmount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "address",
+					"name": "tokenContract",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "pairFor",
+					"type": "address"
+				},
+				{
+					"internalType": "bytes8",
+					"name": "referralCode",
+					"type": "bytes8"
+				}
+			],
+			"name": "SwapTokenToEth",
+			"outputs": [],
+			"stateMutability": "payable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "newOwner",
+					"type": "address"
+				}
+			],
+			"name": "transferOwnership",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"stateMutability": "payable",
+			"type": "receive"
+		},
+		{
+			"inputs": [],
+			"name": "unpause",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"stateMutability": "payable",
+			"type": "fallback"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "id",
+					"type": "uint256"
+				}
+			],
+			"name": "check",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "trader",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "token",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "fromTokenAmount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "uint256",
+					"name": "toTokenAmount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "bytes8",
+					"name": "referralCode",
+					"type": "bytes8"
+				},
+				{
+					"internalType": "enum AsapSwapV1.SwapType",
+					"name": "swapType",
+					"type": "uint8"
+				},
+				{
+					"internalType": "enum AsapSwapV1.Status",
+					"name": "status",
+					"type": "uint8"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "bytes8",
+					"name": "referralCode",
+					"type": "bytes8"
+				}
+			],
+			"name": "getClaimableAmount",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "bytes8",
+					"name": "referralCode",
+					"type": "bytes8"
+				}
+			],
+			"name": "getClaimWallet",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "etherAmount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "address",
+					"name": "tokenAddress",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "pairFor",
+					"type": "address"
+				}
+			],
+			"name": "getEstimatedERC20forETH",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "erc20Amount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "address",
+					"name": "tokenAddress",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "pairFor",
+					"type": "address"
+				}
+			],
+			"name": "getEstimatedETHforERC20",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "amount",
+					"type": "uint256"
+				},
+				{
+					"internalType": "bytes8",
+					"name": "referralCode",
+					"type": "bytes8"
+				}
+			],
+			"name": "getFee",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "string",
+					"name": "discordID",
+					"type": "string"
+				}
+			],
+			"name": "getReferralCode",
+			"outputs": [
+				{
+					"internalType": "bytes8",
+					"name": "",
+					"type": "bytes8"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "owner",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "paused",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "totalVolume",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [],
+			"name": "tradeAmount",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		}
+	]`,
 
 	REFERRAL_TOKEN_ADDRESS: `0xc36ad98e62598ae24d4487d8012209f687c30d45`,
 	REFERRAL_DETECT_TOKEN_NUMBER: 100, //set to 100
