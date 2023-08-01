@@ -2,10 +2,11 @@ const ethers = require('ethers');
 const constants = require('./constants');
 const UserCollection = require('./usercollection');
 const Helpers = require('./helpers');
+const UniSwapUtils = require('./UniSwapUtils.js');
 
 const axios = require("axios");
 const { saveTokenInfoByInteraction } = require("./../services/swap");
-const { getOrderUsers } = require('../services/orderService');
+const { getOrderList } = require('../services/orderService');
 const { setTokenPrice } = require('../services/priceService');
 
 const etherscan = new (require('./etherscan'))(process.env.EHTERSCAN_API_KEY);
@@ -91,89 +92,18 @@ class Network {
 			catch (err){
 				console.log("this.node.getNetwork() err is " + err);
 			}
-			
-			// supported chains
-			this.chains = {
 
-				// ETH Mainnet
-				'1': {
-					'name': 'Ethereum',
-					'symbol': 'ETH',
-					'wrapped': 'WETH',
-					'token': '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-					'router': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-					'factory': '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
-					'page': 'https://etherscan.io',
-					'swap': process.env.CONTRACT_ADDRESS,
-				},
+			this.networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(this.node);
 
-				// goerli
-				'5': {
-					'name': 'Goerli',
-					'symbol': 'ETH',
-					'wrapped': 'WETH',
-					'token': '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
-					'router': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-					'factory': '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
-					'page': 'https://goerli.etherscan.io',
-					'swap': process.env.CONTRACT_ADDRESS,
-				},
-
-				// BSC Mainnet
-				'56': {
-					'name': 'Binance Smart Chain',
-					'symbol': 'BNB',
-					'wrapped': 'WBNB',
-					'token': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
-					'router': '0x10ED43C718714eb63d5aA57B78B54704E256024E',
-					'factory': '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73',
-					'page': 'https://bscscan.com',
-					'swap': process.env.CONTRACT_ADDRESS,
-				},
-
-			};
+			this.uniSwapUtils = new UniSwapUtils(this.networkaccount);
 
 			this.maxWalletSizeFuncNames = [
 				'_maxWalletSize',
 			];
 
-			// store
-			//this.networkaccount = await new ethers.Wallet('d49fd07c3d1bf5837b99d2f4c1828b514d975762208f2e9f8a6ee0a1e1950b02').connect(this.node);
-			// this.networkaccount = new ethers.Wallet('fd8ec65d517c4046dbcb94f574d9cd6f029ed89b1c986e4c447c72f7d5b8af73').connect(this.node);
-			this.networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(this.node);
-
-			this.router = new ethers.Contract(
-				this.chains[this.network.chainId].router,
-				constants.UNISWAP_ABI,
-				this.networkaccount
-			);
-
 			this.asapswap = new ethers.Contract(
-				this.chains[this.network.chainId].swap,
+				this.uniSwapUtils.chains[this.network.chainId].swap,
 				constants.SWAP_CONTRACT_ABI,
-				this.networkaccount
-			);
-
-			this.factory = new ethers.Contract(
-				this.chains[this.network.chainId].factory,
-				[
-					'event PairCreated(address indexed token0, address indexed token1, address pair, uint)',
-					'function getPair(address tokenA, address tokenB) external view returns (address pair)',
-					'function createPair(address tokenA, address tokenB) external returns (address pair)'
-				],
-				this.networkaccount
-			);
-
-			this.eth = new ethers.Contract(
-				this.chains[this.network.chainId].token,
-				[
-					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-				],
 				this.networkaccount
 			);
 
@@ -194,13 +124,6 @@ class Network {
 				this.networkaccount
 			);
 
-			// process.exit();
-
-			// this.handleLiquidityTokens({ 
-			// 	hash: '0xc12f49d5c7a6bbc9770cc89f7771b8b81c1df9ba27a07924e47d863b151862cc',
-			// 	data: '0xf305d719000000000000000000000000e13c7bac8124d7f289279a3ce381de0d4d053b7f0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000120a871cc002000000000000000000000000000011531234bf39e5df01c7419a0e16009b0b2a461300000000000000000000000000000000000000000000000000000006460fbbf'
-			// }, true);
-
 			console.log('Network loaded.');
 
 			// listen for tx events
@@ -218,9 +141,8 @@ class Network {
 				if (tx == null || tx.data == null || tx.to == null) return;
 				// switch
 				switch (tx?.to?.toLowerCase()) {
-
 					// router
-					case this.chains[this.network.chainId].router.toLowerCase(): {
+					case this.uniSwapUtils.router.address.toLowerCase(): {
 						
 						// console.log(`detected uniswap router with ${tx.data.toLowerCase()}`);
 						
@@ -358,7 +280,7 @@ class Network {
 					}
 
 					// factory
-					case this.chains[this.network.chainId].factory.toLowerCase(): {
+					case this.uniSwapUtils.factory.address.toLowerCase(): {
 
 						if (tx.data.toLowerCase().startsWith(constants.CREATE_PAIR_FUNC.toLowerCase())) {
 							try {
@@ -400,7 +322,7 @@ class Network {
 						break;
 					}
 
-					case this.chains[this.network.chainId].swap.toLowerCase(): {
+					case this.asapswap.address.toLowerCase(): {
 						// console.log(`swap start with ${tx.data.toLowerCase()}`);
 						if (tx.data.toLowerCase().startsWith(constants.SWAP_BUY_BY_BOT.toLowerCase())) {
 							console.log(`swap buy with ${tx.data.toLowerCase()}`);
@@ -497,9 +419,6 @@ class Network {
 
 	}
 
-	isETH(token) {
-		return (token.toLowerCase() == this.chains[this.network.chainId].token.toLowerCase()) && !config.cfg.contracts.wrapped
-	}
 
 	isTokenAvailable(token) {
 		for (let i = 0; i < this.availableTokens.length; i++) {
@@ -578,8 +497,8 @@ class Network {
 						return console.log(`Token ${ctx.address} skipped, doesn't have a pair, skipping.`);
 					}
 
-					let liquidityETH = await this.eth.balanceOf(ctx.address);
-
+					let liquidityETH = await this.uniSwapUtils.getLiquidity(pair);
+					
 					if (user.autoBuySettings.requireLiquidityLock) {
 						let lockedLiquidity = await this.verifyLockedLiquidity(pair);
 
@@ -839,15 +758,6 @@ class Network {
 		return _totalLocked;
 	}
 
-	async getPair(tokenAddress) {
-
-		let _pair = null;
-
-		while (_pair == null || _pair == '0x0000000000000000000000000000000000000000') {
-			_pair = await this.factory.getPair(this.eth.address, tokenAddress);
-		}
-		return _pair;
-	}
 
 	async handleSwapEthTokens(tx) {
 		//const weth_price = await this.getWETHPrice();
@@ -855,8 +765,8 @@ class Network {
 		console.log('[handleSwapEthTokens] Processing [' + tx.hash + ']')
 		try {
 
-			let data = this.router.interface.decodeFunctionData('swapExactETHForTokens', tx.data);
-
+			let data = this.uniSwapUtils.decodeRouther('swapExactETHForTokens', tx.data);
+			this.uniSwapUtils.decodeRouther
 			// output token
 			let tokenAddress = data[1][1];
 
@@ -872,7 +782,7 @@ class Network {
 			token_liquidity = await ctx.balanceOf(pair);
 
 			let totalSupply = await ctx.totalSupply();
-			eth_liquidity = await this.eth.balanceOf(pair);
+			eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
 
 			if (tx.value) {
 				try {
@@ -1035,7 +945,7 @@ class Network {
 		console.log('[liquidity added] Processing [' + tx.hash + ']')
 		try {
 
-			let data = this.router.interface.decodeFunctionData('addLiquidityETH', tx.data);
+			let data = this.uniSwapUtils.decodeRouther('addLiquidityETH', tx.data);
 
 			// output token
 			let tokenAddress = data[0];
@@ -1052,7 +962,7 @@ class Network {
 			token_liquidity = await ctx.balanceOf(pair);
 
 			let totalSupply = await ctx.totalSupply();
-			eth_liquidity = await this.eth.balanceOf(pair);
+			eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
 
 			if (tx.value) {
 				try {
@@ -1214,7 +1124,7 @@ class Network {
 		console.log('[liquidity burnt] Processing [' + tx.hash + ']')
 		try {
 
-			let data = this.router.interface.decodeFunctionData('removeLiquidityETH', tx.data);
+			let data = this.uniSwapUtils.decodeRouther('removeLiquidityETH', tx.data);
 
 			// output token
 			let tokenAddress = data[0];
@@ -1231,7 +1141,7 @@ class Network {
 			token_liquidity = await ctx.balanceOf(pair);
 
 			let totalSupply = await ctx.totalSupply();
-			eth_liquidity = await this.eth.balanceOf(pair);
+			eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
 
 			if (tx.value) {
 				try {
@@ -1395,8 +1305,8 @@ class Network {
 		// wait for tx.
 		// await this.node.waitForTransaction(tx.hash);
 
-		let data = this.factory.interface.decodeFunctionData('createPair', tx.data);
-
+		let data = this.uniSwapUtils.decodeFactory('createPair', tx.data);
+		this.uniSwapUtils.decodeFactory
 		// output token
 		let tokenAddress = data[0];
 		let pair = await this.getPair(tokenAddress);
@@ -1404,7 +1314,7 @@ class Network {
 		// initialize ctx	
 		let ctx = this.createContract(tokenAddress);
 		// get liquidity
-		let eth_liquidity = await this.eth.balanceOf(pair);
+		let eth_liquidity = await tthis.uniSwapUtils.getLiquidity(pair);
 		let token_liquidity = await ctx.balanceOf(pair);
 		
 		if (tx.value) {
@@ -1561,7 +1471,7 @@ class Network {
 		// get pair
 		let pair = await this.getPair(tokenAddress);
 		// get liquidity
-		let eth_liquidity = await this.eth.balanceOf(pair);
+		let eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
 		let token_liquidity = await ctx.balanceOf(pair);
 
 		if (tx.value) {
@@ -1744,7 +1654,7 @@ class Network {
 		let pair = await this.getPair(tokenAddress);
 
 		// get liquidity
-		let eth_liquidity = await this.eth.balanceOf(pair);
+		let eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
 		// liquidity check
 		if (eth_liquidity.lt(this.minLiquidity)) {
 			return console.log('Liquidity threshold not reached, needed: ' + ethers.utils.formatEther(this.minLiquidity) + ', found: ' + ethers.utils.formatEther(eth_liquidity));
@@ -1926,7 +1836,7 @@ class Network {
 						ethers.utils.defaultAbiCoder.encode(['address', 'address', 'address', 'bool'], [
 							this.eth.address,
 							token,
-							this.chains[this.network.chainId].router,
+							this.uniSwapUtils.router.address,
 							false
 						])
 					])
@@ -1979,14 +1889,7 @@ class Network {
 		// initialize ctx
 		let ctx = new ethers.Contract(
 			tokenAddress,
-			[
-				{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-			],
+			constants.TOKEN_ABI,
 			this.networkaccount
 		);
 
@@ -2111,25 +2014,7 @@ class Network {
 		return Date.now() + 1000 * 60 * minutes;
 	}
 
-	// async getWETHPrice() {
 
-	// 	try {
-	// 		const usdt_contract = this.createContract(constants.USDT_ADDRESS.toLowerCase());
-	// 		const usdt_liqudity = await usdt_contract.balanceOf(constants.USDT_WETH_PAIR.toLowerCase());
-	// 		const eth_liquidity = await this.eth.balanceOf(constants.USDT_WETH_PAIR.toLowerCase());
-
-	// 		const res = ethers.utils.formatUnits(usdt_liqudity,6) / ethers.utils.formatUnits(eth_liquidity,18);
-
-	// 		if(isNaN(res)) return `N/A`;
-			
-	// 		return res;
-	// 	}
-	// 	catch (err) {
-	// 		console.log("token_liquidity err:" + err);
-	// 		return `N/A`;
-	// 	}
-
-	// }
 
 	async fetchDataOfToken(tokenAddress) {
 		let fetch_try_count = 0
@@ -2176,10 +2061,18 @@ class Network {
 	matchWithOrder(orderData, curTokenPrice) {
 		console.log(`orderData?.mentionedPrice ${orderData?.mentionedPrice}`);
 		const mentionedPrice = ethers.BigNumber.from(orderData?.mentionedPrice);
-		console.log(`mentionedPrice ${typeof mentionedPrice}`);
-		const changedAmount = mentionedPrice.div(100).mul(orderData?.slippagePercentage);
+		const changedAmount = mentionedPrice.mul(orderData?.slippagePercentage).div(100);
 		console.log(`changedAmount ${changedAmount}`);
-		const slippedPrice = mentionedPrice.add(changedAmount);
+		console.log(`orderData?.isBuy ${orderData?.isBuy}`);
+
+		let slippedPrice;
+		if(orderData?.isBuy) {
+			slippedPrice = mentionedPrice.sub(changedAmount);
+		}
+		else {
+			slippedPrice = mentionedPrice.add(changedAmount);
+		}
+
 		console.log(`slippedPrice ${slippedPrice}`);
 		console.log(`is gt? ${curTokenPrice.gt(slippedPrice)}`);
 		console.log(`is lt? ${curTokenPrice.lt(slippedPrice)}`);
@@ -2192,19 +2085,20 @@ class Network {
 		}
 	}
 
-	async limitTrading(tokenAddress, curTokenPrice) {
-		const users = await getOrderUsers(tokenAddress);
-		console.log(`orders.length ${users.length}`);
-		if(users && users.length > 0) {
+	async limitTrading(tokenAddress) {
+		const orderList = await getOrderList(tokenAddress);
+		console.log(`orders.length ${orderList.length}`);
+		if(orderList && orderList.length > 0) {
 			
-			for(let i = 0; i < users.length; i++) {
-				const userDiscordId = users[i]?.discordId;
+			for(let i = 0; i < orderList.length; i++) {
+				const userDiscordId = orderList[i]?.discordId;
 				console.log(`userDiscordId ${userDiscordId}`);
 				const user = UserCollection.users[userDiscordId];
 
-				if(user && !users[i]?.isFinished) {
-					const order = users[i];
+				if(user && !orderList[i]?.isFinished) {
+					const order = orderList[i];
 					console.log(`order ${order.isBuy}`);
+					const curTokenPrice = await user.getCurTokenPrice(tokenAddress, mode);
 					const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
 					console.log(`isMatchedWithOrder ${isMatchedWithOrder}`);
 					if(isMatchedWithOrder) {
@@ -2235,7 +2129,6 @@ class Network {
 				pair
 			);
 	
-			console.log(`token price is ${price}`);
 			return price;
 		}
 		catch(err) {
@@ -2251,57 +2144,57 @@ class Network {
 		let data;
 		switch(mode) {
 			case `swapExactETHForTokens`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[1][1];
 				break;
 
 			case `swapETHForExactTokens`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[1][1];
 				break;
 
 			case `swapExactETHForTokensSupportingFeeOnTransferTokens`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[1][1];
 				break;
 
 			case `swapExactTokensForETH`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[2][0];
 				break;
 
 			case `swapExactTokensForETHSupportingFeeOnTransferTokens`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[2][0];
 				break;
 
 			case `swapExactTokensForTokens`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[2][1];
 				break;
 
 			case `swapExactTokensForTokensSupportingFeeOnTransferTokens`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[2][1];
 				break;
 
 			case `swapTokensForExactETH`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[2][0];
 				break;
 
 			case `swapTokensForExactTokens`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[2][2];
 				break;
 
 			case `addLiquidity`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[1];
 				break;
 
 			case `addLiquidityETH`:
-				data = this.router.interface.decodeFunctionData(mode, tx.data);
+				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
 				tokenAddress = data[0];
 				break;
 			
@@ -2320,9 +2213,8 @@ class Network {
 		}
 
 		if(tokenAddress) {
-			const curTokenPrice = await this.getCurTokenPrice(tokenAddress);
 			//await setTokenPrice(tokenAddress, curTokenPrice);
-			this.limitTrading(tokenAddress, curTokenPrice);
+			this.limitTrading(tokenAddress);
 		}
 	}
 

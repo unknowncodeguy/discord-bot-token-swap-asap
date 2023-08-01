@@ -654,9 +654,6 @@ process.on('uncaughtException', (e, origin) => {
 						return await interaction.reply({ content: 'Sell percentage must be a valid number (1-100).', ephemeral: true});
 					}
 
-					const curPrice = await Network.getCurTokenPrice(interaction.fields.getTextInputValue('token-address'));
-					console.log(`cur pruice` + curPrice);
-
 					await interaction.reply({
 						content: 'Transaction has been sent.',
 						embeds: [],
@@ -708,8 +705,8 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_buy_percentage').toString();
 					console.log(`orderPercentage when buying: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > -1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
+					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 1 and 100.', ephemeral: true});
 					}
 
 					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
@@ -720,7 +717,7 @@ process.on('uncaughtException', (e, origin) => {
 
 					const curPrice = await Network.getCurTokenPrice(tokenAddress);
 
-					let msg = `Your orders were not saved! Please check you network!`;
+					let msg = `Your orders were not saved! Please check your network!`;
 					try {
 						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
 
@@ -747,8 +744,8 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderPercentage = interaction.fields.getTextInputValue('set_limit_order_buy_percentage').toString();
 					console.log(`orderPercentage when buying: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage < -100 || orderPercentage > -1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
+					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 1 and 100.', ephemeral: true});
 					}
 
 					const tokenAddress = interaction.fields.getTextInputValue('set_limit_order_buy_token').toString();
@@ -780,8 +777,8 @@ process.on('uncaughtException', (e, origin) => {
 
 					const orderAmount = interaction.fields.getTextInputValue('show_select_order_sell_amount').toString();
 					console.log(`orderAmount when selling: ${orderAmount}`);
-					if(!Helpers.isInt(orderAmount) || orderAmount < -100 || orderAmount > -1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and -100.', ephemeral: true});
+					if(!Helpers.isInt(orderAmount) || orderAmount > 100 || orderAmount < 1) {
+						return interaction.reply({ content: 'Percentage must be a valid number between 1 and 100.', ephemeral: true});
 					}
 
 					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_sell_percentage').toString();
@@ -818,13 +815,13 @@ process.on('uncaughtException', (e, origin) => {
 					const orderAmount = interaction.fields.getTextInputValue('set_limit_order_sell_amount').toString();
 					console.log(`orderAmount when selling: ${orderAmount}`);
 					if(!Helpers.isInt(orderAmount) || orderAmount > 100 || orderAmount < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
+						return interaction.reply({ content: 'Percentage must be a valid number between 1 and 100.', ephemeral: true});
 					}
 
 					const orderPercentage = interaction.fields.getTextInputValue('set_limit_order_sell_percentage').toString();
 					console.log(`orderPercentage when selling: ${orderPercentage}`);
 					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
+						return interaction.reply({ content: 'Percentage must be a valid number between 1 and 100.', ephemeral: true});
 					}
 
 					const tokenAddress = interaction.fields.getTextInputValue('set_limit_order_sell_token').toString();
@@ -1068,12 +1065,6 @@ process.on('uncaughtException', (e, origin) => {
 
 				case 'claim_invite_rewards': {
 					await _user.claimInviteRewards(interaction);
-
-					break
-				}
-
-				case 'temp': {
-					await _user.temp();
 
 					break
 				}
@@ -1617,39 +1608,6 @@ process.on('uncaughtException', (e, origin) => {
 
 					break;
 				}
-
-				case 'start_temp': {
-					try {
-						await Network.test();
-					}
-					catch(err) {
-						console.log(`ERROR IN START TEMP ${err}`);
-					}
-				}
-
-				case 'verify_claim_wallet': {
-					let msg = `Verifying your wallet was failed!`;
-					const userInfo = await getUserInfo(_user.discordId);
-
-					if(userInfo?.joiners?.length > 0 && userInfo?.referralLink) {
-						if(userInfo?.walletChanged) {
-							const res =  await _user. x();
-							if(res) {
-								await upsertAccountData(userInfo.discordId, {walletChanged: false});
-								msg = `You verified your wallet!`;
-							}
-						}
-						else {
-							msg = `You already verified your wallet!`;
-						}
-					}
-					else {
-						msg = `You are not a referrer! Create invite link and let other users to join to our server!`;
-					}
-
-					await interaction.reply({ content: msg, ephemeral: true });
-					break;
-				}
 			}
 
 			if(interaction.customId.startsWith(`deleteorder`)) {
@@ -1764,9 +1722,7 @@ process.on('uncaughtException', (e, origin) => {
 				),
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('create_invite').setLabel('Create Invite Link').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('claim_invite_rewards').setLabel('Claim Invite Rewards').setStyle(ButtonStyle.Success),
-					// new ButtonBuilder().setCustomId('temp').setLabel('XXX').setStyle(ButtonStyle.Success)
-					// new ButtonBuilder().setCustomId('verify_claim_wallet').setLabel('Verify Your Claim Wallet').setStyle(ButtonStyle.Secondary)
+					new ButtonBuilder().setCustomId('claim_invite_rewards').setLabel('Claim Invite Rewards').setStyle(ButtonStyle.Success)
 				),
 				// new ActionRowBuilder().addComponents(
 				// 	new ButtonBuilder().setCustomId('start_auto').setLabel('Start Auto Buying').setStyle(ButtonStyle.Primary),
@@ -1774,8 +1730,7 @@ process.on('uncaughtException', (e, origin) => {
 				// ),
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('set_limit_order').setLabel('Set Limit Order').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('show_limit_order').setLabel('Show Limit Orders').setStyle(ButtonStyle.Secondary),
-					// new ButtonBuilder().setCustomId('start_temp').setLabel('Start temp').setStyle(ButtonStyle.Secondary)
+					new ButtonBuilder().setCustomId('show_limit_order').setLabel('Show Limit Orders').setStyle(ButtonStyle.Secondary)
 				)
 			]
 		});

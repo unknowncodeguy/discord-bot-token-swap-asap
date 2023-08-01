@@ -69,7 +69,8 @@ contract AsapSwapV1 is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     /// referral codes => balance of swap fee
     mapping (bytes8 => uint256) private _referalFees;
     /// referral codes -> wallet address
-    mapping (bytes8 => address) private _referalCodes;
+    mapping (bytes8 => address) private _referrerWallets;
+    mapping (string => address) private _referralCodes;
     /// minimum amount that referer can withdraw. default value is 1 eth.
     /// Admin can adjust this variable using setMinimumClaimable() method
     uint256 private _minReferrerClaimable;
@@ -84,7 +85,7 @@ contract AsapSwapV1 is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     event AdminRegistered(address admin);
     event MinimumClaimableChanged(uint256 minAmount);
     event ReferrerClaimedProfit(address user, uint256 amount);
-    event GenerateReferralCode(string discordID, bytes8 referralCode);
+    event ReferralCodeGenerated(string discordID, bytes8 referralCode);
     //////////================= Modifiers & Initializers ====================================================
     modifier onlyContract(address account) {
         require( account.isContract(), "[Validation] The address does not contain a contract");
@@ -249,37 +250,32 @@ contract AsapSwapV1 is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     }
     /// generate unique referral code for discord id.
     function generateReferralCode(string calldata discordID) external {
-         bytes8 referralCode = bytes8(keccak256(abi.encodePacked(discordID)));
-         if(_referalCodes[referralCode] == address(0)){
-             _referalCodes[referralCode] = _msgSender();
+         bytes8 referralCode = bytes8(keccak256(abi.encodePacked(discordID, _msgSender())));
+         if(_referrerWallets[referralCode] == address(0)){
+            _referralCodes[discordID] = referralCode;
+             _referrerWallets[referralCode] = _msgSender();
              _referalFees[referralCode] = 0;
+             emit ReferralCodeGenerated(discordID, referralCode);
          }
-         emit GenerateReferralCode(discordID, referralCode);
+         require( _referrerWallets[referralCode] != _msgSender(), "[Validation] This discord ID is registered for other wallet." );                 
     }
     function getReferralCode(string memory discordID) public view returns(bytes8){
-         bytes8 referralCode = bytes8(keccak256(abi.encodePacked(discordID)));
-         if(_referalCodes[referralCode] == _msgSender()) return referralCode;
-         return  0;
+         return  _referralCodes[discordID]; 
     }
     function getClaimableAmount(bytes8 referralCode) public view returns(uint256)
     {
-         require( _referalCodes[referralCode] != _msgSender(), "[Validation] Referral code is not registered for this user" );
+         require( _referrerWallets[referralCode] != _msgSender(), "[Validation] Referral code is not registered for this user" );
          return  _referalFees[referralCode];
-    }
-    function getClaimWallet(bytes8 referralCode) public view returns(address)
-    {
-         require( _referalCodes[referralCode] != address(0), "[Validation] Referral code is not registered for this user" );
-         return  _referalCodes[referralCode];
     }
     /// change user's default wallet
     /// if caller is referrer, change wallet address for referral code
     function changeUserWallet(address newWallet, bytes8  referralCode) external {
-        require( _referalCodes[referralCode] == _msgSender(), "[Validation] It's not your referral code" );
-        _referalCodes[referralCode] = newWallet;
+        require( _referrerWallets[referralCode] == _msgSender(), "[Validation] It's not your referral code" );
+        _referrerWallets[referralCode] = newWallet;
     }
     
     function ClaimReferrerProfit(bytes8  referralCode ) external payable{
-        require( _referalCodes[referralCode] == _msgSender(), "[Validation] It's not your referral code" );
+        require( _referrerWallets[referralCode] == _msgSender(), "[Validation] It's not your referral code" );
         require( _referalFees[referralCode] >= _minReferrerClaimable, "[Validation] referrer has not enough balance to claim" );
         TransferHelper.safeTransferETH(_msgSender(), _referalFees[referralCode]);
         emit ReferrerClaimedProfit(_msgSender(), _referalFees[referralCode]);
@@ -288,13 +284,13 @@ contract AsapSwapV1 is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
 
     function getFee(uint256 amount, bytes8 referralCode) public view returns (uint256) {
         uint _feePercentage = _defaultSwapFee;
-        if (_referalCodes[referralCode] != address(0)) _feePercentage = _feePercentage - _referredDiscountRatio;
+        if (_referrerWallets[referralCode] != address(0)) _feePercentage = _feePercentage - _referredDiscountRatio;
         return amount.mul(_feePercentage).div(10000); 
     }
 
     function _distributeFees(uint256 fee, bytes8 referralCode) private {
         uint256 _referrerFee = 0;
-        if (_referalCodes[referralCode] != address(0)){
+        if (_referrerWallets[referralCode] != address(0)){
             _referrerFee = fee.mul(_referrerProfitRatio).div(100);
             _referalFees[referralCode] = _referalFees[referralCode].add(_referrerFee);
         } 

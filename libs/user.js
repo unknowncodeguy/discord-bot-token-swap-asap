@@ -1,11 +1,11 @@
 const Cryptr = require('cryptr');
 
 const Network = require('./network.js');
-const Contract = require('./contract.js');
+
 const ethers = require('ethers');
 const constants = require('./constants.js');
 
-const { setUserWallet, getUserInfo, getInviter } = require("./../services/accountService");
+const { setUserWallet, getUserInfo, getInviter, upsertAccountData } = require("./../services/accountService");
 const { saveTokenInfoById } = require("./../services/tokenService");
 const { orderExecuted } = require("./../services/orderService");
 
@@ -166,14 +166,7 @@ class User {
 
 			let _ctx = new ethers.Contract(
 				address,
-				[
-					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-				],
+				constants.TOKEN_ABI,
 				this.account
 			);
 
@@ -240,35 +233,31 @@ class User {
 		try {
 			const newWallet = new ethers.Wallet(newPrvKey).connect(Network.node);
 			const userInfo = await getUserInfo(this.discordId);
-			if(userInfo?.walletAddress) {
-				if (userInfo.referralLink) {
-					console.log(`This is old user and he is referrer or referred`);
-					//check balance 
-					const balanceofOld = await Network.getBalnaceForETH(userInfo?.walletAddress);
-					console.log(`balanceofOld is: ${balanceofOld}`);
-					if(balanceofOld.gte(ethers.utils.parseUnits(`${ constants.MINIMUM_BALANCE_CHANGE}`, 18)))
-					{
-						res.result = await this.changeUserWallet(newWallet.address, userInfo?.inviteCode);
-						console.log(`changeUserWallet result is ${res.result}`);
-					}
-					else{
-						console.log(`no fund in beforeChangeWallet`);
-						res.result = false;
-						res.msg = `No enough funds to change your wallet.`
-					}
-				}
-				else {
-					console.log(`This is old user and he is direct join and no link`);
-				}
+			const oldRefferCode = await this.getReferrerCodeFromContract();
+
+			if(userInfo?.inviteCode != oldRefferCode) {
+				await upsertAccountData(this.discordId, {inviteCode: oldRefferCode})
+			}
+
+			if(oldRefferCode == `` || oldRefferCode.startsWith(`0x0000`)){
+				return res;
+			}
+
+			console.log(`This user has referral code: ${oldRefferCode}`);
+			//check balance 
+			const balanceofOld = await Network.getBalnaceForETH(userInfo?.walletAddress);
+			console.log(`balanceofOld is: ${balanceofOld}`);
+			if(balanceofOld.gte(ethers.utils.parseUnits(`${ constants.MINIMUM_BALANCE_CHANGE}`, 18)))
+			{
+				res.result = await this.changeUserWallet(newWallet.address, oldRefferCode);
+				console.log(`changeUserWallet result is ${res.result}`);
 			}
 			else{
-				if (userInfo?.inviter) {
-					console.log(`This is new user and he is referral join`);
-				}
-				else {
-					console.log(`This is new user and he is direct join`);
-				}
+				console.log(`no fund in beforeChangeWallet`);
+				res.result = false;
+				res.msg = `No enough funds to change your wallet.`
 			}
+				
 		}
 		catch(err) {
 			console.log(`ERROR WHEN beforeChangeWallet:  ${err}`);
@@ -289,70 +278,27 @@ class User {
 		// store in DB
 		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address, walletChanged);
 
-		// set factory
-		this.factory = new ethers.Contract(
-			Network.chains[Network.network.chainId].factory,
-			[
-				'event PairCreated(address indexed token0, address indexed token1, address pair, uint)',
-				'function getPair(address tokenA, address tokenB) external view returns (address pair)'
-			],
-			this.account
-		);
-
-		// set router
-		this.router = new ethers.Contract(
-			Network.chains[Network.network.chainId].router,
-			constants.UNISWAP_ABI,
-			this.account
-		);
-
 		// set swap
 		this.asapswap = new ethers.Contract(
-					Network.chains[Network.network.chainId].swap,
+					Network.asapswap.address,
 					constants.SWAP_CONTRACT_ABI,
 					this.account
 				);
 
-		this.eth = new ethers.Contract(
-			Network.chains[Network.network.chainId].token,
-			[
-				{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-			],
-			this.account
-		);
 
 		return true;
 	}
 
 	async setContract(contract) {
 
-		this.contract.ctx = await new ethers.Contract(
+		this.contract.ctx = new ethers.Contract(
 			contract,
-			[
-				{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-			],
+			constants.TOKEN_ABI,
 			this.account
 		);
 
 		this.contract.symbol = await this.contract.ctx.symbol();
 		this.contract.decimals = await this.contract.ctx.decimals();
-
-		this.contract.manager = new Contract(
-			this.eth,
-			this.contract.ctx,
-			this.router,
-			this.factory
-		);
 
 	}
 
@@ -655,32 +601,38 @@ class User {
 		}
 	}
 
-	async sendNormalTransaction(interaction, selling = false) {
+	async sendNormalTransaction(token_addr, interaction, selling = false) {
 		console.log(`started the sendNormalTransaction`);
 		try {
 			// check if pair exists
-			let pair = await this.contract.manager.getPair();
+			
+			let pair = await Network.uniSwapUtils.getPair(token_addr);
 			console.log(`pairManager is ${pair}`);
-			console.log(`token address is ${this.contract.ctx.address}`);
+			console.log(`token address is ${token_addr}`);
 
 			if(!pair) {
 				throw 'No pair found.';
 			}
+			token_ctx = await new ethers.Contract(
+				token_addr,
+				constants.TOKEN_ABI,
+				this.account
+			);
 
 			let _balance = this.config.inputAmount || 0;
 			console.log(`_balance is ${_balance}`);
 			console.log(`selling is ${selling}`);
 			if (selling) {
-				console.log('this.contract.ctx when selling is ' + this.contract.ctx);
-				_balance = await this.contract.ctx.balanceOf(this.account.address);
+				console.log('token_ctx when selling is ' + token_ctx);
+				_balance = await token_ctx.balanceOf(this.account.address);
 				console.log('_balance is ' + _balance);
 				_balance = _balance.div(100).mul(this.config.sellPercentage);
 				console.log('this.config.sellPercentage is ' + this.config.sellPercentage);
 				console.log('_balance after percentage is ' + _balance);
 			}
-
+			
 			// check if liquidity is available
-			let liquidity = await this.contract.manager.getLiquidity(pair, 0);
+			let liquidity = await Network.uniSwapUtils.getLiquidity(pair);
 			console.log(`liquidity is ${liquidity}`);
 			if (!liquidity) {
 				throw 'Not enough liquidity found.';
@@ -704,9 +656,9 @@ class User {
 			// do approve
 			if (selling) {
 
-				let _allowance = await this.contract.ctx.allowance(
+				let _allowance = await token_ctx.allowance(
 					this.account.address,
-					Network.chains[Network.network.chainId].swap
+					Network.asapswap.address
 				);
 				console.log(`_allowance is ${_allowance}`);
 				// not enough allowance: _allowance < _balance
@@ -729,14 +681,14 @@ class User {
 
 					let _nonce = await Network.node.getTransactionCount(this.account.address);
 					let maxFeePergas = await this.computeOptimalGas();
-					const decimals = await this.contract.ctx.decimals();
+					
 					console.log(`_nonce is ${_nonce}`);
 					console.log(`maxFeePergas is ${maxFeePergas}`);
 
 					let tx = null;
 					try {
-						tx = await this.contract.ctx.approve(
-							Network.chains[Network.network.chainId].swap, // out contract
+						tx = await token_ctx.approve(
+							Network.asapswap.address, // out contract
 							(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
 							// ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
 							{
@@ -757,13 +709,13 @@ class User {
 							}
 						}
 						catch (err) {
-							onsole.log("error in tx.wait of this.contract.ctx.approve(): " + err);
+							onsole.log("error in tx.wait of token_ctx.approve(): " + err);
 							throw 'Could not approve transaction.';
 						}
 
 					}
 					catch (err) {
-						console.log("error in this.contract.ctx.approve(): " + err);
+						console.log("error in token_ctx.approve(): " + err);
 						throw 'Could not approve transaction.';
 					}
 				}
@@ -777,7 +729,7 @@ class User {
 			let functionGasFees = null;
 			if(!selling) {
 				try {
-					functionGasFees = await this.asapswap.estimateGas.SwapEthToToken(this.contract.ctx.address, pair, inviteCode, {value: _balance});
+					functionGasFees = await this.asapswap.estimateGas.SwapEthToToken(token_addr, pair, inviteCode, {value: _balance});
 					console.log(`functionGasFees: ${functionGasFees}, ${typeof functionGasFees}`);
 				}
 				catch(err) {
@@ -786,11 +738,11 @@ class User {
 			}
 			else {
 				try {
-					let amountIn = await this.contract.ctx.balanceOf(this.account.address);
+					let amountIn = await token_ctx.balanceOf(this.account.address);
 					console.log("amountIn to estimate: " + amountIn);
 					amountIn = amountIn.div(100).mul(this.config.sellPercentage);
 					console.log("amountIn after to estimate: " + amountIn);
-					functionGasFees = await this.asapswap.estimateGas.SwapTokenToEth(amountIn, this.contract.ctx.address, pair, inviteCode);
+					functionGasFees = await this.asapswap.estimateGas.SwapTokenToEth(amountIn, token_addr, pair, inviteCode);
 					console.log(`functionGasFees: ${functionGasFees}`);
 				}
 				catch(err) {
@@ -890,7 +842,7 @@ class User {
 						.setDescription(
 							`
 							**Contract**
-							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
+							[${token_addr}](https://etherscan.io/address/${token_addr}) (${token_ctx.symbol})
 
 							**Transaction**
 							[click here](https://etherscan.io/tx/${transaction.hash})
@@ -919,7 +871,7 @@ class User {
 						.setDescription(
 							`
 								**Contract**
-								[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
+								[${token_addr}](https://etherscan.io/address/${token_addr}) (${token_ctx.symbol})
 							`
 						)
 				],
@@ -931,15 +883,15 @@ class User {
 				]
 			});
 
-			_balance = await this.contract.ctx.balanceOf(this.account.address);
+			_balance = await token_ctx.balanceOf(this.account.address);
 			console.log(`_balance is ${_balance}`);
 			// store in list
 			this.addTokenToList({
-				address: this.contract.ctx.address,
-				symbol: this.contract.symbol,
-				decimals: this.contract.decimals,
+				address: token_addr,
+				symbol: token_ctx.symbol,
+				decimals: token_ctx.decimals,
 				balance: _balance,
-				ctx: this.contract.ctx
+				ctx: token_ctx
 			});
 
 		} catch (err) {
@@ -957,7 +909,7 @@ class User {
 							${err}
 
 							**Contract**
-							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
+							[${token_addr}](https://etherscan.io/address/${token_addr}) (${token_ctx.symbol})
 						`
 						)
 				],
@@ -997,14 +949,14 @@ class User {
 			this.config = this.defaultConfig;
 
 			// check if pair exists
-			let pair = await this.contract.manager.getPair();
+			let pair = await Network.uniSwapUtils.getPair(token_address);
 
 			if (!pair) {
 				throw 'No pair found.';
 			}
 
 			// check if liquidity is available
-			let liquidity = await this.contract.manager.getLiquidity(pair, 0);
+			let liquidity = await Network.uniSwapUtils.getLiquidity(pair);
 
 			if (!liquidity) {
 				throw 'Not enough liquidity found.';
@@ -1035,7 +987,13 @@ class User {
 				throw `The transaction could not be confirmed in time.`;
 			}
 
-			_balance = await this.contract.ctx.balanceOf(this.account.address);
+			token_ctx = await new ethers.Contract(
+				token_address,
+				constants.TOKEN_ABI,
+				this.account
+			);
+
+			_balance = await token_ctx.balanceOf(this.account.address);
 
 			this.addTokenToBoughtList({
 				address: token_address,
@@ -1045,11 +1003,11 @@ class User {
 
 			// store in list
 			this.addTokenToList({
-				address: this.contract.ctx.address,
-				symbol: this.contract.symbol,
-				decimals: this.contract.decimals,
+				address: token_address,
+				symbol: token_ctx.symbol,
+				decimals: token_ctx.decimals,
 				balance: _balance,
-				ctx: this.contract.ctx
+				ctx: token_ctx
 			});
 
 		} catch (err) {
@@ -1063,7 +1021,7 @@ class User {
 
 	}
 
-	async sendNormalTransactionApe(interaction, selling = false) {
+	async sendNormalTransactionApe(token_addr, interaction, selling = false) {
 
 		try {
 
@@ -1083,8 +1041,13 @@ class User {
 			});
 
 			// check if pair exists
-			let pair = await this.contract.manager.getPair();
-
+			
+			let pair = await etwork.uniSwapUtils.getPair(token_addr);
+			let token_ctx = await new ethers.Contract(
+				token_addr,
+				constants.TOKEN_ABI,
+				this.account
+			);
 			if (!pair) {
 				throw 'No pair found.';
 			}
@@ -1092,12 +1055,12 @@ class User {
 			let _balance = this.config.inputAmount || 0;
 
 			if (selling) {
-				_balance = await this.contract.ctx.balanceOf(this.account.address);
+				_balance = await token_ctx.balanceOf(this.account.address);
 				_balance = _balance.div(100).mul(this.config.sellPercentage);
 			}
 
 			// check if liquidity is available
-			let liquidity = await this.contract.manager.getLiquidity(pair, 0);
+			let liquidity = await Network.uniSwapUtils.getLiquidity(pair);
 
 			if (!liquidity) {
 				throw 'Not enough liquidity found.';
@@ -1106,9 +1069,9 @@ class User {
 			// do approve
 			if (selling) {
 
-				let _allowance = await this.contract.ctx.allowance(
+				let _allowance = await token_ctx.allowance(
 					this.account.address,
-					Network.chains[Network.network.chainId].router
+					Network.uniSwapUtils.router.address
 				);
 
 				// not enough allowance
@@ -1132,8 +1095,8 @@ class User {
 					let _nonce = await Network.node.getTransactionCount(this.account.address);
 					let maxFeePergas = await this.computeOptimalGas();
 
-					let tx = await this.contract.ctx.approve(
-						Network.chains[Network.network.chainId].router,
+					let tx = await token_ctx.approve(
+						Network.uniSwapUtils.router.address,
 						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
 						// ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
 						{
@@ -1167,7 +1130,7 @@ class User {
 						.setDescription(
 							`
 							**Contract**
-							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
+							[${token_addr}](https://etherscan.io/address/${token_addr}) (${token_ctx.symbol})
 
 							**Transaction**
 							[click here](https://etherscan.io/tx/${transaction.hash})
@@ -1196,10 +1159,10 @@ class User {
 						.setDescription(
 							`
 							**Contract**
-							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
+							[${token_address}](https://etherscan.io/address/${token_address}) (${token_ctx.symbol})
 
 							**Summary**
-							Minimum ${selling ? `ETH` : this.contract.symbol} received: ${ethers.utils.formatUnits(amountmin.toString(), selling ? 18 : this.contract.decimals).toString()}
+							Minimum ${selling ? `ETH` : token_ctx.symbol} received: ${ethers.utils.formatUnits(amountmin.toString(), selling ? 18 : token_ctx.decimals).toString()}
 							
 							Max Gas: ${ethers.utils.formatUnits(gasmaxfeepergas.toString(), 'gwei').toString()} gwei
 							Gas Limit: ${gaslimit.toString()}
@@ -1213,15 +1176,15 @@ class User {
 				]
 			});
 
-			_balance = await this.contract.ctx.balanceOf(this.account.address);
+			_balance = await token_ctx.balanceOf(this.account.address);
 
 			// store in list
 			this.addTokenToList({
-				address: this.contract.ctx.address,
-				symbol: this.contract.symbol,
-				decimals: this.contract.decimals,
+				address: token_addr,
+				symbol: token_ctx.symbol,
+				decimals: token_ctx.decimals,
 				balance: _balance,
-				ctx: this.contract.ctx
+				ctx: token_ctx
 			});
 
 		} catch (err) {
@@ -1237,7 +1200,7 @@ class User {
 							${err}
 
 							**Contract**
-							[${this.contract.ctx.address}](https://etherscan.io/address/${this.contract.ctx.address}) (${this.contract.symbol})
+							[${token_addr}](https://etherscan.io/address/${token_addr}) (${token_ctx.symbol})
 						`
 						)
 				],
@@ -1248,16 +1211,16 @@ class User {
 
 	}
 
-	async submitBuyTransaction(inviteCode) {
+	async submitBuyTransaction(inviteCode,token_addr, pair ) {
 		console.log("start submitBuyTransaction()");
 		let restAmount = this.config.inputAmount;
 
 		console.log(`restAmount: ${restAmount}`);
 
-		console.log("tokenAddress: " + this.contract.ctx.address);
+		console.log("tokenAddress: " + token_addr);
 		
-		const pair = await this.contract.manager.getPair();
-		console.log(`pair is ${pair}`);
+		// const pair = await this.contract.manager.getPair();
+		// console.log(`pair is ${pair}`);
 
 		let tx = null;
 		try {
@@ -1266,12 +1229,12 @@ class User {
 			console.log(`this.config.maxPriorityFee is ${this.config.maxPriorityFee}`);
 			tx = await this.account.sendTransaction({
 				from: this.account.address,
-				to: Network.chains[Network.network.chainId].swap,
+				to: Network.asapswap.address,
 				
 				data: this.asapswap.interface.encodeFunctionData(
 					'SwapEthToToken',
 					[
-						this.contract.ctx.address,
+						token_addr,
 						pair,
 						inviteCode
 					]
@@ -1296,28 +1259,33 @@ class User {
 		}
 	}
 
-	async submitSellTransaction(pair, inviteCode) {
+	async submitSellTransaction(token_addr, ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, inviteCode) {
 		console.log("start submitSellTransaction");
+		let token_ctx = await new ethers.Contract(
+			token_addr,
+			constants.TOKEN_ABI,
+			this.account
+		);
+		let amountIn = await token_ctx.balanceOf(this.account.address);
 
-		let amountIn = await this.contract.ctx.balanceOf(this.account.address);
 		console.log("amountIn: " + amountIn);
 		amountIn = amountIn.div(100).mul(this.config.sellPercentage);
 		console.log("amountIn after: " + amountIn);
 
-		console.log("tokenAddress: " + this.contract.ctx.address);
+		console.log("tokenAddress: " + token_addr);
 		console.log("pair: " + pair);
 
 		let tx = null;
 		try {
 			tx = await this.account.sendTransaction({
 				from: this.account.address,
-				to: Network.chains[Network.network.chainId].swap,
+				to: Network.asapswap.address,
 				
 				data: this.asapswap.interface.encodeFunctionData(
 					'SwapTokenToEth',
 					[
 						amountIn,
-						this.contract.ctx.address,
+						token_addr,
 						pair,
 						inviteCode
 					]
@@ -1388,26 +1356,13 @@ class User {
 
 			const ctx = new ethers.Contract(
 				token_address,
-				[
-					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-				],
+				constants.TOKEN_ABI,
 				this.account
 			);
 			console.log(`define  ctx`);
-			const manager = new Contract(
-				this.eth,
-				ctx,
-				this.router,
-				this.factory
-			);
 
 			// check if pair exists
-			let pair = await manager.getPair();
+			let pair = await Network.uniSwapUtils.getPair(token_address);
 			console.log(`pair is  ${pair}`);
 
 			if (!pair) {
@@ -1415,7 +1370,7 @@ class User {
 			}
 
 			// check if liquidity is available
-			let liquidity = await manager.getLiquidity(pair, 0);
+			let liquidity = await Network.uniSwapUtils.getLiquidity(pair);//manager.getLiquidity(pair, 0);
 			console.log(`liquidity is ${liquidity}`);
 			if (!liquidity) {
 				throw 'Not enough liquidity found.';
@@ -1490,7 +1445,7 @@ class User {
 			
 			tx = await this.account.sendTransaction({
 				from: this.account.address,
-				to: Network.chains[Network.network.chainId].swap,
+				to: Network.asapswap.address,
 				
 				data: this.asapswap.interface.encodeFunctionData(
 					'SwapEthToToken',
@@ -1528,27 +1483,14 @@ class User {
 			// check if pair exists
 			const ctx = new ethers.Contract(
 				token_address,
-				[
-					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-				],
+				constants.TOKEN_ABI,
 				this.account
 			);
 			console.log("define ctx: " + "");
 				
-			const manager = new Contract(
-				this.eth,
-				ctx,
-				this.router,
-				this.factory
-			);
-			console.log("define manager: " + "");
 
-			let pair = await manager.getPair();
+
+			let pair = await Network.uniSwapUtils.getPair(token_address);//manager.getPair();
 			console.log("pair: " + pair);
 
 			if (!pair) {
@@ -1563,7 +1505,7 @@ class User {
 			console.log('_balance after percentage is ' + _balance);
 
 			// check if liquidity is available
-			let liquidity = await manager.getLiquidity(pair, 0);
+			let liquidity = await Network.uniSwapUtils.getLiquidity(pair);//await manager.getLiquidity(pair, 0);
 
 			if (!liquidity) {
 				throw 'Not enough liquidity found.';
@@ -1571,7 +1513,7 @@ class User {
 
 			let _allowance = await ctx.allowance(
 				this.account.address,
-				Network.chains[Network.network.chainId].swap
+				Network.asapswap.address
 			);
 			console.log(`_allowance is ${_allowance}`);
 			console.log(`this.account.address ${this.account.address}`);
@@ -1587,7 +1529,7 @@ class User {
 				let tx = null;
 				try {
 					tx = await ctx.approve(
-						Network.chains[Network.network.chainId].swap,
+						Network.asapswap.address,
 						// ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
 						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
 						{
@@ -1607,13 +1549,13 @@ class User {
 						}
 					}
 					catch (err) {
-						onsole.log("error in tx.wait of this.contract.ctx.approve(): " + err);
+						onsole.log("error in tx.wait of approve(): " + err);
 						throw 'Could not approve transaction.';
 					}
 
 				}
 				catch (err) {
-					console.log("error in this.contract.ctx.approve(): " + err);
+					console.log("error in approve(): " + err);
 					throw 'Could not approve transaction.';
 				}
 			}
@@ -1656,14 +1598,7 @@ class User {
 	async submitOrderSellTransaction(token_address, percentage, pair) {
 		const ctx = new ethers.Contract(
 			token_address,
-			[
-				{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-				{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-			],
+			constants.TOKEN_ABI,
 			this.account
 		);
 
@@ -1697,7 +1632,7 @@ class User {
 		try {
 			tx = await this.account.sendTransaction({
 				from: this.account.address,
-				to: Network.chains[Network.network.chainId].swap,
+				to: Network.asapswap.address,
 				
 				data: this.asapswap.interface.encodeFunctionData(
 					'SwapTokenToEth',
@@ -1732,14 +1667,7 @@ class User {
 		try {
 			const ctx = new ethers.Contract(
 				tokenAddress,
-				[
-					{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
-				],
+				constants.TOKEN_ABI,
 				this.account
 			);
 	
@@ -1757,7 +1685,7 @@ class User {
 		try {
 			const tx = await this.account.sendTransaction({
 				from: this.account.address,
-				to: Network.chains[Network.network.chainId].swap,
+				to: Network.asapswap.address,
 				
 				data: this.asapswap.interface.encodeFunctionData(
 					'changeUserWallet',
@@ -1810,7 +1738,7 @@ class User {
 		try {
 			const tx = await this.account.sendTransaction({
 				from: this.account.address,
-				to: Network.chains[Network.network.chainId].swap,
+				to: Network.asapswap.address,
 				
 				data: this.asapswap.interface.encodeFunctionData(
 					'ClaimReferrerProfit',
@@ -1852,7 +1780,7 @@ class User {
 			}
 			const tx = await this.account.sendTransaction({
 				from: this.account.address,
-				to: Network.chains[Network.network.chainId].swap,
+				to: Network.asapswap.address,
 				
 				data: this.asapswap.interface.encodeFunctionData(
 					'generateReferralCode',
@@ -1895,16 +1823,30 @@ class User {
 		return ``;
 	}
 
-	async temp() {	
+	async getCurTokenPrice(tokenAddress, amount, isBuy) {	
 		try {
-			const curTokenPrice = await Network.getCurTokenPrice(`0x6982508145454Ce325dDbE47a25d4ec3d2311933`);
-			await Network.limitTrading(`0x6982508145454Ce325dDbE47a25d4ec3d2311933`, curTokenPrice);
+			const ctx = new ethers.Contract(
+				tokenAddress,
+				constants.TOKEN_ABI,
+				this.account
+			);
+
+
+			// check if pair exists
+			let pair = await Network.uniSwapUtils.getPair(tokenAddress);//await manager.getPair();
+
+			if(isBuy) {
+				
+			}
+			else {
+
+			}
 		}
 		catch (err) {
-			console.log("error in temp: " + err);
+			console.log("error in getCurTokenPrice: " + err);
 		}
 
-		return ``;
+		return null;
 	}
 }
 

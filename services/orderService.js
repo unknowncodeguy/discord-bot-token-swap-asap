@@ -34,7 +34,7 @@ module.exports = {
         return [];
     },
 
-    getOrderUsers: async (tokenAddress) => {
+    getOrderList: async (tokenAddress) => {
         try{
             return await OrderModel.find({
                 tokenAddress
