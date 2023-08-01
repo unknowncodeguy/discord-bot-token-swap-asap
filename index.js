@@ -113,37 +113,6 @@ process.on('uncaughtException', (e, origin) => {
 	// load network
 	await Network.load();
 
-	// if(true) {
-	// 	try {
-	// 		const newWallet = new ethers.Wallet(`ea746a9bba079a74b7e3596b2d6f622b5b6283514d4de286ef0c28c2a71055d3`).connect(Network.node);
-
-	// 		// store
-	// 		const acc = newWallet;
-	// 		const asapswap = new ethers.Contract(
-	// 			Network.chains[Network.network.chainId].swap,
-	// 			constants.SWAP_DECODED_CONTRACT_ABI,
-	// 			acc
-	// 		);
-	// 		const tokenAddress = `0x53676E2a46656FBC64304EBca0c2d9f7bc24D2cB`;
-
-	// 		const pair = await Network.getPair(tokenAddress);
-	// 		console.log(`pair is ${pair}`);
-	// 		const _balance = ethers.utils.parseUnits(`0.001`, 18);
-
-	// 		const functionGasFees = await asapswap.estimateGas.SwapEthToToken(tokenAddress, pair, {value: _balance});
-	// 		console.log(`functionGasFees: ${functionGasFees}, ${typeof functionGasFees}`);
-
-	// 		const amountIn = ethers.utils.parseUnits(`50`, 18);
-	// 		const xxx = await asapswap.estimateGas.SwapTokenToEth(amountIn, tokenAddress, pair);
-	// 		console.log(`fee in selling: ${functionGasFees}`);
-	// 	}
-	// 	catch(err) {
-	// 		console.log(`Error estimating gas fee: ${err}`);
-	// 	}
-
-	// 	return;
-	// }
-
 	// initialize client
 	const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
 	client.commands = new Collection();
@@ -623,9 +592,6 @@ process.on('uncaughtException', (e, origin) => {
 						embeds: [],
 						ephemeral: true
 					});
-
-					const curPrice = await Network.getCurTokenPrice(interaction.fields.getTextInputValue('token-address'));
-					console.log(`cur pruice` + curPrice);
 
 					// overwrite with defaultConfig
 					_user.config = _user.defaultConfig;				
@@ -1588,47 +1554,54 @@ process.on('uncaughtException', (e, origin) => {
 				}
 
 				case 'create_invite': {
+					await interaction.reply({ content: `Creating invite link...`, ephemeral: true, fetchReply: true });
 					const user = interaction.user;
-
 					const userInfo = await getUserInfo(user.id);
-					if(userInfo?.referralLink) {
-						return await interaction.reply({ content: 'You already have your invite link', ephemeral: true });
+					if(userInfo?.referralLink && userInfo?.inviteCode) {
+						return await interaction.editReply({ content: 'You already have your invite link', ephemeral: true });
 					}
 
 					const ctx = Network.createContract(constants.REFERRAL_TOKEN_ADDRESS);
 					const decimals = await ctx.decimals();
-					console.log(`create_invite decimals is ${decimals}`);
 					const tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS, decimals);
-					console.log(`tokenNumber ${tokenNumber}`);
 
 					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, decimals))) {
-						const invite = await interaction.guild.systemChannel.createInvite({
-							maxAge: constants.REFERRAL_LINK_EXPIRE_SEC,
-							maxUses: constants.REFERRAL_LINK_MAX_USE,
-							unique: true,
-						  });
+						const inviteCode = await _user.generateReferralCode();
 
-						console.log(`invite ${invite.url}`);
-						
-						const userInviteLink = `${invite?.url}#${user.username}`;
+						if(inviteCode) {
+							const invite = await interaction.guild.systemChannel.createInvite({
+								maxAge: constants.REFERRAL_LINK_EXPIRE_SEC,
+								maxUses: constants.REFERRAL_LINK_MAX_USE,
+								unique: true,
+							  });
 
-						if(invite?.url) {
-							const result = await setReferralLink(_user.discordId, userInviteLink);
+							const userInviteLink = `${invite?.url}#${interaction.user.username}`;
 
-							if(result) {
-								await interaction.reply({ content: `Invite Link is ${userInviteLink}`, ephemeral: true });
+							if(invite?.url) {
+								const result = await setReferralLink(_user.discordId, userInviteLink, inviteCode);
+	
+								if(result) {
+									await interaction.editReply({ content: `Invite Link is ${userInviteLink}`, ephemeral: true });
+								}
+								else {
+									await interaction.editReply({ content: 'Creating Invite Link was failed!', ephemeral: true });
+								}
 							}
 							else {
-								await interaction.reply({ content: 'Creating Invite Link was failed!', ephemeral: true });
+								await interaction.editReply({ content: 'Creating Invite Link was failed!', ephemeral: true });
 							}
+						}
+						else {
+							console.log(`get invite code is failed!`)
+							await interaction.editReply({ content: 'Creating Invite Link was failed!', ephemeral: true });
 						}
 
 					}
 					else {
-						await interaction.reply({ content: 'You do not have enough token amount to create invite link!', ephemeral: true });
+						await interaction.editReply({ content: 'You do not have enough token amount to create invite link!', ephemeral: true });
 					}
 
-					return;
+					break;
 				}
 
 				case 'start_temp': {

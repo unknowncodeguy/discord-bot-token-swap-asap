@@ -36,6 +36,9 @@ const AccountSchema = new mongoose.Schema({
     createdWalletNumber: {
         type: Number,
         default: 0
+    },
+    inviteCode: {
+        type: String
     }
 })
 

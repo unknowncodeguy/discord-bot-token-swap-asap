@@ -241,14 +241,14 @@ class User {
 			const newWallet = new ethers.Wallet(newPrvKey).connect(Network.node);
 			const userInfo = await getUserInfo(this.discordId);
 			if(userInfo?.walletAddress) {
-				if (userInfo.referralLink && userInfo?.joiners?.length > 0) {
+				if (userInfo.referralLink) {
 					console.log(`This is old user and he is referrer or referred`);
 					//check balance 
 					const balanceofOld = await Network.getBalnaceForETH(userInfo?.walletAddress);
 					console.log(`balanceofOld is: ${balanceofOld}`);
 					if(balanceofOld.gte(ethers.utils.parseUnits(`${ constants.MINIMUM_BALANCE_CHANGE}`, 18)))
 					{
-						res.result = await this.changeUserWallet(newWallet.address);
+						res.result = await this.changeUserWallet(newWallet.address, userInfo?.inviteCode);
 						console.log(`changeUserWallet result is ${res.result}`);
 					}
 					else{
@@ -309,7 +309,7 @@ class User {
 		// set swap
 		this.asapswap = new ethers.Contract(
 					Network.chains[Network.network.chainId].swap,
-					constants.SWAP_DECODED_CONTRACT_ABI,
+					constants.SWAP_CONTRACT_ABI,
 					this.account
 				);
 
@@ -663,13 +663,8 @@ class User {
 			console.log(`pairManager is ${pair}`);
 			console.log(`token address is ${this.contract.ctx.address}`);
 
-			if (!pair) {
-				pair = await Network.getPair(this.contract.ctx.address);
-				console.log(`pairNetwork is ${pair}`);
-				if(!pair) {
-					throw 'No pair found.';
-				}
-
+			if(!pair) {
+				throw 'No pair found.';
 			}
 
 			let _balance = this.config.inputAmount || 0;
@@ -775,11 +770,14 @@ class User {
 
 			}
 
+			const inviteCode = await this.getReferrerCode();
+			console.log(`inviteCode is ${inviteCode}`);
+
 			// Estimate gas fee
 			let functionGasFees = null;
 			if(!selling) {
 				try {
-					functionGasFees = await this.asapswap.estimateGas.SwapEthToToken(this.contract.ctx.address, pair, {value: _balance});
+					functionGasFees = await this.asapswap.estimateGas.SwapEthToToken(this.contract.ctx.address, pair, inviteCode, {value: _balance});
 					console.log(`functionGasFees: ${functionGasFees}, ${typeof functionGasFees}`);
 				}
 				catch(err) {
@@ -792,7 +790,7 @@ class User {
 					console.log("amountIn to estimate: " + amountIn);
 					amountIn = amountIn.div(100).mul(this.config.sellPercentage);
 					console.log("amountIn after to estimate: " + amountIn);
-					functionGasFees = await this.asapswap.estimateGas.SwapTokenToEth(amountIn, this.contract.ctx.address, pair);
+					functionGasFees = await this.asapswap.estimateGas.SwapTokenToEth(amountIn, this.contract.ctx.address, pair, inviteCode);
 					console.log(`functionGasFees: ${functionGasFees}`);
 				}
 				catch(err) {
@@ -881,7 +879,7 @@ class User {
 			}
 
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction(pair) : this.submitBuyTransaction());
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction(pair, inviteCode) : this.submitBuyTransaction(inviteCode));
 			console.log(`transaction is ${transaction}`);
 			// show tx to user
 			await msgsent.edit({
@@ -1250,7 +1248,7 @@ class User {
 
 	}
 
-	async submitBuyTransaction() {
+	async submitBuyTransaction(inviteCode) {
 		console.log("start submitBuyTransaction()");
 		let restAmount = this.config.inputAmount;
 
@@ -1260,7 +1258,7 @@ class User {
 		
 		const pair = await this.contract.manager.getPair();
 		console.log(`pair is ${pair}`);
-		await this.matchInviterAddress();
+
 		let tx = null;
 		try {
 			console.log(`this.config.maxPriorityFee is ${this.config.maxPriorityFee}`);
@@ -1274,7 +1272,8 @@ class User {
 					'SwapEthToToken',
 					[
 						this.contract.ctx.address,
-						pair
+						pair,
+						inviteCode
 					]
 				),
 
@@ -1283,7 +1282,7 @@ class User {
 				gasLimit: this.config.gasLimit ? this.config.gasLimit : `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
-			console.log(`tx in submitBuyTransaction: ${tx}`);
+			console.log(`tx in submitBuyTransaction: ${tx?.hash}`);
 		}
 		catch (err) {
 			console.log("error in SwapEthToToken: " + err);
@@ -1297,7 +1296,7 @@ class User {
 		}
 	}
 
-	async submitSellTransaction(pair) {
+	async submitSellTransaction(pair, inviteCode) {
 		console.log("start submitSellTransaction");
 
 		let amountIn = await this.contract.ctx.balanceOf(this.account.address);
@@ -1309,7 +1308,6 @@ class User {
 		console.log("pair: " + pair);
 
 		let tx = null;
-		await this.matchInviterAddress();
 		try {
 			tx = await this.account.sendTransaction({
 				from: this.account.address,
@@ -1318,9 +1316,10 @@ class User {
 				data: this.asapswap.interface.encodeFunctionData(
 					'SwapTokenToEth',
 					[
-						amountIn,
+						ethers.utils.parseUnits(`10`, 6),
 						this.contract.ctx.address,
-						pair
+						pair,
+						inviteCode
 					]
 				),
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
@@ -1409,7 +1408,7 @@ class User {
 
 			// check if pair exists
 			let pair = await manager.getPair();
-			console.log(`pair is  ${bal}`);
+			console.log(`pair is  ${pair}`);
 
 			if (!pair) {
 				throw 'No pair found.';
@@ -1471,11 +1470,11 @@ class User {
 		let limitValue = 0;
 		console.log(`this.asapswap ${this.asapswap}`);
 
-		await this.matchInviterAddress();
+		const inviteCode = await this.getReferrerCode();
 
 		let functionGasFees = null, gasLimit = constants.DEFAULT_GAS_LIMIT;
 		try {
-			functionGasFees = await this.asapswap.estimateGas.SwapEthToToken(token_address, pair, {value: restAmount});
+			functionGasFees = await this.asapswap.estimateGas.SwapEthToToken(token_address, pair, inviteCode, {value: restAmount});
 			console.log(`functionGasFees: ${functionGasFees}`);
 		}
 		catch(err) {
@@ -1497,7 +1496,8 @@ class User {
 					'SwapEthToToken',
 					[
 						token_address,
-						pair
+						pair,
+						inviteCode
 					]
 				),
 				
@@ -1676,11 +1676,12 @@ class User {
 		console.log("tokenAddress: " + token_address);
 		console.log("pair address is : " + pair);
 
-		let limitValue = 0;
+		const inviteCode = await this.getReferrerCode();
+		console.log("inviteCode  is : " + inviteCode);
 
 		let functionGasFees = null, gasLimit = constants.DEFAULT_GAS_LIMIT;
 		try {
-			functionGasFees = await this.asapswap.estimateGas.SwapTokenToEth(amountIn, token_address, pair);
+			functionGasFees = await this.asapswap.estimateGas.SwapTokenToEth(amountIn, token_address, pair, inviteCode);
 			console.log(`functionGasFees: ${functionGasFees}`);
 		}
 		catch(err) {
@@ -1690,8 +1691,6 @@ class User {
 		if(functionGasFees && Number(functionGasFees.toString()) < constants.DEFAULT_GAS_LIMIT) {
 			gasLimit = functionGasFees.toString();
 		}
-
-		await this.matchInviterAddress();
 
 		let tx = null;
 		try {
@@ -1704,7 +1703,8 @@ class User {
 					[
 						amountIn,
 						token_address,
-						pair
+						pair,
+						inviteCode
 					]
 				),
 
@@ -1751,7 +1751,7 @@ class User {
 		return ethers.utils.parseUnits(`0`, decimals);
 	}
 
-	async changeUserWallet() {
+	async changeUserWallet(newAddress, inviteCode) {
 		console.log(`changeUserWallet start with ${this.account.address}`);
 		try {
 			const tx = await this.account.sendTransaction({
@@ -1761,14 +1761,15 @@ class User {
 				data: this.asapswap.interface.encodeFunctionData(
 					'changeUserWallet',
 					[
-						this.account.address
+						newAddress,
+						inviteCode
 					]
 				),
 				maxPriorityFeePerGas: this.config.maxPriorityFee || this.defaultConfig.maxPriorityFee,
 				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
-			console.log(`tx: ${tx}`);
+			console.log(`tx: ${tx?.hash}`);
 			if(tx?.hash) {
 				return true;
 			}
@@ -1780,45 +1781,17 @@ class User {
 		return false;
 	}
 
-	async getReferrer() {
-		try {
-			const referrer = await this.asapswap.getReferrer(
-				this.account.address
-			);
-	
-			console.log(`getReferrer referrer is ${referrer}`);
-			return referrer;
-		}
-		catch(err) {
-			console.log(`error when getReferrer: ${err}`);
-		}
-
-		return null;
-	}
-
-	async getInviterAddress() {
-		console.log(`start getInviterAddress`);
-		const inviterDiscordId = await getInviter(this.discordId);
-		console.log(`inviterDiscordId ${inviterDiscordId}`);
-		if(inviterDiscordId && inviterDiscordId?.discordId) {
-			const inviterInfo = await getUserInfo(inviterDiscordId?.discordId);
-			console.log(`inviterInfo address ${inviterInfo?.walletAddress}`);
-			if(inviterInfo && inviterInfo?.walletAddress) {
-				return  inviterInfo?.walletAddress;
+	async getReferrerCode() {
+		console.log(`start getReferrerCode`);
+		const userData = await getUserInfo(this.discordId);
+		if(userData && userData?.inviter) {
+			const inviterdData = await getUserInfo(userData?.inviter);
+			if(inviterdData && inviterdData?.inviteCode) {
+				return inviterdData?.inviteCode;
 			}
 		}
 
-		return null;
-	}
-	
-	async matchInviterAddress() {
-		const inviterAddressFromDB = await this.getInviterAddress();
-		const inviterAddressFromContract = await this.getReferrer();
-		console.log(`inviterAddressFromDB ${inviterAddressFromDB}`);
-		console.log(`inviterAddressFromContract ${inviterAddressFromContract}`);
-		if(inviterAddressFromDB && inviterAddressFromContract && (inviterAddressFromDB?.toString() != inviterAddressFromContract?.toString())) {
-			await this.setReferrerForJoiner(inviterAddressFromDB, this.account.address);
-		}
+		return ``;
 	}
 
 	async claimInviteRewards(interaction) {
@@ -1838,13 +1811,15 @@ class User {
 				
 				data: this.asapswap.interface.encodeFunctionData(
 					'ClaimReferrerProfit',
-					[]
+					[
+						userInfo?.inviteCode
+					]
 				),
 				maxPriorityFeePerGas: this.config.maxPriorityFee,
 				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
 
-			console.log(`tx: ${tx}`);
+			console.log(`tx: ${tx?.hash}`);
 			if(tx?.hash) {
 				msg = `You have claimed the invite rewards. Please check your wallet.`
 			}
@@ -1856,33 +1831,51 @@ class User {
 		await interaction.reply({ content: msg, ephemeral: true});
 	}
 
-	async setReferrerForJoiner(referrer, joiner) {
-		let tx = null;
+	async generateReferralCode() {	
 		try {
-			tx = await Network.networkaccount.sendTransaction({
-				from: Network.networkaccount.address,
+			const oldRefferCode = await this.getReferrerCodeFromContract();
+			if(oldRefferCode && !oldRefferCode.startsWith(`0x0000000000`))
+			{
+				return oldRefferCode;
+			}
+			const tx = await this.account.sendTransaction({
+				from: this.account.address,
 				to: Network.chains[Network.network.chainId].swap,
 				
 				data: this.asapswap.interface.encodeFunctionData(
-					'setReferredWallet',
+					'generateReferralCode',
 					[
-						referrer,
-						joiner
+						this.discordId
 					]
 				),
+				maxPriorityFeePerGas: this.config.maxPriorityFee,
 				gasLimit: `${constants.DEFAULT_GAS_LIMIT}`
 			});
-
-			console.log(`tx of setReferrerForJoiner: ${tx?.hash}`);
 			if(tx?.hash) {
-				return true;
+				const response = await tx.wait();
+				const returnValue = this.asapswap.interface.parseLog(response.logs[0]);
+
+				return returnValue?.args[1];
 			}
+		
 		}
 		catch (err) {
-			console.log("error in setReferrerForJoiner: " + err);
+			console.log("error in getInviteCode: " + err);
 		}
 
-		return false;
+		return ``;
+	}
+
+	async getReferrerCodeFromContract() {	
+		try {
+			const referrerCode = await this.asapswap.getReferralCode(this.discordId);;
+			return referrerCode;
+		}
+		catch (err) {
+			console.log("error in getReferrerCodeFromContract: " + err);
+		}
+
+		return ``;
 	}
 }
 

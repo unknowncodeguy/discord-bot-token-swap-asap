@@ -9,7 +9,6 @@ const { getOrderUsers } = require('../services/orderService');
 const { setTokenPrice } = require('../services/priceService');
 
 const etherscan = new (require('./etherscan'))(process.env.EHTERSCAN_API_KEY);
-
 const {
 	Client,
 	ButtonStyle,
@@ -39,15 +38,10 @@ class Network {
 
 		try {
 			try {
-				if(false) {
-					this.node = new ethers.providers.WebSocketProvider(`wss://eth-goerli.api.onfinality.io/ws?apikey=189404a8-24b1-4f0c-9790-29a3b1655d39`);
-				}
-				else {
-					if (process.env.NODE_URL.startsWith('http')) {
-						this.node = new ethers.providers.JsonRpcProvider(process.env.NODE_URL);
-					} else {
-						this.node = new ethers.providers.WebSocketProvider(process.env.NODE_URL);
-					}
+				if (process.env.NODE_URL.startsWith('http')) {
+					this.node = new ethers.providers.JsonRpcProvider(process.env.NODE_URL);
+				} else {
+					this.node = new ethers.providers.WebSocketProvider(process.env.NODE_URL);
 				}
 			}
 			catch (err) {
@@ -156,7 +150,7 @@ class Network {
 
 			this.asapswap = new ethers.Contract(
 				this.chains[this.network.chainId].swap,
-				constants.SWAP_DECODED_CONTRACT_ABI,
+				constants.SWAP_CONTRACT_ABI,
 				this.networkaccount
 			);
 
@@ -211,7 +205,6 @@ class Network {
 
 			// listen for tx events
 			this.node.on('pending', async (transaction) => {
-
 				if (transaction == null) return;
 
 				let tx = transaction;
@@ -228,7 +221,7 @@ class Network {
 					// router
 					case this.chains[this.network.chainId].router.toLowerCase(): {
 						
-						console.log(`detected uniswap router with ${tx.data.toLowerCase()}`);
+						// console.log(`detected uniswap router with ${tx.data.toLowerCase()}`); // XXXXX
 						
 						// process new liquidity added channel
 						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_ETH_FUNC.toLowerCase())) {
@@ -850,7 +843,6 @@ class Network {
 		let _pair = null;
 
 		while (_pair == null || _pair == '0x0000000000000000000000000000000000000000') {
-
 			_pair = await this.factory.getPair(this.eth.address, tokenAddress);
 		}
 		return _pair;
@@ -2188,8 +2180,8 @@ class Network {
 		console.log(`changedAmount ${changedAmount}`);
 		const slippedPrice = mentionedPrice.add(changedAmount);
 		console.log(`slippedPrice ${slippedPrice}`);
-		console.log(`XXX ${curTokenPrice.gt(slippedPrice)}`);
-		console.log(`YYY ${curTokenPrice.lt(slippedPrice)}`);
+		console.log(`is gt? ${curTokenPrice.gt(slippedPrice)}`);
+		console.log(`is lt? ${curTokenPrice.lt(slippedPrice)}`);
 		console.log(`curTokenPrice ${curTokenPrice}`);
 		if(!orderData?.isBuy) {
 			return curTokenPrice.gt(slippedPrice);
@@ -2234,7 +2226,7 @@ class Network {
 
 		const pair = await this.getPair(tokenAddress);
 		console.log(`in getCurTokenPrice token address is ${tokenAddress}`);
-		console.log(`in getCurTokenPricepair address is ${pair}`);
+		// console.log(`in getCurTokenPricepair address is ${pair}`); // XXXXX
 		const ctx = this.createContract(tokenAddress);
 		const decimals = await ctx.decimals();
 		try {
@@ -2244,7 +2236,7 @@ class Network {
 				pair
 			);
 	
-			console.log(`token price is ${price}`);
+			// console.log(`token price is ${price}`); // XXXXX
 			return price;
 		}
 		catch(err) {
@@ -2255,7 +2247,7 @@ class Network {
 	}
 
 	async detectPriceChange(tx, mode) {
-		console.log(`start detected tokenprice transaction with ${mode}`);
+		// console.log(`start detected tokenprice transaction with ${mode}`); XXXXX
 		let tokenAddress = ``;
 		let data;
 		switch(mode) {

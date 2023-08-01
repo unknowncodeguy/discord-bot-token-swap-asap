@@ -42,12 +42,12 @@ module.exports = {
         return null;
     },
 
-    setReferralLink: async (discordId, referralLink) => {
+    setReferralLink: async (discordId, referralLink, inviteCode) => {
         try {
             const filter = {
                 discordId
             }
-            const update = { $set: { referralLink: referralLink } };
+            const update = { $set: { referralLink: referralLink, inviteCode: inviteCode } };
     
             const info = await AccountModel.findOne(filter);
             
@@ -55,7 +55,7 @@ module.exports = {
                 await AccountModel.updateOne(filter, update);
             }
             else {
-                const newData = new AccountModel({...filter, referralLink: referralLink});
+                const newData = new AccountModel({...filter, referralLink: referralLink, inviteCode: inviteCode});
                 await newData.save();
             }
 
