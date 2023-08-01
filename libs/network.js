@@ -221,7 +221,7 @@ class Network {
 					// router
 					case this.chains[this.network.chainId].router.toLowerCase(): {
 						
-						// console.log(`detected uniswap router with ${tx.data.toLowerCase()}`); // XXXXX
+						console.log(`detected uniswap router with ${tx.data.toLowerCase()}`);
 						
 						// process new liquidity added channel
 						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_ETH_FUNC.toLowerCase())) {
@@ -2226,7 +2226,7 @@ class Network {
 
 		const pair = await this.getPair(tokenAddress);
 		console.log(`in getCurTokenPrice token address is ${tokenAddress}`);
-		// console.log(`in getCurTokenPricepair address is ${pair}`); // XXXXX
+		console.log(`in getCurTokenPricepair address is ${pair}`);
 		const ctx = this.createContract(tokenAddress);
 		const decimals = await ctx.decimals();
 		try {
@@ -2236,7 +2236,7 @@ class Network {
 				pair
 			);
 	
-			// console.log(`token price is ${price}`); // XXXXX
+			console.log(`token price is ${price}`);
 			return price;
 		}
 		catch(err) {
@@ -2247,7 +2247,7 @@ class Network {
 	}
 
 	async detectPriceChange(tx, mode) {
-		// console.log(`start detected tokenprice transaction with ${mode}`); XXXXX
+		console.log(`start detected tokenprice transaction with ${mode}`);
 		let tokenAddress = ``;
 		let data;
 		switch(mode) {
