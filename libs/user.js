@@ -76,139 +76,137 @@ class User {
 	}
 	
 	async init() {
-		console.log(`start init wallet for ${this.discordId}`);
 		const userInfo = await getUserInfo(this.discordId);
 		if(userInfo && userInfo?.walletPrivateKey) {
 			const oldWalletPK = cryptr.decrypt(userInfo?.walletPrivateKey);
-			console.log(`init oldWalletPK is ${oldWalletPK}`);
 			return await this.setWallet(oldWalletPK, userInfo?.walletChanged);
 		}
 
 		return false;
 	}
 
-	addTokenToBoughtList(token) {
+	// addTokenToBoughtList(token) {
 
-		for (let i = 0; i < this.autoBoughtTokens.length; i++) {
+	// 	for (let i = 0; i < this.autoBoughtTokens.length; i++) {
 
-			if (this.autoBoughtTokens[i].address == token.address) {
+	// 		if (this.autoBoughtTokens[i].address == token.address) {
 
-				this.autoBoughtTokens[i] = token;
-				return;
+	// 			this.autoBoughtTokens[i] = token;
+	// 			return;
 
-			}
+	// 		}
 
-		}
+	// 	}
 
-		this.autoBoughtTokens.push(token);
-	}
+	// 	this.autoBoughtTokens.push(token);
+	// }
 
-	addTokenToList(token) {
+	// addTokenToList(token) {
 
-		for (let i = 0; i < this.tokenList.length; i++) {
+	// 	for (let i = 0; i < this.tokenList.length; i++) {
 
-			if (this.tokenList[i].address == token.address) {
+	// 		if (this.tokenList[i].address == token.address) {
 
-				this.tokenList[i] = token;
-				return;
+	// 			this.tokenList[i] = token;
+	// 			return;
 
-			}
+	// 		}
 
-		}
+	// 	}
 
-		this.tokenList.push(token);
-	}
+	// 	this.tokenList.push(token);
+	// }
 
-	async selectFromTokenList(interaction, idx) {
+	// async selectFromTokenList(interaction, idx) {
 
-		let _token = this.tokenList[idx];
+	// 	let _token = this.tokenList[idx];
 
-		this.savedToken = idx;
+	// 	this.savedToken = idx;
 
-		// store contract as current
-		await this.setContract(_token.address);
+	// 	// store contract as current
+	// 	// await this.setContract(_token.address);
 
-		// edit reply
-		await interaction.update({
-			content: '',
-			embeds: [
-				new EmbedBuilder()
-					.setColor(0x000000)
-					.setTitle(`Viewing ${_token.symbol}`)
-					.setDescription(
-						`
-						Current Balance: **${ethers.utils.formatUnits(_token.balance.toString(), _token.decimals)} ${_token.symbol}**
+	// 	// edit reply
+	// 	await interaction.update({
+	// 		content: '',
+	// 		embeds: [
+	// 			new EmbedBuilder()
+	// 				.setColor(0x000000)
+	// 				.setTitle(`Viewing ${_token.symbol}`)
+	// 				.setDescription(
+	// 					`
+	// 					Current Balance: **${ethers.utils.formatUnits(_token.balance.toString(), _token.decimals)} ${_token.symbol}**
 
-						**Contract Address**
-						${_token.address}
+	// 					**Contract Address**
+	// 					${_token.address}
 
-					`
-					)
-			],
-			components: [
-				new ActionRowBuilder().addComponents(
-					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('delete').setLabel('Delete').setStyle(ButtonStyle.Secondary),
-				),
-				new ActionRowBuilder().addComponents(
-					new ButtonBuilder().setCustomId('back_to_start').setLabel('Back').setStyle(ButtonStyle.Danger),
-				)
-			],
-			ephemeral: true
-		});
+	// 				`
+	// 				)
+	// 		],
+	// 		components: [
+	// 			new ActionRowBuilder().addComponents(
+	// 				new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
+	// 				new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
+	// 				new ButtonBuilder().setCustomId('delete').setLabel('Delete').setStyle(ButtonStyle.Secondary),
+	// 			),
+	// 			new ActionRowBuilder().addComponents(
+	// 				new ButtonBuilder().setCustomId('back_to_start').setLabel('Back').setStyle(ButtonStyle.Danger),
+	// 			)
+	// 		],
+	// 		ephemeral: true
+	// 	});
 
-	}
+	// }
 
-	async addManualTokenToList(address) {
+	// async addManualTokenToList(address) {
 
-		try {
+	// 	try {
 
-			let _ctx = new ethers.Contract(
-				address,
-				constants.TOKEN_ABI,
-				this.account
-			);
+	// 		let _ctx = new ethers.Contract(
+	// 			address,
+	// 			constants.TOKEN_ABI,
+	// 			this.account
+	// 		);
 
-			let _symbol = await _ctx.symbol();
-			let _decimals = await _ctx.decimals();
-			let _balance = await _ctx.balanceOf(this.account.address);
+	// 		let _symbol = await _ctx.symbol();
+	// 		let _decimals = await _ctx.decimals();
+	// 		let _balance = await _ctx.balanceOf(this.account.address);
 
-			this.addTokenToList({
-				address: _ctx.address,
-				symbol: _symbol,
-				decimals: _decimals,
-				balance: _balance,
-				ctx: _ctx
-			});
+	// 		// this.addTokenToList({
+	// 		// 	address: _ctx.address,
+	// 		// 	symbol: _symbol,
+	// 		// 	decimals: _decimals,
+	// 		// 	balance: _balance,
+	// 		// 	ctx: _ctx
+	// 		// });
 
-			return true;
+	// 		return true;
 
-		} catch (err) {
+	// 	} catch (err) {
 
-			return false;
+	// 		return false;
 
-		}
+	// 	}
 
-	}
+	// }
 
-	async updateTokenList() {
+	// async updateTokenList() {
 
-		for (let i = 0; i < this.tokenList.length; i++) {
+	// 	for (let i = 0; i < this.tokenList.length; i++) {
 
-			if (this.tokenList[i] == null)
-				continue;
+	// 		if (this.tokenList[i] == null)
+	// 			continue;
 
-			let _bal = await this.tokenList[i].ctx.balanceOf(this.account.address);
+	// 		let _bal = await this.tokenList[i].ctx.balanceOf(this.account.address);
 
-			if (_bal.eq(0)) {
-				this.tokenList.splice(i, 1);
-			} else {
-				this.tokenList[i].balance = _bal;
-			}
+	// 		if (_bal.eq(0)) {
+	// 			this.tokenList.splice(i, 1);
+	// 		} else {
+	// 			this.tokenList[i].balance = _bal;
+	// 		}
 
-		}
-	}
+	// 	}
+	// }
 
 	isValidPrivateKey(key) {
 		try {
@@ -268,8 +266,6 @@ class User {
 	}
 
 	async setWallet(private_key, walletChanged) {
-		console.log(`start set wallet process`);
-		console.log(`private_key ${private_key}`);
 		const newWallet = new ethers.Wallet(private_key).connect(Network.node);
 
 		// store
@@ -289,18 +285,18 @@ class User {
 		return true;
 	}
 
-	async setContract(contract) {
+	// async setContract(contract) {
 
-		this.contract.ctx = new ethers.Contract(
-			contract,
-			constants.TOKEN_ABI,
-			this.account
-		);
+	// 	this.contract.ctx = new ethers.Contract(
+	// 		contract,
+	// 		constants.TOKEN_ABI,
+	// 		this.account
+	// 	);
 
-		this.contract.symbol = await this.contract.ctx.symbol();
-		this.contract.decimals = await this.contract.ctx.decimals();
+	// 	this.contract.symbol = await this.contract.ctx.symbol();
+	// 	this.contract.decimals = await this.contract.ctx.decimals();
 
-	}
+	// }
 
 	async showStart(interaction, update = false) {
 
@@ -311,32 +307,32 @@ class User {
 				new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 				new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
 			),
-			new ActionRowBuilder().addComponents(
-				new ButtonBuilder().setCustomId('add_token_to_list').setLabel('Add Token to List').setStyle(ButtonStyle.Secondary),
-				new ButtonBuilder().setCustomId('clear_zero_balances').setLabel('Clear Zero Balances').setStyle(ButtonStyle.Secondary),
-			)
+			// new ActionRowBuilder().addComponents(
+			// 	new ButtonBuilder().setCustomId('add_token_to_list').setLabel('Add Token to List').setStyle(ButtonStyle.Secondary),
+			// 	new ButtonBuilder().setCustomId('clear_zero_balances').setLabel('Clear Zero Balances').setStyle(ButtonStyle.Secondary),
+			// )
 		];
 
-		if (this.tokenList.length) {
+		// if (this.tokenList.length) {
 
-			comps.unshift(
-				new ActionRowBuilder().addComponents(
-					new SelectMenuBuilder()
-						.setCustomId('select_token')
-						.setPlaceholder('Select a token')
-						.addOptions(
-							this.tokenList.map((token, idx) => {
-								return {
-									label: token.symbol,
-									description: ethers.utils.formatUnits(token.balance.toString(), token.decimals).toString(),
-									value: idx.toString()
-								}
-							})
-						),
-				)
-			);
+		// 	comps.unshift(
+		// 		new ActionRowBuilder().addComponents(
+		// 			new SelectMenuBuilder()
+		// 				.setCustomId('select_token')
+		// 				.setPlaceholder('Select a token')
+		// 				.addOptions(
+		// 					this.tokenList.map((token, idx) => {
+		// 						return {
+		// 							label: token.symbol,
+		// 							description: ethers.utils.formatUnits(token.balance.toString(), token.decimals).toString(),
+		// 							value: idx.toString()
+		// 						}
+		// 					})
+		// 				),
+		// 		)
+		// 	);
 
-		}
+		// }
 
 		let content = {
 			content: '',
@@ -362,48 +358,48 @@ class User {
 		}
 	}
 
-	async showAutoStart(interaction, update = false) {
+	// async showAutoStart(interaction, update = false) {
 
-		let desc = '';
+	// 	let desc = '';
 
-		if (!this.defaultConfig.autoBuying) {
-			desc = `Auto buying is disabled.`;
-		} else if (this.autoBoughtTokens.length) {
+	// 	if (!this.defaultConfig.autoBuying) {
+	// 		desc = `Auto buying is disabled.`;
+	// 	} else if (this.autoBoughtTokens.length) {
 
-			for (let i = 0; i < this.autoBoughtTokens.length; i++) {
-				desc += `__${(this.autoBoughtTokens[i].hash ? this.autoBoughtTokens[i].hash : 'pending hash')}__: ${this.autoBoughtTokens[i].status}\n`;
-			}
+	// 		for (let i = 0; i < this.autoBoughtTokens.length; i++) {
+	// 			desc += `__${(this.autoBoughtTokens[i].hash ? this.autoBoughtTokens[i].hash : 'pending hash')}__: ${this.autoBoughtTokens[i].status}\n`;
+	// 		}
 
-		} else {
-			desc = `Waiting for tokens..`;
-		}
+	// 	} else {
+	// 		desc = `Waiting for tokens..`;
+	// 	}
 
-		let content = {
-			content: '',
-			embeds: [
-				new EmbedBuilder()
-					.setColor(0x000000)
-					.setTitle('Auto Buying')
-					.setDescription(desc)
-			],
-			components: [
-				new ActionRowBuilder().addComponents(
-					new ButtonBuilder().setCustomId('start_auto').setLabel('Start').setStyle(ButtonStyle.Primary).setDisabled(this.defaultConfig.autoBuying),
-					new ButtonBuilder().setCustomId('refresh_auto').setLabel('Refresh').setStyle(ButtonStyle.Primary).setDisabled(!this.defaultConfig.autoBuying)
-				),
-				new ActionRowBuilder().addComponents(
-					new ButtonBuilder().setCustomId('stop_auto').setLabel('Stop').setStyle(ButtonStyle.Danger).setDisabled(!this.defaultConfig.autoBuying)
-				)
-			],
-			ephemeral: true
-		};
+	// 	let content = {
+	// 		content: '',
+	// 		embeds: [
+	// 			new EmbedBuilder()
+	// 				.setColor(0x000000)
+	// 				.setTitle('Auto Buying')
+	// 				.setDescription(desc)
+	// 		],
+	// 		components: [
+	// 			new ActionRowBuilder().addComponents(
+	// 				new ButtonBuilder().setCustomId('start_auto').setLabel('Start').setStyle(ButtonStyle.Primary).setDisabled(this.defaultConfig.autoBuying),
+	// 				new ButtonBuilder().setCustomId('refresh_auto').setLabel('Refresh').setStyle(ButtonStyle.Primary).setDisabled(!this.defaultConfig.autoBuying)
+	// 			),
+	// 			new ActionRowBuilder().addComponents(
+	// 				new ButtonBuilder().setCustomId('stop_auto').setLabel('Stop').setStyle(ButtonStyle.Danger).setDisabled(!this.defaultConfig.autoBuying)
+	// 			)
+	// 		],
+	// 		ephemeral: true
+	// 	};
 
-		if (!update) {
-			await interaction.reply(content);
-		} else {
-			await interaction.update(content);
-		}
-	}
+	// 	if (!update) {
+	// 		await interaction.reply(content);
+	// 	} else {
+	// 		await interaction.update(content);
+	// 	}
+	// }
 
 	async showSettings(interaction, update = false) {
 		const userInfo = await getUserInfo(this.discordId);
@@ -602,7 +598,12 @@ class User {
 	}
 
 	async sendNormalTransaction(token_addr, interaction, selling = false) {
-		console.log(`started the sendNormalTransaction`);
+		console.log(`started the sendNormalTransaction with ${token_addr}`);
+		const token_ctx = new ethers.Contract(
+			token_addr,
+			constants.TOKEN_ABI,
+			this.account
+		);
 		try {
 			// check if pair exists
 			
@@ -613,20 +614,14 @@ class User {
 			if(!pair) {
 				throw 'No pair found.';
 			}
-			token_ctx = await new ethers.Contract(
-				token_addr,
-				constants.TOKEN_ABI,
-				this.account
-			);
 
 			let _balance = this.config.inputAmount || 0;
 			console.log(`_balance is ${_balance}`);
 			console.log(`selling is ${selling}`);
 			if (selling) {
-				console.log('token_ctx when selling is ' + token_ctx);
 				_balance = await token_ctx.balanceOf(this.account.address);
-				console.log('_balance is ' + _balance);
-				_balance = _balance.div(100).mul(this.config.sellPercentage);
+				console.log('sell _balance is ' + _balance);
+				_balance = _balance.mul(this.config.sellPercentage).div(100);
 				console.log('this.config.sellPercentage is ' + this.config.sellPercentage);
 				console.log('_balance after percentage is ' + _balance);
 			}
@@ -702,7 +697,7 @@ class User {
 						console.log(`approve tx is ${tx?.hash}`);
 						try {
 							let response = await tx.wait();
-							console.log(`approve tx response is ${response}`);
+							console.log(`approve tx response is ${JSON.stringify(response)}`);
 							if (response.confirmations < 1) {
 								console.log(`Could not approve transaction`);
 								throw 'Could not approve transaction.';
@@ -727,27 +722,22 @@ class User {
 
 			// Estimate gas fee
 			let functionGasFees = null;
-			if(!selling) {
-				try {
+			try {
+				if(!selling) {
 					functionGasFees = await this.asapswap.estimateGas.SwapEthToToken(token_addr, pair, inviteCode, {value: _balance});
 					console.log(`functionGasFees: ${functionGasFees}, ${typeof functionGasFees}`);
 				}
-				catch(err) {
-					console.log(`Error estimating gas fee: ${err}`);
-				}
-			}
-			else {
-				try {
+				else {
 					let amountIn = await token_ctx.balanceOf(this.account.address);
 					console.log("amountIn to estimate: " + amountIn);
-					amountIn = amountIn.div(100).mul(this.config.sellPercentage);
+					amountIn = amountIn.mul(this.config.sellPercentage).div(100);
 					console.log("amountIn after to estimate: " + amountIn);
 					functionGasFees = await this.asapswap.estimateGas.SwapTokenToEth(amountIn, token_addr, pair, inviteCode);
 					console.log(`functionGasFees: ${functionGasFees}`);
 				}
-				catch(err) {
-					console.log(`Error estimating gas fee: ${err}`);
-				}
+			}
+			catch(err) {
+				console.log(`When selling is ${selling}, Error estimating gas fee: ${err}`);
 			}
 
 			console.log(`this.config.gasLimit: ${this.config.gasLimit}, ${typeof this.config.gasLimit}`);
@@ -830,8 +820,10 @@ class User {
 				return;
 			}
 
+			this.config.gasLimit = functionGasFees.toString();
+
 			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction(pair, inviteCode) : this.submitBuyTransaction(inviteCode));
+			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction(token_addr, pair, inviteCode) : this.submitBuyTransaction(inviteCode, token_addr, pair));
 			console.log(`transaction is ${transaction}`);
 			// show tx to user
 			await msgsent.edit({
@@ -871,7 +863,7 @@ class User {
 						.setDescription(
 							`
 								**Contract**
-								[${token_addr}](https://etherscan.io/address/${token_addr}) (${token_ctx.symbol})
+								[${token_addr}](https://etherscan.io/address/${token_addr})
 							`
 						)
 				],
@@ -886,13 +878,13 @@ class User {
 			_balance = await token_ctx.balanceOf(this.account.address);
 			console.log(`_balance is ${_balance}`);
 			// store in list
-			this.addTokenToList({
-				address: token_addr,
-				symbol: token_ctx.symbol,
-				decimals: token_ctx.decimals,
-				balance: _balance,
-				ctx: token_ctx
-			});
+			// this.addTokenToList({
+			// 	address: token_addr,
+			// 	symbol: token_ctx.symbol,
+			// 	decimals: token_ctx.decimals,
+			// 	balance: _balance,
+			// 	ctx: token_ctx
+			// });
 
 		} catch (err) {
 
@@ -924,303 +916,300 @@ class User {
 
 	}
 
-	async sendAutoBuyTransaction(token_address) {
+	// async sendAutoBuyTransaction(token_address) {
 
-		try {
+	// 	try {
 
-			let _balance = this.defaultConfig.inputAmount || 0;
+	// 		let _balance = this.defaultConfig.inputAmount || 0;
 
-			// TO:DO check if user has enough balance.
-			let bal = await this.getBalance();
+	// 		// TO:DO check if user has enough balance.
+	// 		let bal = await this.getBalance();
 
-			if (bal.lt(_balance)) {
-				throw 'Not enough balance.';
-			}
+	// 		if (bal.lt(_balance)) {
+	// 			throw 'Not enough balance.';
+	// 		}
 
-			this.addTokenToBoughtList({
-				address: token_address,
-				status: 'Looking for pair..'
-			});
+	// 		this.addTokenToBoughtList({
+	// 			address: token_address,
+	// 			status: 'Looking for pair..'
+	// 		});
 
-			// store contract
-			await this.setContract(token_address);
+	// 		// store contract
+	// 		// await this.setContract(token_address);
 
-			// overwrite with defaultConfig
-			this.config = this.defaultConfig;
+	// 		// overwrite with defaultConfig
+	// 		this.config = this.defaultConfig;
 
-			// check if pair exists
-			let pair = await Network.uniSwapUtils.getPair(token_address);
+	// 		// check if pair exists
+	// 		let pair = await Network.uniSwapUtils.getPair(token_address);
 
-			if (!pair) {
-				throw 'No pair found.';
-			}
+	// 		if (!pair) {
+	// 			throw 'No pair found.';
+	// 		}
 
-			// check if liquidity is available
-			let liquidity = await Network.uniSwapUtils.getLiquidity(pair);
+	// 		// check if liquidity is available
+	// 		let liquidity = await Network.uniSwapUtils.getLiquidity(pair);
 
-			if (!liquidity) {
-				throw 'Not enough liquidity found.';
-			}
+	// 		if (!liquidity) {
+	// 			throw 'Not enough liquidity found.';
+	// 		}
 
-			this.addTokenToBoughtList({
-				address: token_address,
-				status: 'Looking for liquidity..'
-			});
+	// 		this.addTokenToBoughtList({
+	// 			address: token_address,
+	// 			status: 'Looking for liquidity..'
+	// 		});
 
-			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await this.submitBuyTransaction();
+	// 		// submit real tx
+	// 		let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await this.submitBuyTransaction();
 
-			this.addTokenToBoughtList({
-				address: token_address,
-				status: 'Waiting for transaction to confirm..',
-				hash: transaction.hash
-			});
+	// 		this.addTokenToBoughtList({
+	// 			address: token_address,
+	// 			status: 'Waiting for transaction to confirm..',
+	// 			hash: transaction.hash
+	// 		});
 
-			// wait for response
-			let response = await Network.node.waitForTransaction(transaction.hash);
+	// 		// wait for response
+	// 		let response = await Network.node.waitForTransaction(transaction.hash);
 
-			if (response.status != 1) {
-				throw `Transaction failed with status: ${response.status}.`;
-			}
+	// 		if (response.status != 1) {
+	// 			throw `Transaction failed with status: ${response.status}.`;
+	// 		}
 
-			if (response.confirmations == 0) {
-				throw `The transaction could not be confirmed in time.`;
-			}
+	// 		if (response.confirmations == 0) {
+	// 			throw `The transaction could not be confirmed in time.`;
+	// 		}
 
-			token_ctx = await new ethers.Contract(
-				token_address,
-				constants.TOKEN_ABI,
-				this.account
-			);
+	// 		const token_ctx = new ethers.Contract(
+	// 			token_address,
+	// 			constants.TOKEN_ABI,
+	// 			this.account
+	// 		);
 
-			_balance = await token_ctx.balanceOf(this.account.address);
+	// 		_balance = await token_ctx.balanceOf(this.account.address);
 
-			this.addTokenToBoughtList({
-				address: token_address,
-				status: 'TX completed!',
-				hash: transaction.hash
-			});
+	// 		this.addTokenToBoughtList({
+	// 			address: token_address,
+	// 			status: 'TX completed!',
+	// 			hash: transaction.hash
+	// 		});
 
-			// store in list
-			this.addTokenToList({
-				address: token_address,
-				symbol: token_ctx.symbol,
-				decimals: token_ctx.decimals,
-				balance: _balance,
-				ctx: token_ctx
-			});
+	// 		// store in list
+	// 		// this.addTokenToList({
+	// 		// 	address: token_address,
+	// 		// 	symbol: token_ctx.symbol,
+	// 		// 	decimals: token_ctx.decimals,
+	// 		// 	balance: _balance,
+	// 		// 	ctx: token_ctx
+	// 		// });
 
-		} catch (err) {
-			console.log(`error in sendAutoBuyTransaction(): ${err}`);
-			this.addTokenToBoughtList({
-				address: token_address,
-				status: err.error ? err.error : 'Could not process TX.'
-			});
+	// 	} catch (err) {
+	// 		console.log(`error in sendAutoBuyTransaction(): ${err}`);
+	// 		this.addTokenToBoughtList({
+	// 			address: token_address,
+	// 			status: err.error ? err.error : 'Could not process TX.'
+	// 		});
 
-		}
+	// 	}
 
-	}
+	// }
 
-	async sendNormalTransactionApe(token_addr, interaction, selling = false) {
+	// async sendNormalTransactionApe(token_addr, interaction, selling = false) {
 
-		try {
+	// 	try {
 
-			var msgsent = await interaction.user.send({
-				content: '',
-				embeds: [
-					new EmbedBuilder()
-						.setColor(0x0099FF)
-						.setTitle('Processing transaction..')
-						.setDescription(
-							`
-							Processing..
-						`
-						)
-				],
-				components: []
-			});
+	// 		var msgsent = await interaction.user.send({
+	// 			content: '',
+	// 			embeds: [
+	// 				new EmbedBuilder()
+	// 					.setColor(0x0099FF)
+	// 					.setTitle('Processing transaction..')
+	// 					.setDescription(
+	// 						`
+	// 						Processing..
+	// 					`
+	// 					)
+	// 			],
+	// 			components: []
+	// 		});
 
-			// check if pair exists
+	// 		// check if pair exists
 			
-			let pair = await etwork.uniSwapUtils.getPair(token_addr);
-			let token_ctx = await new ethers.Contract(
-				token_addr,
-				constants.TOKEN_ABI,
-				this.account
-			);
-			if (!pair) {
-				throw 'No pair found.';
-			}
+	// 		let pair = await Network.uniSwapUtils.getPair(token_addr);
+	// 		let token_ctx = new ethers.Contract(
+	// 			token_addr,
+	// 			constants.TOKEN_ABI,
+	// 			this.account
+	// 		);
+	// 		if (!pair) {
+	// 			throw 'No pair found.';
+	// 		}
 
-			let _balance = this.config.inputAmount || 0;
+	// 		let _balance = this.config.inputAmount || 0;
 
-			if (selling) {
-				_balance = await token_ctx.balanceOf(this.account.address);
-				_balance = _balance.div(100).mul(this.config.sellPercentage);
-			}
+	// 		if (selling) {
+	// 			_balance = await token_ctx.balanceOf(this.account.address);
+	// 			_balance = _balance.div(100).mul(this.config.sellPercentage);
+	// 		}
 
-			// check if liquidity is available
-			let liquidity = await Network.uniSwapUtils.getLiquidity(pair);
+	// 		// check if liquidity is available
+	// 		let liquidity = await Network.uniSwapUtils.getLiquidity(pair);
 
-			if (!liquidity) {
-				throw 'Not enough liquidity found.';
-			}
+	// 		if (!liquidity) {
+	// 			throw 'Not enough liquidity found.';
+	// 		}
 
-			// do approve
-			if (selling) {
+	// 		// do approve
+	// 		if (selling) {
 
-				let _allowance = await token_ctx.allowance(
-					this.account.address,
-					Network.uniSwapUtils.router.address
-				);
+	// 			let _allowance = await token_ctx.allowance(
+	// 				this.account.address,
+	// 				Network.uniSwapUtils.router.address
+	// 			);
 
-				// not enough allowance
-				if (_allowance.lt(_balance)) {
+	// 			// not enough allowance
+	// 			if (_allowance.lt(_balance)) {
 
-					await msgsent.edit({
-						content: '',
-						embeds: [
-							new EmbedBuilder()
-								.setColor(0x0099FF)
-								.setTitle('Processing transaction..')
-								.setDescription(
-									`
-									Approving..
-								`
-								)
-						],
-						components: []
-					});
+	// 				await msgsent.edit({
+	// 					content: '',
+	// 					embeds: [
+	// 						new EmbedBuilder()
+	// 							.setColor(0x0099FF)
+	// 							.setTitle('Processing transaction..')
+	// 							.setDescription(
+	// 								`
+	// 								Approving..
+	// 							`
+	// 							)
+	// 					],
+	// 					components: []
+	// 				});
 
-					let _nonce = await Network.node.getTransactionCount(this.account.address);
-					let maxFeePergas = await this.computeOptimalGas();
+	// 				let _nonce = await Network.node.getTransactionCount(this.account.address);
+	// 				let maxFeePergas = await this.computeOptimalGas();
 
-					let tx = await token_ctx.approve(
-						Network.uniSwapUtils.router.address,
-						(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
-						// ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
-						{
-							'maxPriorityFeePerGas': this.config.maxPriorityFee,
-							'maxFeePerGas': maxFeePergas,
-							'gasLimit': parseInt(this.config.gasLimit == null ? `${constants.DEFAULT_GAS_LIMIT}` : this.config.gasLimit),
-							'nonce': _nonce
-						}
-					);
+	// 				let tx = await token_ctx.approve(
+	// 					Network.uniSwapUtils.router.address,
+	// 					(ethers.BigNumber.from("2").pow(ethers.BigNumber.from("256").sub(ethers.BigNumber.from("1")))).toString(),
+	// 					// ethers.utils.parseUnits(`${constants.APPROVE_AMOUNT}`, decimals),
+	// 					{
+	// 						'maxPriorityFeePerGas': this.config.maxPriorityFee,
+	// 						'maxFeePerGas': maxFeePergas,
+	// 						'gasLimit': parseInt(this.config.gasLimit == null ? `${constants.DEFAULT_GAS_LIMIT}` : this.config.gasLimit),
+	// 						'nonce': _nonce
+	// 					}
+	// 				);
 
-					// wait for tx
-					let response = await tx.wait();
+	// 				// wait for tx
+	// 				let response = await tx.wait();
 
-					if (response.confirmations < 1) {
-						throw 'Could not approve transaction.';
-					}
+	// 				if (response.confirmations < 1) {
+	// 					throw 'Could not approve transaction.';
+	// 				}
 
-				}
+	// 			}
 
-			}
+	// 		}
 
-			// submit real tx
-			let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction(pair) : this.submitBuyTransaction());
+	// 		// submit real tx
+	// 		let { transaction, gasmaxfeepergas, gaslimit, amountmin } = await (selling ? this.submitSellTransaction(pair) : this.submitBuyTransaction());
 
-			// show tx to user
-			await msgsent.edit({
-				embeds: [
-					new EmbedBuilder()
-						.setColor(0xffb800)
-						.setTitle('Waiting..')
-						.setDescription(
-							`
-							**Contract**
-							[${token_addr}](https://etherscan.io/address/${token_addr}) (${token_ctx.symbol})
+	// 		// show tx to user
+	// 		await msgsent.edit({
+	// 			embeds: [
+	// 				new EmbedBuilder()
+	// 					.setColor(0xffb800)
+	// 					.setTitle('Waiting..')
+	// 					.setDescription(
+	// 						`
+	// 						**Contract**
+	// 						[${token_addr}](https://etherscan.io/address/${token_addr}) (${token_ctx.symbol})
 
-							**Transaction**
-							[click here](https://etherscan.io/tx/${transaction.hash})
-						`
-						)
-				]
-			});
+	// 						**Transaction**
+	// 						[click here](https://etherscan.io/tx/${transaction.hash})
+	// 					`
+	// 					)
+	// 			]
+	// 		});
 
-			// wait for response
-			let response = await Network.node.waitForTransaction(transaction.hash);
+	// 		// wait for response
+	// 		let response = await Network.node.waitForTransaction(transaction.hash);
 
-			if (response.status != 1) {
-				throw `Transaction failed with status: ${response.status}.`;
-			}
+	// 		if (response.status != 1) {
+	// 			throw `Transaction failed with status: ${response.status}.`;
+	// 		}
 
-			if (response.confirmations == 0) {
-				throw `The transaction could not be confirmed in time.`;
-			}
+	// 		if (response.confirmations == 0) {
+	// 			throw `The transaction could not be confirmed in time.`;
+	// 		}
 
-			// finish it off!
-			await msgsent.edit({
-				embeds: [
-					new EmbedBuilder()
-						.setColor(0x009f0b)
-						.setTitle('Finished!')
-						.setDescription(
-							`
-							**Contract**
-							[${token_address}](https://etherscan.io/address/${token_address}) (${token_ctx.symbol})
+	// 		// finish it off!
+	// 		await msgsent.edit({
+	// 			embeds: [
+	// 				new EmbedBuilder()
+	// 					.setColor(0x009f0b)
+	// 					.setTitle('Finished!')
+	// 					.setDescription(
+	// 						`
+	// 						**Contract**
+	// 						[${token_address}](https://etherscan.io/address/${token_address}) (${token_ctx.symbol})
 
-							**Summary**
-							Minimum ${selling ? `ETH` : token_ctx.symbol} received: ${ethers.utils.formatUnits(amountmin.toString(), selling ? 18 : token_ctx.decimals).toString()}
+	// 						**Summary**
+	// 						Minimum ${selling ? `ETH` : token_ctx.symbol} received: ${ethers.utils.formatUnits(amountmin.toString(), selling ? 18 : token_ctx.decimals).toString()}
 							
-							Max Gas: ${ethers.utils.formatUnits(gasmaxfeepergas.toString(), 'gwei').toString()} gwei
-							Gas Limit: ${gaslimit.toString()}
-						`
-						)
-				],
-				components: [
-					new ActionRowBuilder().addComponents(
-						new ButtonBuilder().setLabel('View Transaction').setStyle(ButtonStyle.Link).setURL(`https://etherscan.io/tx/${response.transactionHash}`),
-					)
-				]
-			});
+	// 						Max Gas: ${ethers.utils.formatUnits(gasmaxfeepergas.toString(), 'gwei').toString()} gwei
+	// 						Gas Limit: ${gaslimit.toString()}
+	// 					`
+	// 					)
+	// 			],
+	// 			components: [
+	// 				new ActionRowBuilder().addComponents(
+	// 					new ButtonBuilder().setLabel('View Transaction').setStyle(ButtonStyle.Link).setURL(`https://etherscan.io/tx/${response.transactionHash}`),
+	// 				)
+	// 			]
+	// 		});
 
-			_balance = await token_ctx.balanceOf(this.account.address);
+	// 		_balance = await token_ctx.balanceOf(this.account.address);
 
-			// store in list
-			this.addTokenToList({
-				address: token_addr,
-				symbol: token_ctx.symbol,
-				decimals: token_ctx.decimals,
-				balance: _balance,
-				ctx: token_ctx
-			});
+	// 		// store in list
+	// 		// this.addTokenToList({
+	// 		// 	address: token_addr,
+	// 		// 	symbol: token_ctx.symbol,
+	// 		// 	decimals: token_ctx.decimals,
+	// 		// 	balance: _balance,
+	// 		// 	ctx: token_ctx
+	// 		// });
 
-		} catch (err) {
+	// 	} catch (err) {
 
-			await msgsent.edit({
-				embeds: [
-					new EmbedBuilder()
-						.setColor(0x9f0000)
-						.setTitle('Failed')
-						.setDescription(
-							`
-							**Reason**
-							${err}
+	// 		await msgsent.edit({
+	// 			embeds: [
+	// 				new EmbedBuilder()
+	// 					.setColor(0x9f0000)
+	// 					.setTitle('Failed')
+	// 					.setDescription(
+	// 						`
+	// 						**Reason**
+	// 						${err}
 
-							**Contract**
-							[${token_addr}](https://etherscan.io/address/${token_addr}) (${token_ctx.symbol})
-						`
-						)
-				],
-				components: [],
-			});
+	// 						**Contract**
+	// 						[${token_addr}](https://etherscan.io/address/${token_addr}) (${token_ctx.symbol})
+	// 					`
+	// 					)
+	// 			],
+	// 			components: [],
+	// 		});
 
-		}
+	// 	}
 
-	}
+	// }
 
-	async submitBuyTransaction(inviteCode,token_addr, pair ) {
-		console.log("start submitBuyTransaction()");
+	async submitBuyTransaction(inviteCode, token_addr, pair) {
+		console.log("start submitBuyTransaction");
 		let restAmount = this.config.inputAmount;
 
 		console.log(`restAmount: ${restAmount}`);
-
 		console.log("tokenAddress: " + token_addr);
-		
-		// const pair = await this.contract.manager.getPair();
-		// console.log(`pair is ${pair}`);
+		console.log(`pair is ${pair}`);
 
 		let tx = null;
 		try {
@@ -1259,9 +1248,9 @@ class User {
 		}
 	}
 
-	async submitSellTransaction(token_addr, ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, inviteCode) {
+	async submitSellTransaction(token_addr, pair, inviteCode) {
 		console.log("start submitSellTransaction");
-		let token_ctx = await new ethers.Contract(
+		let token_ctx = new ethers.Contract(
 			token_addr,
 			constants.TOKEN_ABI,
 			this.account
@@ -1310,9 +1299,7 @@ class User {
 	}
 
 	async getBalance() {
-
-		return this.account.getBalance();
-
+		return await this.account.getBalance();
 	}
 
 	async computeOptimalGas() {
@@ -1341,6 +1328,11 @@ class User {
 
 	async sendOrderBuyTransaction(token_address, amount, orderId) {
 
+		const ctx = new ethers.Contract(
+			token_address,
+			constants.TOKEN_ABI,
+			this.account
+		);
 		try {
 			console.log(`start sendOrderBuyTransaction with ${token_address} and ${amount}`);
 			console.log("this.account: " + this.account);
@@ -1354,11 +1346,7 @@ class User {
 				throw 'Not enough balance.';
 			}
 
-			const ctx = new ethers.Contract(
-				token_address,
-				constants.TOKEN_ABI,
-				this.account
-			);
+
 			console.log(`define  ctx`);
 
 			// check if pair exists
@@ -1396,17 +1384,17 @@ class User {
 
 			await orderExecuted(orderId);
 
-			_balance = await ctx.balanceOf(this.account.address);
-			const symbol = await ctx.symbol();
-			const decimals = await ctx.decimals();
+			// _balance = await ctx.balanceOf(this.account.address);
+			// const symbol = await ctx.symbol();
+			// const decimals = await ctx.decimals();
 			// store in list
-			this.addTokenToList({
-				address: ctx.address,
-				symbol: symbol,
-				decimals: decimals,
-				balance: _balance,
-				ctx: ctx
-			});
+			// this.addTokenToList({
+			// 	address: ctx.address,
+			// 	symbol: symbol,
+			// 	decimals: decimals,
+			// 	balance: _balance,
+			// 	ctx: ctx
+			// });
 
 		} catch (err) {
 			console.log(`error in sendOrderBuyTransaction: ${err}`);
@@ -1422,7 +1410,6 @@ class User {
 		console.log("tokenAddress: " + token_address);
 		console.log("pair: " + pair);
 
-		let limitValue = 0;
 		console.log(`this.asapswap ${this.asapswap}`);
 
 		const inviteCode = await this.getReferrerCode();
@@ -1479,13 +1466,16 @@ class User {
 		console.log("token_address: " + token_address);
 		console.log("percentage: " + percentage);
 		console.log("this.account: " + this.account);
+
+		const ctx = new ethers.Contract(
+			token_address,
+			constants.TOKEN_ABI,
+			this.account
+		);
+		
 		try {
 			// check if pair exists
-			const ctx = new ethers.Contract(
-				token_address,
-				constants.TOKEN_ABI,
-				this.account
-			);
+
 			console.log("define ctx: " + "");
 				
 
@@ -1577,17 +1567,17 @@ class User {
 
 			await orderExecuted(orderId);
 
-			_balance = await ctx.balanceOf(this.account.address);
-			const symbol = await ctx.symbol();
-			const decimals = await ctx.decimals();
+			// _balance = await ctx.balanceOf(this.account.address);
+			// const symbol = await ctx.symbol();
+			// const decimals = await ctx.decimals();
 			// // store in list
-			this.addTokenToList({
-				address: ctx.address,
-				symbol: symbol,
-				decimals: decimals,
-				balance: _balance,
-				ctx: ctx
-			});
+			// this.addTokenToList({
+			// 	address: ctx.address,
+			// 	symbol: symbol,
+			// 	decimals: decimals,
+			// 	balance: _balance,
+			// 	ctx: ctx
+			// });
 
 		} catch (err) {
 			console.log(`error in sendOrderSellTransaction: ${err}`);
@@ -1824,6 +1814,8 @@ class User {
 	}
 
 	async getCurTokenPrice(tokenAddress, amount, isBuy) {	
+		let price = 0;
+
 		try {
 			const ctx = new ethers.Contract(
 				tokenAddress,
@@ -1831,22 +1823,60 @@ class User {
 				this.account
 			);
 
+			const decimals = await ctx.decimals(); 
+			console.log(`decimal is ${decimals}`);
 
-			// check if pair exists
 			let pair = await Network.uniSwapUtils.getPair(tokenAddress);//await manager.getPair();
+			console.log(`pair is ${pair}`);
 
 			if(isBuy) {
-				
+				const tokenAmount = await this.asapswap.getEstimatedERC20forETH(
+					ethers.utils.parseUnits(`${amount}`, 18),
+					tokenAddress,
+					pair
+				);
+				console.log(`tokenAmount is ${tokenAmount}`);
+
+				price = ethers.utils.parseUnits(`${1}`, 18).div(tokenAmount.div(ethers.utils.parseUnits(`${amount}`, 18)));
 			}
 			else {
+				const ethAmount = await this.asapswap.getEstimatedETHforERC20(
+					amount,
+					tokenAddress,
+					pair
+				);
+				console.log(`ethAmount is ${ethAmount}`);
 
+				price = ethers.utils.parseUnits(`${1}`, 18).div(amount.div(ethAmount));
 			}
+
+			console.log(`price is ${price} and type is ${typeof price}`);
 		}
 		catch (err) {
 			console.log("error in getCurTokenPrice: " + err);
 		}
 
-		return null;
+		return price;
+	}
+	
+	async getBalanceOf(tokenAddress) {	
+		let _balance = null;
+
+		try {
+			const ctx = new ethers.Contract(
+				tokenAddress,
+				constants.TOKEN_ABI,
+				this.account
+			);
+
+			_balance = await ctx.balanceOf(this.account.address);
+			console.log(`_balance ${_balance} and type is ${typeof _balance}`);
+		}
+		catch (err) {
+			console.log("error in getBalanceOf: " + err);
+		}
+
+		return _balance;
 	}
 }
 

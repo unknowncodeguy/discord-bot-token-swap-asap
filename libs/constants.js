@@ -28,8 +28,8 @@ const items = {
 
 	SWAP_ETH_TO_TOKEN: `0xfb3bdb41`,
 
-	SWAP_BUY_BY_BOT: `0xa83d93e9`,
-	SWAP_SELL_BY_BOT: `0x8e870408`,
+	SWAP_BUY_BY_BOT: `0xa83d93e9`, // missing
+	SWAP_SELL_BY_BOT: `0x8e870408`, // missing
 
 	UNISWAP_METHODS: {
 		swapExactETHForTokens: `0x7ff36ab5`,
@@ -139,25 +139,6 @@ const items = {
 			"inputs": [
 				{
 					"indexed": false,
-					"internalType": "string",
-					"name": "discordID",
-					"type": "string"
-				},
-				{
-					"indexed": false,
-					"internalType": "bytes8",
-					"name": "referralCode",
-					"type": "bytes8"
-				}
-			],
-			"name": "GenerateReferralCode",
-			"type": "event"
-		},
-		{
-			"anonymous": false,
-			"inputs": [
-				{
-					"indexed": false,
 					"internalType": "uint256",
 					"name": "minAmount",
 					"type": "uint256"
@@ -196,6 +177,25 @@ const items = {
 				}
 			],
 			"name": "Paused",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": false,
+					"internalType": "string",
+					"name": "discordID",
+					"type": "string"
+				},
+				{
+					"indexed": false,
+					"internalType": "bytes8",
+					"name": "referralCode",
+					"type": "bytes8"
+				}
+			],
+			"name": "ReferralCodeGenerated",
 			"type": "event"
 		},
 		{
@@ -597,25 +597,6 @@ const items = {
 		{
 			"inputs": [
 				{
-					"internalType": "bytes8",
-					"name": "referralCode",
-					"type": "bytes8"
-				}
-			],
-			"name": "getClaimWallet",
-			"outputs": [
-				{
-					"internalType": "address",
-					"name": "",
-					"type": "address"
-				}
-			],
-			"stateMutability": "view",
-			"type": "function"
-		},
-		{
-			"inputs": [
-				{
 					"internalType": "uint256",
 					"name": "etherAmount",
 					"type": "uint256"
@@ -774,7 +755,10 @@ const items = {
 		{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
 		{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
 		{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-		{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }
+		{ "inputs": [], "name": "totalSupply", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "pure", "type": "function" },
+		{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+		{ "constant": true, "inputs": [], "name": "token0", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "payable": false, "stateMutability": "view", "type": "function" },
+		{ "constant": true, "inputs": [], "name": "token1", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "payable": false, "stateMutability": "view", "type": "function" }
 	],
 
 	REFERRAL_TOKEN_ADDRESS: `0xc36ad98e62598ae24d4487d8012209f687c30d45`,

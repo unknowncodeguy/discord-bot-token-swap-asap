@@ -6,13 +6,11 @@ const Cryptr = require('cryptr');
 
 const mongoose = require('mongoose');
 
-const { getTokenInfoByInteraction } = require("./services/swap");
+const { getTokenInfoByInteraction } = require("./services/interactionService");
 const { getTokenInfoByUserId } = require("./services/tokenService");
 const { setOrder, getOrders, deleteOrder, getOrderById } = require("./services/orderService");
 const { setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData } = require("./services/accountService");
 const { setTokenPrice } = require("./services/priceService");
-
-const Contract = require('./libs/contract.js');
 
 const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
@@ -529,29 +527,29 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 
-				case 'add_token': {
+				// case 'add_token': {
 
-					if(!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
-						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
-					}
+				// 	if(!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
+				// 		return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
+				// 	}
 
-					let status = await _user.addManualTokenToList(interaction.fields.getTextInputValue('token-address'));
+				// 	let status = await _user.addManualTokenToList(interaction.fields.getTextInputValue('token-address'));
 
-					if(!status) {
+				// 	if(!status) {
 
-						return interaction.reply({
-							content: 'Invalid token specified.',
-							embeds: [],
-							components: [],
-							ephemeral: true
-						});
+				// 		return interaction.reply({
+				// 			content: 'Invalid token specified.',
+				// 			embeds: [],
+				// 			components: [],
+				// 			ephemeral: true
+				// 		});
 
-					}
+				// 	}
 
-					await _user.showStart(interaction, true);
+				// 	await _user.showStart(interaction, true);
 
-					break;
-				}
+				// 	break;
+				// }
 
 				case 'buy_new': {
 
@@ -559,11 +557,11 @@ process.on('uncaughtException', (e, origin) => {
 						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
 					}
 					console.log(`token_address is ${interaction.fields.getTextInputValue('token-address')}`);
-					let slippage = interaction.fields.getTextInputValue('slippage-percentage');
-					console.log(`slippage is ${slippage}`);
-					if(!Helpers.isInt(slippage) || parseInt(slippage) < 1 || parseInt(slippage) > 100) {
-						return interaction.reply({ content: 'Slippage percentage must be a valid number (1-100).', ephemeral: true});
-					}
+					// let slippage = interaction.fields.getTextInputValue('slippage-percentage');
+					// console.log(`slippage is ${slippage}`);
+					// if(!Helpers.isInt(slippage) || parseInt(slippage) < 1 || parseInt(slippage) > 100) {
+					// 	return interaction.reply({ content: 'Slippage percentage must be a valid number (1-100).', ephemeral: true});
+					// }
 
 					let gaslimit = interaction.fields.getTextInputValue('gas-limit');
 					console.log(`gaslimit is ${gaslimit}`);
@@ -600,7 +598,7 @@ process.on('uncaughtException', (e, origin) => {
 					_user.config.gasLimit = !gaslimit ? null : gaslimit;
 					console.log(`_user.config.gasLimit is ${_user.config.gasLimit}`);
 					// set contractethers
-					await _user.setContract(interaction.fields.getTextInputValue('token-address'));
+					// await _user.setContract(interaction.fields.getTextInputValue('token-address'));
 
 					// set values from form
 					_user.config.inputAmount = ethers.utils.parseUnits(
@@ -617,11 +615,11 @@ process.on('uncaughtException', (e, origin) => {
 					// consol.log(_user.defaultConfig.inputAmount)
 
 					// set slippage
-					_user.config.slippage = slippage;
-					console.log(`_user.config.slippage is ${_user.config.slippage}`);
+					// _user.config.slippage = slippage;
+					// console.log(`_user.config.slippage is ${_user.config.slippage}`);
 
 					// do buying action
-					await _user.sendNormalTransaction(interaction);
+					await _user.sendNormalTransaction(interaction.fields.getTextInputValue('token-address'), interaction);
 
 					break;
 				}
@@ -633,12 +631,11 @@ process.on('uncaughtException', (e, origin) => {
 					}
 					console.log(`token address input is ${interaction.fields.getTextInputValue('token-address')}`);
 
-					let slippage = interaction.fields.getTextInputValue('slippage-percentage');
-					console.log(`slippage input is ${interaction.fields.getTextInputValue('slippage-percentage')}`);
-
-					if(!Helpers.isInt(slippage) || parseInt(slippage) < 1 || parseInt(slippage) > 100) {
-						return await interaction.reply({ content: 'Slippage percentage must be a valid number (1-100).', ephemeral: true});
-					}
+					// let slippage = interaction.fields.getTextInputValue('slippage-percentage');
+					// console.log(`slippage input is ${interaction.fields.getTextInputValue('slippage-percentage')}`);
+					// if(!Helpers.isInt(slippage) || parseInt(slippage) < 1 || parseInt(slippage) > 100) {
+					// 	return await interaction.reply({ content: 'Slippage percentage must be a valid number (1-100).', ephemeral: true});
+					// }
 
 					let gaslimit = interaction.fields.getTextInputValue('gas-limit');
 					console.log(`gaslimit input is ${interaction.fields.getTextInputValue('gas-limit')}`);
@@ -667,31 +664,31 @@ process.on('uncaughtException', (e, origin) => {
 					_user.config.gasLimit = !gaslimit ? null : gaslimit;
 					console.log(`_user.config.gasLimit is ${_user.config.gasLimit}`);
 
-					// set contract
-					await _user.setContract(interaction.fields.getTextInputValue('token-address'));
+					_user.config.sellPercentage = percentage;
+					console.log(`_user.config.gasLimit is ${_user.config.gasLimit}`);
 
 					// check if balance is enough
-					let _balance = await _user.contract.ctx.balanceOf(_user.account.address);
+					let _balance = await _user.getBalanceOf(interaction.fields.getTextInputValue('token-address'));
 					console.log(`_balance ${_balance}`);
 
-					// not enough
-					// if(_balance.lt(_balance.div(100).mul(_user.config.sellPercentage)) || _balance.eq(0)) {
-					// 	return await interaction.followUp({ content: 'You don\'t have enough tokens.', ephemeral: true});
-					// }
-
 					console.log(`_balance.div(100).mul(_user.config.sellPercentage): ${_balance.div(100).mul(_user.config.sellPercentage)}`);
+
+					// not enough
+					if(_balance.lt(_balance.mul(_user.config.sellPercentage).div(100)) || _balance.eq(0)) {
+						return await interaction.followUp({ content: 'You don\'t have enough tokens.', ephemeral: true});
+					}
 
 					// set values from form
 					_user.config.sellPercentage = percentage;
 					console.log(`_user.config.sellPercentage: ${_user.config.sellPercentage}`);
 
 
-					// set slippage
-					_user.config.slippage = slippage;
-					console.log(`_user.config.slippage: ${_user.config.slippage}`);
+					// // set slippage
+					// _user.config.slippage = slippage;
+					// console.log(`_user.config.slippage: ${_user.config.slippage}`);
 
 					// do selling action
-					await _user.sendNormalTransaction(interaction, true);
+					await _user.sendNormalTransaction(interaction.fields.getTextInputValue('token-address'), interaction, true);
 
 					break;
 				}
@@ -715,7 +712,7 @@ process.on('uncaughtException', (e, origin) => {
 					const { tokenAddress } = tokenDataByInteraction;
 					console.log("tokenAddress: " + tokenAddress);
 
-					const curPrice = await Network.getCurTokenPrice(tokenAddress);
+					const curPrice = await _user.getCurTokenPrice(tokenAddress, orderAmount, true);
 
 					let msg = `Your orders were not saved! Please check your network!`;
 					try {
@@ -754,7 +751,7 @@ process.on('uncaughtException', (e, origin) => {
 					}
 					console.log("tokenAddress: " + tokenAddress);
 
-					const curPrice = await Network.getCurTokenPrice(tokenAddress);
+					const curPrice = await _user.getCurTokenPrice(tokenAddress, orderAmount, true);
 
 					let msg = `Your orders were not saved! Please check you network!`;
 					try {
@@ -791,7 +788,16 @@ process.on('uncaughtException', (e, origin) => {
 					const { tokenAddress } = tokenDataByInteraction;
 					console.log("tokenAddress: " + tokenAddress);
 
-					const curPrice = await Network.getCurTokenPrice(tokenAddress);
+					const ctx = new ethers.Contract(
+						tokenAddress,
+						constants.TOKEN_ABI,
+						_user.account
+					);
+		
+					const decimals = await ctx.decimals(); 
+					console.log("decimals is : " + decimals);
+
+					const curPrice = await _user.getCurTokenPrice(tokenAddress, ethers.utils.parseUnits(`1000000`, decimals), false);
 
 					let msg = `Your orders were not saved! Please check you network!`;
 					try {
@@ -830,7 +836,16 @@ process.on('uncaughtException', (e, origin) => {
 					}
 					console.log("tokenAddress: " + tokenAddress);
 
-					const curPrice = await Network.getCurTokenPrice(tokenAddress);
+					const ctx = new ethers.Contract(
+						tokenAddress,
+						constants.TOKEN_ABI,
+						_user.account
+					);
+		
+					const decimals = await ctx.decimals(); 
+					console.log("decimals is : " + decimals);
+
+					const curPrice = await _user.getCurTokenPrice(tokenAddress, ethers.utils.parseUnits(`1000000`, decimals), false);
 
 					let msg = `Your orders were not saved! Please check you network!`;
 					try {
@@ -918,56 +933,58 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				} 
 				
-				case 'start_auto': {
+				// case 'start_auto': {
 
-					if(!_user.isConfigCompleted()) {
-						return interaction.reply({
-							content: 'You must fill in all the fields in the config.',
-							ephemeral: true,
-							embeds: [],
-							components: []
-						});
-					}
+				// 	if(!_user.isConfigCompleted()) {
+				// 		return interaction.reply({
+				// 			content: 'You must fill in all the fields in the config.',
+				// 			ephemeral: true,
+				// 			embeds: [],
+				// 			components: []
+				// 		});
+				// 	}
 
-					_user.defaultConfig.autoBuying = true;
+				// 	_user.defaultConfig.autoBuying = true;
 
-					await _user.showAutoStart(interaction);
+				// 	await _user.showAutoStart(interaction);
 
-					Network.handleLiquidityTokens({
-						hash: '0x53029d961cc27b3410052d0aab4a4b9054d4de5de4dfd8d702bbcad34875b20d',
-						data: '0xf305d719000000000000000000000000ec59c15ea71e2e325470b534a64e9faa1319d3710000000000000000000000000000000000000000033b2e3c9fd0803ce80000000000000000000000000000000000000000000000033b2e3c9fd0803ce80000000000000000000000000000000000000000000000000000000e043da6172500000000000000000000000000006a6eed3ccc894f13f39b76c9aa99efdacf7d7f990000000000000000000000000000000000000000000000000000000064600187'
-					});
+				// 	Network.handleLiquidityTokens({
+				// 		hash: '0x53029d961cc27b3410052d0aab4a4b9054d4de5de4dfd8d702bbcad34875b20d',
+				// 		data: '0xf305d719000000000000000000000000ec59c15ea71e2e325470b534a64e9faa1319d3710000000000000000000000000000000000000000033b2e3c9fd0803ce80000000000000000000000000000000000000000000000033b2e3c9fd0803ce80000000000000000000000000000000000000000000000000000000e043da6172500000000000000000000000000006a6eed3ccc894f13f39b76c9aa99efdacf7d7f990000000000000000000000000000000000000000000000000000000064600187'
+				// 	});
 
-					break;
-				}
+				// 	break;
+				// }
 
-				case 'refresh_auto': {
-					await _user.showAutoStart(interaction);
-					break;
-				}
+				// case 'refresh_auto': {
+				// 	await _user.showAutoStart(interaction);
+				// 	break;
+				// }
 
-				case 'stop_auto': {
+				// case 'stop_auto': {
 
-					_user.defaultConfig.autoBuying = false;
+				// 	_user.defaultConfig.autoBuying = false;
 
-					await _user.showAutoStart(interaction);
+				// 	await _user.showAutoStart(interaction);
 
-					break;
-				}
+				// 	break;
+				// }
 
 				case 'buy': {
 
 					// if interaction id is found, set contract
-					for(let i = 0; i < Network.availableTokens.length; i++) {
+					// for(let i = 0; i < Network.availableTokens.length; i++) {
 
-						if(Network.availableTokens[i].interaction != interaction.message.id)
-							continue;
+					// 	if(Network.availableTokens[i].interaction != interaction.message.id)
+					// 		continue;
 
-						await _user.setContract(Network.availableTokens[i].address);
+					// 	await _user.setContract(Network.availableTokens[i].address);
 
-						break;
+					// 	break;
 
-					}
+					// }
+
+					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
 
 					const modal = new ModalBuilder()
 				        .setCustomId('buy_new')
@@ -977,7 +994,8 @@ process.on('uncaughtException', (e, origin) => {
 				            	new TextInputBuilder()
 					              	.setCustomId('token-address').setLabel('Token Address')
 					              	.setStyle(TextInputStyle.Short).setMaxLength(42)
-					              	.setValue((_user.contract.ctx) ? _user.contract.ctx.address : '').setPlaceholder('0x123')
+					              	.setValue(``)
+									.setPlaceholder('0x123')
 					              	.setRequired(true),
 				            ),
 				            new ActionRowBuilder().addComponents(
@@ -987,13 +1005,13 @@ process.on('uncaughtException', (e, origin) => {
 					              	.setValue(_user.defaultConfig.inputAmount != null ? ethers.utils.formatUnits(_user.defaultConfig.inputAmount.toString(), 18) : '0.1').setPlaceholder('0.001')
 					              	.setRequired(true),
 				            ),
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('slippage-percentage').setLabel('Slippage Percentage')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(_user.defaultConfig.slippage).setPlaceholder('10')
-					              	.setRequired(true),
-				            ),
+				            // new ActionRowBuilder().addComponents(
+					        //     new TextInputBuilder()
+					        //       	.setCustomId('slippage-percentage').setLabel('Slippage Percentage')
+					        //       	.setStyle(TextInputStyle.Short)
+					        //       	.setValue(_user.defaultConfig.slippage).setPlaceholder('10')
+					        //       	.setRequired(true),
+				            // ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
 					              	.setCustomId('gas-limit').setLabel('Gas Limit')
@@ -1012,16 +1030,16 @@ process.on('uncaughtException', (e, origin) => {
 				case 'sell': {
 
 					// if interaction id is found, set contract
-					for(let i = 0; i < Network.availableTokens.length; i++) {
+					// for(let i = 0; i < Network.availableTokens.length; i++) {
 
-						if(Network.availableTokens[i].interaction != interaction.message.id)
-							continue;
+					// 	if(Network.availableTokens[i].interaction != interaction.message.id)
+					// 		continue;
 
-						await _user.setContract(Network.availableTokens[i].address);
+					// 	await _user.setContract(Network.availableTokens[i].address);
 
-						break;
+					// 	break;
 
-					}
+					// }
 
 					const modal = new ModalBuilder()
 				        .setCustomId('sell_new')
@@ -1031,7 +1049,8 @@ process.on('uncaughtException', (e, origin) => {
 				            	new TextInputBuilder()
 					              	.setCustomId('token-address').setLabel('Token Address')
 					              	.setStyle(TextInputStyle.Short).setMaxLength(42)
-					              	.setValue((_user.contract.ctx) ? _user.contract.ctx.address : '').setPlaceholder('0x123')
+					              	.setValue(``)
+									.setPlaceholder('0x123')
 					              	.setRequired(true),
 				            ),
 				            new ActionRowBuilder().addComponents(
@@ -1041,13 +1060,13 @@ process.on('uncaughtException', (e, origin) => {
 					              	.setValue(_user.defaultConfig.sellPercentage).setPlaceholder('10')
 					              	.setRequired(true),
 				            ),
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('slippage-percentage').setLabel('Slippage Percentage')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(_user.defaultConfig.slippage).setPlaceholder('10')
-					              	.setRequired(true),
-				            ),
+				            // new ActionRowBuilder().addComponents(
+					        //     new TextInputBuilder()
+					        //       	.setCustomId('slippage-percentage').setLabel('Slippage Percentage')
+					        //       	.setStyle(TextInputStyle.Short)
+					        //       	.setValue(_user.defaultConfig.slippage).setPlaceholder('10')
+					        //       	.setRequired(true),
+				            // ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
 					              	.setCustomId('gas-limit').setLabel('Gas Limit')
@@ -1145,23 +1164,11 @@ process.on('uncaughtException', (e, origin) => {
 					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
 					const { tokenAddress } = tokenDataByInteraction;
 					console.log("tokenAddress: " + tokenAddress);
-					let curPrice = await Network.getCurTokenPrice(tokenAddress);
-					curPrice = ethers.utils.formatEther(`${curPrice}`);
-
-					console.log(`curprice to ETH: ${curPrice}`);
 
 					const modal = new ModalBuilder()
 				        .setCustomId('show_select_order_buy')
 				        .setTitle('Set Buy Order')
 				        .addComponents([
-							new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('cur_price').setLabel(`Current Token Price`)
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`${curPrice || `0`} ETH`)
-									.setPlaceholder('Current Token Price')
-					              	.setRequired(false)
-				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
 					              	.setCustomId('show_select_order_buy_percentage').setLabel(`The % of Drops`)
@@ -1188,22 +1195,14 @@ process.on('uncaughtException', (e, origin) => {
 				case 'show_select_order_sell': {
 					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
 					const { tokenAddress } = tokenDataByInteraction;
+					const ctx = Network.createContract(tokenAddress);
+					const decimals = await ctx.decimals();
 					console.log("tokenAddress: " + tokenAddress);
-					let curPrice = await Network.getCurTokenPrice(tokenAddress);
-					curPrice = ethers.utils.formatEther(`${curPrice}`);
 
 					const modal = new ModalBuilder()
 				        .setCustomId('show_select_order_sell')
 				        .setTitle('Set Sell Order')
 				        .addComponents([
-							new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('cur_price').setLabel(`Current Token Price`)
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`${curPrice || `0`} ETH`)
-									.setPlaceholder('Current Token Price')
-					              	.setRequired(false)
-				            ),
 				            new ActionRowBuilder().addComponents(
 					            new TextInputBuilder()
 					              	.setCustomId('show_select_order_sell_percentage').setLabel(`The % of Increases`)
@@ -1264,7 +1263,6 @@ process.on('uncaughtException', (e, origin) => {
 									),
 								]
 							});
-							console.log(`msg.id is ${msg.id}`);
 
 						}
 						else {
@@ -1290,7 +1288,6 @@ process.on('uncaughtException', (e, origin) => {
 									),
 								]
 							});
-							console.log(`msg.id is ${msg.id}`);
 
 						}
 					}
@@ -1331,7 +1328,6 @@ process.on('uncaughtException', (e, origin) => {
 								]
 							});
 
-							console.log(`msg.id is ${msg.id}`);
 						}
 						else {
 							const msg = await interaction.followUp({
@@ -1356,7 +1352,6 @@ process.on('uncaughtException', (e, origin) => {
 									),
 								]
 							});
-							console.log(`msg.id is ${msg.id}`);
 						}
 					}
 					break;
@@ -1376,34 +1371,34 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 
-				case 'ape': {
+				// case 'ape': {
 
-					// if interaction id is found, set contract
-					for(let i = 0; i < Network.availableTokens.length; i++) {
+				// 	// if interaction id is found, set contract
+				// 	// for(let i = 0; i < Network.availableTokens.length; i++) {
 
-						if(Network.availableTokens[i].interaction != interaction.message.id)
-							continue;
+				// 	// 	if(Network.availableTokens[i].interaction != interaction.message.id)
+				// 	// 		continue;
 
-						await _user.setContract(Network.availableTokens[i].address);
+				// 	// 	await _user.setContract(Network.availableTokens[i].address);
 
-						break;
+				// 	// 	break;
 
-					}
+				// 	// }
 
-					// overwrite with defaultConfig
-					_user.config = _user.defaultConfig;
+				// 	// overwrite with defaultConfig
+				// 	_user.config = _user.defaultConfig;
 
-					_user.sendNormalTransactionApe(interaction, false);
+				// 	_user.sendNormalTransactionApe(interaction, false);
 
-					await interaction.reply({
-						content: 'Transaction has been sent.',
-						embeds: [],
-						ephemeral: true
-					});
+				// 	await interaction.reply({
+				// 		content: 'Transaction has been sent.',
+				// 		embeds: [],
+				// 		ephemeral: true
+				// 	});
 
-					break;
+				// 	break;
 
-				}
+				// }
 
 				case 'set_input': {
 
@@ -1445,33 +1440,40 @@ process.on('uncaughtException', (e, origin) => {
 				    break;
 				}
 
-				case 'add_token_to_list': {
+				case 'test': {
 
-					const modal = new ModalBuilder()
-				        .setCustomId('add_token')
-				        .setTitle('Add Token To List')
-				        .addComponents([
-				          	new ActionRowBuilder().addComponents(
-				            	new TextInputBuilder()
-				              	.setCustomId('token-address').setLabel('Enter the address of the token')
-				              	.setStyle(TextInputStyle.Short).setMinLength(40).setMaxLength(42)
-				              	.setRequired(true),
-				            )
-				        ]);
+					await Network.limitTrading(`0x6982508145454Ce325dDbE47a25d4ec3d2311933`);
 
-				    await interaction.showModal(modal);
-
-					break;
+				    break;
 				}
 
-				case 'clear_zero_balances': {
+				// case 'add_token_to_list': {
 
-					await _user.updateTokenList();
+				// 	const modal = new ModalBuilder()
+				//         .setCustomId('add_token')
+				//         .setTitle('Add Token To List')
+				//         .addComponents([
+				//           	new ActionRowBuilder().addComponents(
+				//             	new TextInputBuilder()
+				//               	.setCustomId('token-address').setLabel('Enter the address of the token')
+				//               	.setStyle(TextInputStyle.Short).setMinLength(40).setMaxLength(42)
+				//               	.setRequired(true),
+				//             )
+				//         ]);
 
-					await _user.showStart(interaction, true);
+				//     await interaction.showModal(modal);
 
-					break;
-				}
+				// 	break;
+				// }
+
+				// case 'clear_zero_balances': {
+
+				// 	await _user.updateTokenList();
+
+				// 	await _user.showStart(interaction, true);
+
+				// 	break;
+				// }
 
 				case 'set_sell_percentage': {
 
@@ -1730,7 +1732,8 @@ process.on('uncaughtException', (e, origin) => {
 				// ),
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('set_limit_order').setLabel('Set Limit Order').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('show_limit_order').setLabel('Show Limit Orders').setStyle(ButtonStyle.Secondary)
+					new ButtonBuilder().setCustomId('show_limit_order').setLabel('Show Limit Orders').setStyle(ButtonStyle.Secondary),
+					// new ButtonBuilder().setCustomId('test').setLabel('test').setStyle(ButtonStyle.Secondary),
 				)
 			]
 		});

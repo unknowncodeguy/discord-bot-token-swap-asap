@@ -1,9 +1,12 @@
 const ethers = require('ethers');
+const constants = require('./constants');
 
 class UniSwapUtils {
 
-	constructor() {
+	constructor(account, chainId) {
 		
+		this.account = account;
+
 		// supported chains
 		this.chains = {
 
@@ -46,12 +49,13 @@ class UniSwapUtils {
 		};
 
 		this.weth = new ethers.Contract(
-			this.chains[Network.network.chainId].token,
+			this.chains[chainId].token,
 			constants.TOKEN_ABI,
 			this.account
 		);
+
 		this.factory = new ethers.Contract(
-			this.chains[Network.network.chainId].factory,
+			this.chains[chainId].factory,
 			[
 				'event PairCreated(address indexed token0, address indexed token1, address pair, uint)',
 				'function getPair(address tokenA, address tokenB) external view returns (address pair)'
@@ -61,12 +65,18 @@ class UniSwapUtils {
 
 		// set router
 		this.router = new ethers.Contract(
-			this.chains[Network.network.chainId].router,
+			this.chains[chainId].router,
 			constants.UNISWAP_ABI,
 			this.account
 		);
 	}
-
+	updateTokenInfo(token_addr){
+		//pair
+		//address
+		// liqudity
+		// updateAt 
+		// set interval of update token info at .env
+	}
 	async getPair(token_addr) {
 
 		let pairAddress = await this.factory.getPair(this.weth.address, token_addr);
@@ -79,7 +89,7 @@ class UniSwapUtils {
 
 	async getLiquidity(pair) {
 
-		let liquidity = await this.token_in.balanceOf(pair);
+		let liquidity = await this.weth.balanceOf(pair);
 
 
 		return liquidity;
@@ -89,8 +99,9 @@ class UniSwapUtils {
 	decodeFactory(method, data){
 		return this.factory.interface.decodeFunctionData(method, data);
 	}
+
 	decodeRouther(method, data){
-		return this.uniSwapUtils.decodeRouther(method, data);
+		return this.router.interface.decodeFunctionData(method, data);
 	}
 	
 }

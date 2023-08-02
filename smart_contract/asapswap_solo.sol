@@ -70,7 +70,7 @@ contract AsapSwapV1 is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     mapping (bytes8 => uint256) private _referalFees;
     /// referral codes -> wallet address
     mapping (bytes8 => address) private _referrerWallets;
-    mapping (string => address) private _referralCodes;
+    mapping (string => bytes8) private _referralCodes;
     /// minimum amount that referer can withdraw. default value is 1 eth.
     /// Admin can adjust this variable using setMinimumClaimable() method
     uint256 private _minReferrerClaimable;
@@ -260,6 +260,7 @@ contract AsapSwapV1 is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
          require( _referrerWallets[referralCode] != _msgSender(), "[Validation] This discord ID is registered for other wallet." );                 
     }
     function getReferralCode(string memory discordID) public view returns(bytes8){
+
          return  _referralCodes[discordID]; 
     }
     function getClaimableAmount(bytes8 referralCode) public view returns(uint256)

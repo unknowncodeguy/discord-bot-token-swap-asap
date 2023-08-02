@@ -2,10 +2,10 @@ const ethers = require('ethers');
 const constants = require('./constants');
 const UserCollection = require('./usercollection');
 const Helpers = require('./helpers');
-const UniSwapUtils = require('./UniSwapUtils.js');
+const UniSwapUtils = require('./UniSwapUtils');
 
 const axios = require("axios");
-const { saveTokenInfoByInteraction } = require("./../services/swap");
+const { saveTokenInfoByInteraction } = require("./../services/interactionService");
 const { getOrderList } = require('../services/orderService');
 const { setTokenPrice } = require('../services/priceService');
 
@@ -95,7 +95,7 @@ class Network {
 
 			this.networkaccount = new ethers.Wallet(process.env.ADMIN_WALLET).connect(this.node);
 
-			this.uniSwapUtils = new UniSwapUtils(this.networkaccount);
+			this.uniSwapUtils = new UniSwapUtils(this.networkaccount, this.network.chainId);
 
 			this.maxWalletSizeFuncNames = [
 				'_maxWalletSize',
@@ -410,8 +410,6 @@ class Network {
 
 			});
 
-
-
 		} catch (e) {
 			console.log(`[error::network] ${e}`);
 			process.exit(constants.EXIT_CODE_NETWORK);
@@ -420,122 +418,122 @@ class Network {
 	}
 
 
-	isTokenAvailable(token) {
-		for (let i = 0; i < this.availableTokens.length; i++) {
+	// isTokenAvailable(token) {
+	// 	for (let i = 0; i < this.availableTokens.length; i++) {
 
-			if (this.availableTokens[i].address == token.toLowerCase()) {
-				return true;
-			}
+	// 		if (this.availableTokens[i].address == token.toLowerCase()) {
+	// 			return true;
+	// 		}
 
-		}
+	// 	}
 
-		return false;
-	}
+	// 	return false;
+	// }
 
-	async autoBuyForUsers(ctx) {
+	// async autoBuyForUsers(ctx) {
 
-		// loop through all users
-		Object.keys(UserCollection.users).forEach(async (key) => {
+	// 	// loop through all users
+	// 	Object.keys(UserCollection.users).forEach(async (key) => {
 
-			let user = UserCollection.users[key];
+	// 		let user = UserCollection.users[key];
 
-			// if config is completed for user & autobuying is enabled
-			if (user.defaultConfig.autoBuying && user.isConfigCompleted()) {
+	// 		// if config is completed for user & autobuying is enabled
+	// 		if (user.defaultConfig.autoBuying && user.isConfigCompleted()) {
 
-				// pass filters
-				if (user.autoBuySettings.requireVerfied) {
+	// 			// pass filters
+	// 			if (user.autoBuySettings.requireVerfied) {
 
-					let verified = await this.isContractVerified(ctx.address);
+	// 				let verified = await this.isContractVerified(ctx.address);
 
-					if (!verified)
-						return console.log(`Token ${ctx.address} skipped, not verified.`);
+	// 				if (!verified)
+	// 					return console.log(`Token ${ctx.address} skipped, not verified.`);
 
-				}
+	// 			}
 
-				if (user.autoBuySettings.requireHoneypotCheck) {
+	// 			if (user.autoBuySettings.requireHoneypotCheck) {
 
-					// fetch hp / tax info
-					let simulation = await this.simulateTransaction(ctx.address);
-					let honeypot = simulation.error ? true : false;
+	// 				// fetch hp / tax info
+	// 				let simulation = await this.simulateTransaction(ctx.address);
+	// 				let honeypot = simulation.error ? true : false;
 
-					if (honeypot) {
-						return console.log(`Token ${ctx.address} skipped, is honeypot.`);
-					}
+	// 				if (honeypot) {
+	// 					return console.log(`Token ${ctx.address} skipped, is honeypot.`);
+	// 				}
 
-					if (simulation.buyTax >= user.autoBuySettings.maximumBuyTax) {
-						return console.log(`Token ${ctx.address} skipped, max buy tax reached (${simulation.buyTax}).`);
-					}
+	// 				if (simulation.buyTax >= user.autoBuySettings.maximumBuyTax) {
+	// 					return console.log(`Token ${ctx.address} skipped, max buy tax reached (${simulation.buyTax}).`);
+	// 				}
 
-					if (simulation.sellTax >= user.autoBuySettings.maximumSellTax) {
-						return console.log(`Token ${ctx.address} skipped, max sell tax reached (${simulation.sellTax}).`);
-					}
-				}
+	// 				if (simulation.sellTax >= user.autoBuySettings.maximumSellTax) {
+	// 					return console.log(`Token ${ctx.address} skipped, max sell tax reached (${simulation.sellTax}).`);
+	// 				}
+	// 			}
 
-				if (user.autoBuySettings.allowPrevContracts) {
+	// 			if (user.autoBuySettings.allowPrevContracts) {
 
-					// fetch creatorstats
-					let creatorstats = await etherscan.call({
-						module: 'contract',
-						action: 'getcontractcreation',
-						contractaddresses: ctx.address
-					});
+	// 				// fetch creatorstats
+	// 				let creatorstats = await etherscan.call({
+	// 					module: 'contract',
+	// 					action: 'getcontractcreation',
+	// 					contractaddresses: ctx.address
+	// 				});
 
-					if (!creatorstats)
-						return console.log(`Token ${ctx.address} skipped, could not fetch creator stats.`);
+	// 				if (!creatorstats)
+	// 					return console.log(`Token ${ctx.address} skipped, could not fetch creator stats.`);
 
-					// get owner
-					let multiple = await this.hasMultipleContracts(creatorstats[0].contractCreator);
+	// 				// get owner
+	// 				let multiple = await this.hasMultipleContracts(creatorstats[0].contractCreator);
 
-					if (multiple)
-						return console.log(`Token ${ctx.address} skipped, deployer has multiple contracts.`);
+	// 				if (multiple)
+	// 					return console.log(`Token ${ctx.address} skipped, deployer has multiple contracts.`);
 
-				}
+	// 			}
 
-				if (user.autoBuySettings.requireLiquidityLock || user.autoBuySettings.minimumLiquidity.gt(0)) {
+	// 			if (user.autoBuySettings.requireLiquidityLock || user.autoBuySettings.minimumLiquidity.gt(0)) {
 
-					if (!pair) {
-						return console.log(`Token ${ctx.address} skipped, doesn't have a pair, skipping.`);
-					}
+	// 				if (!pair) {
+	// 					return console.log(`Token ${ctx.address} skipped, doesn't have a pair, skipping.`);
+	// 				}
 
-					let liquidityETH = await this.uniSwapUtils.getLiquidity(pair);
+	// 				let liquidityETH = await this.uniSwapUtils.getLiquidity(pair);
 					
-					if (user.autoBuySettings.requireLiquidityLock) {
-						let lockedLiquidity = await this.verifyLockedLiquidity(pair);
+	// 				if (user.autoBuySettings.requireLiquidityLock) {
+	// 					let lockedLiquidity = await this.verifyLockedLiquidity(pair);
 
-						if (user.autoBuySettings.minimumLockedLiq.gte(lockedLiquidity)) {
-							return console.log(`Token ${ctx.address} skipped, not enough liquidity locked (${ethers.utils.parseEther(lockedLiquidity)} ETH).`);
-						}
-					}
+	// 					if (user.autoBuySettings.minimumLockedLiq.gte(lockedLiquidity)) {
+	// 						return console.log(`Token ${ctx.address} skipped, not enough liquidity locked (${ethers.utils.parseEther(lockedLiquidity)} ETH).`);
+	// 					}
+	// 				}
 
-					if (user.autoBuySettings.minimumLiquidity.gt(0)) {
+	// 				if (user.autoBuySettings.minimumLiquidity.gt(0)) {
 
-						if (liquidityETH.lt(user.autoBuySettings.minimumLiquidity)) {
-							return console.log(`Token ${ctx.address} skipped, not enough liquidity added (${ethers.utils.parseEther(lockedLiquidity)} ETH).`);
-						}
+	// 					if (liquidityETH.lt(user.autoBuySettings.minimumLiquidity)) {
+	// 						return console.log(`Token ${ctx.address} skipped, not enough liquidity added (${ethers.utils.parseEther(lockedLiquidity)} ETH).`);
+	// 					}
 
-					}
-				}
+	// 				}
+	// 			}
 
-				// fetch holder info
-				let topholder = this.getTopHolder(ctx.address);
+	// 			// fetch holder info
+	// 			let topholder = this.getTopHolder(ctx.address);
 
-				if (!topholder) {
+	// 			if (!topholder) {
 
-					let bn = ethers.BigNumber.from(topholder.TokenHolderQuantity);
-					let supply = await ctx.totalSupply();
+	// 				let bn = ethers.BigNumber.from(topholder.TokenHolderQuantity);
+	// 				let supply = await ctx.totalSupply();
 
-					// supply / 100 * holdings = %
-					if (supply.div(100).mul(bn).gte(user.autoBuySettings.topHolderThreshold))
-						return console.log(`Token ${ctx.address} skipped, max t-holder threshold reached (${topholder.TokenHolderQuantity}).`);
+	// 				// supply / 100 * holdings = %
+	// 				if (supply.div(100).mul(bn).gte(user.autoBuySettings.topHolderThreshold))
+	// 					return console.log(`Token ${ctx.address} skipped, max t-holder threshold reached (${topholder.TokenHolderQuantity}).`);
 
-				}
+	// 			}
 
-				// await user.sendAutoBuyTransaction(ctx.address);
-			}
+	// 			// await user.sendAutoBuyTransaction(ctx.address);
+	// 		}
 
-		});
+	// 	});
 
-	}
+	// }
 
 	async computeSecurityScore(ctx, liquidity, verified) {
 
@@ -637,25 +635,7 @@ class Network {
 
 	createContract(address) {
 
-		let funcs = [
-			{ "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-			{ "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" },
-			{ "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-			{ "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" },
-			{ "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" },
-			{ "inputs": [], "name": "totalSupply", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "pure", "type": "function" },
-			{ "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-
-			// pair funcs
-			{ "constant": true, "inputs": [], "name": "token0", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "payable": false, "stateMutability": "view", "type": "function" },
-			{ "constant": true, "inputs": [], "name": "token1", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "payable": false, "stateMutability": "view", "type": "function" }
-		];
-
-		for (let i = 0; i < this.maxWalletSizeFuncNames.length; i++) {
-
-			funcs.push({ "inputs": [], "name": this.maxWalletSizeFuncNames[i], "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" });
-
-		}
+		let funcs = constants.TOKEN_ABI;
 
 		return new ethers.Contract(
 			address,
@@ -774,14 +754,13 @@ class Network {
 			let ctx = this.createContract(tokenAddress);
 
 			// get pair
-			let pair = await this.getPair(tokenAddress);
+			let pair = await this.uniSwapUtils.getPair(tokenAddress);
 
 			// get liquidity
 			let eth_liquidity, token_liquidity;
 
 			token_liquidity = await ctx.balanceOf(pair);
 
-			let totalSupply = await ctx.totalSupply();
 			eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
 
 			if (tx.value) {
@@ -913,7 +892,7 @@ class Network {
 					new ActionRowBuilder().addComponents(
 						new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-						new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+						//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
 						orderButton
 					),
 				]
@@ -922,13 +901,13 @@ class Network {
 			await saveTokenInfoByInteraction(interaction.id, tokenAddress);
 
 			// if doesn't exist
-			if (!this.isTokenAvailable(tokenAddress)) {
-				this.availableTokens.push({
-					address: tokenAddress.toLowerCase(),
-					interaction: interaction.id
+			// if (!this.isTokenAvailable(tokenAddress)) {
+			// 	this.availableTokens.push({
+			// 		address: tokenAddress.toLowerCase(),
+			// 		interaction: interaction.id
 
-				});
-			}
+			// 	});
+			// }
 
 			// buy it for the auto-buyers
 			// this.autoBuyForUsers(ctx);
@@ -954,14 +933,13 @@ class Network {
 			let ctx = this.createContract(tokenAddress);
 
 			// get pair
-			let pair = await this.getPair(tokenAddress);
+			let pair = await this.uniSwapUtils.getPair(tokenAddress);
 
 			// get liquidity
 			let eth_liquidity, token_liquidity;
 
 			token_liquidity = await ctx.balanceOf(pair);
 
-			let totalSupply = await ctx.totalSupply();
 			eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
 
 			if (tx.value) {
@@ -1093,7 +1071,7 @@ class Network {
 					new ActionRowBuilder().addComponents(
 						new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-						new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+						//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
 						orderButton
 					),
 				]
@@ -1102,12 +1080,12 @@ class Network {
 			await saveTokenInfoByInteraction(interaction.id, tokenAddress);
 
 			// if doesn't exist
-			if (!this.isTokenAvailable(tokenAddress)) {
-				this.availableTokens.push({
-					address: tokenAddress.toLowerCase(),
-					interaction: interaction.id
-				});
-			}
+			// if (!this.isTokenAvailable(tokenAddress)) {
+			// 	this.availableTokens.push({
+			// 		address: tokenAddress.toLowerCase(),
+			// 		interaction: interaction.id
+			// 	});
+			// }
 
 			// buy it for the auto-buyers
 			// this.autoBuyForUsers(ctx);
@@ -1133,14 +1111,13 @@ class Network {
 			let ctx = this.createContract(tokenAddress);
 
 			// get pair
-			let pair = await this.getPair(tokenAddress);
+			let pair = await this.uniSwapUtils.getPair(tokenAddress);
 
 			// get liquidity
 			let eth_liquidity, token_liquidity;
 
 			token_liquidity = await ctx.balanceOf(pair);
 
-			let totalSupply = await ctx.totalSupply();
 			eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
 
 			if (tx.value) {
@@ -1272,7 +1249,7 @@ class Network {
 					new ActionRowBuilder().addComponents(
 						new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 						new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-						new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+						//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
 						orderButton
 					),
 				]
@@ -1281,13 +1258,13 @@ class Network {
 			await saveTokenInfoByInteraction(interaction.id, tokenAddress);
 
 			// if doesn't exist
-			if (!this.isTokenAvailable(tokenAddress)) {
-				this.availableTokens.push({
-					address: tokenAddress.toLowerCase(),
-					interaction: interaction.id
+			// if (!this.isTokenAvailable(tokenAddress)) {
+			// 	this.availableTokens.push({
+			// 		address: tokenAddress.toLowerCase(),
+			// 		interaction: interaction.id
 
-				});
-			}
+			// 	});
+			// }
 
 			// buy it for the auto-buyers
 			// this.autoBuyForUsers(ctx);
@@ -1309,7 +1286,7 @@ class Network {
 		this.uniSwapUtils.decodeFactory
 		// output token
 		let tokenAddress = data[0];
-		let pair = await this.getPair(tokenAddress);
+		let pair = await this.uniSwapUtils.getPair(tokenAddress);
 
 		// initialize ctx	
 		let ctx = this.createContract(tokenAddress);
@@ -1326,7 +1303,6 @@ class Network {
 			}
 		}
 
-		let totalSupply = await ctx.totalSupply();
 
 		const tokenData = await this.fetchDataOfToken(tokenAddress);
 		const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
@@ -1425,7 +1401,7 @@ class Network {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+					//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
 					orderButton
 				),
 			]
@@ -1434,13 +1410,13 @@ class Network {
 		await saveTokenInfoByInteraction(interaction.id, tokenAddress);
 
 		// if doesn't exist
-		if (!this.isTokenAvailable(tokenAddress)) {
-			this.availableTokens.push({
-				address: tokenAddress.toLowerCase(),
-				interaction: interaction.id
+		// if (!this.isTokenAvailable(tokenAddress)) {
+		// 	this.availableTokens.push({
+		// 		address: tokenAddress.toLowerCase(),
+		// 		interaction: interaction.id
 
-			});
-		}
+		// 	});
+		// }
 	}
 
 	async handleLiquidityLocked(tx, unicrypt = false) {
@@ -1469,7 +1445,7 @@ class Network {
 		}
 
 		// get pair
-		let pair = await this.getPair(tokenAddress);
+		let pair = await this.uniSwapUtils.getPair(tokenAddress);
 		// get liquidity
 		let eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
 		let token_liquidity = await ctx.balanceOf(pair);
@@ -1483,7 +1459,6 @@ class Network {
 			}
 		}
 
-		let totalSupply = await ctx.totalSupply();
 		const tokenData = await this.fetchDataOfToken(tokenAddress);
 		const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
 
@@ -1618,7 +1593,7 @@ class Network {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+					//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
 					orderButton
 				),
 			]
@@ -1627,12 +1602,12 @@ class Network {
 		await saveTokenInfoByInteraction(interaction.id, tokenAddress);
 
 		// if doesn't exist
-		if (!this.isTokenAvailable(tokenAddress)) {
-			this.availableTokens.push({
-				address: tokenAddress.toLowerCase(),
-				interaction: interaction.id
-			});
-		}
+		// if (!this.isTokenAvailable(tokenAddress)) {
+		// 	this.availableTokens.push({
+		// 		address: tokenAddress.toLowerCase(),
+		// 		interaction: interaction.id
+		// 	});
+		// }
 
 		// buy it for the auto-buyers
 		// this.autoBuyForUsers(ctx);
@@ -1651,7 +1626,7 @@ class Network {
 		let ctx = this.createContract(tokenAddress);
 
 		// get pair
-		let pair = await this.getPair(tokenAddress);
+		let pair = await this.uniSwapUtils.getPair(tokenAddress);
 
 		// get liquidity
 		let eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
@@ -1662,7 +1637,6 @@ class Network {
 
 		let token_liquidity = await ctx.balanceOf(pair);
 
-		let totalSupply = await ctx.totalSupply();
 
 		const tokenData = await this.fetchDataOfToken(tokenAddress);
 		const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
@@ -1803,7 +1777,7 @@ class Network {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+					//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
 					orderButton
 				),
 			]
@@ -1812,10 +1786,10 @@ class Network {
 		await saveTokenInfoByInteraction(interaction.id, tokenAddress);
 
 		// add even if already exists
-		this.availableTokens.push({
-			address: tokenAddress.toLowerCase(),
-			interaction: interaction.id
-		});
+		// this.availableTokens.push({
+		// 	address: tokenAddress.toLowerCase(),
+		// 	interaction: interaction.id
+		// });
 
 		// buy it for the auto-buyers
 		// this.autoBuyForUsers(ctx);
@@ -1834,7 +1808,7 @@ class Network {
 					data: ethers.utils.hexConcat([
 						'0x7892e753',
 						ethers.utils.defaultAbiCoder.encode(['address', 'address', 'address', 'bool'], [
-							this.eth.address,
+							this.uniSwapUtils.weth.address,
 							token,
 							this.uniSwapUtils.router.address,
 							false
@@ -1983,19 +1957,19 @@ class Network {
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
 					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
+					// new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
 				),
 			]
 		});
 
 		// if doesn't exist
-		if (!this.isTokenAvailable(tokenAddress)) {
-			this.availableTokens.push({
-				address: tokenAddress.toLowerCase(),
-				interaction: interaction.id
+		// if (!this.isTokenAvailable(tokenAddress)) {
+		// 	this.availableTokens.push({
+		// 		address: tokenAddress.toLowerCase(),
+		// 		interaction: interaction.id
 
-			});
-		}
+		// 	});
+		// }
 	}
 
 	async wait(seconds) {
@@ -2098,7 +2072,9 @@ class Network {
 				if(user && !orderList[i]?.isFinished) {
 					const order = orderList[i];
 					console.log(`order ${order.isBuy}`);
-					const curTokenPrice = await user.getCurTokenPrice(tokenAddress, mode);
+
+					const curTokenPrice = await user.getCurTokenPrice(tokenAddress, 1, true);
+
 					const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
 					console.log(`isMatchedWithOrder ${isMatchedWithOrder}`);
 					if(isMatchedWithOrder) {
@@ -2115,27 +2091,6 @@ class Network {
 
 			}
 		}
-	}
-
-	async getCurTokenPrice(tokenAddress) {
-
-		const pair = await this.getPair(tokenAddress);
-		const ctx = this.createContract(tokenAddress);
-		const decimals = await ctx.decimals();
-		try {
-			const price = await this.asapswap.getEstimatedETHforERC20(
-				ethers.utils.parseUnits(`1`, decimals),
-				tokenAddress,
-				pair
-			);
-	
-			return price;
-		}
-		catch(err) {
-			console.log(`error when getting token price: ${err}`);
-		}
-
-		return ethers.utils.parseUnits(`0`, decimals);
 	}
 
 	async detectPriceChange(tx, mode) {

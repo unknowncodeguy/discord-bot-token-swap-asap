@@ -89,5 +89,16 @@ module.exports = {
         }
 
         return null;
+    },
+
+    getAllOrders: async () => {
+        try{
+            
+        }
+        catch(err) {
+            console.log(`Error when getting all order: ${err}`);
+        }
+
+        return [];
     }
 };
