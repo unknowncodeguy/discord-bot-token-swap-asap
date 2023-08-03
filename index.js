@@ -12,7 +12,7 @@ const { setOrder, getOrders, deleteOrder, getOrderById } = require("./services/o
 const { setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData } = require("./services/accountService");
 const { setTokenPrice } = require("./services/priceService");
 
-const { User, UserCollection, Helpers, Network } = require('./libs/main.js');
+const { User, UserCollection, Helpers, Network, OrderCollection } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
 require('dotenv').config()
 const { 
@@ -119,15 +119,14 @@ process.on('uncaughtException', (e, origin) => {
 	// listen for commands
 	client.on(Events.InteractionCreate, async (interaction) => {
 		
-		if(!UserCollection.exists(interaction.user.id)) {
-
-			UserCollection.add(
-				interaction.user.id, 
-				new User(interaction.user.username, interaction.user.id)
-			);
-			const new_user = UserCollection.get(interaction.user.id);
-			await new_user.init();
-		}
+		// if(!UserCollection.exists(interaction.user.id)) {
+		// 	UserCollection.add(
+		// 		interaction.user.id, 
+		// 		new User(interaction.user.id)
+		// 	);
+		// 	const new_user = UserCollection.get(interaction.user.id);
+		// 	await new_user.init();
+		// }
 
 		// fetch user
 		let _user = UserCollection.get(interaction.user.id);
@@ -719,6 +718,7 @@ process.on('uncaughtException', (e, origin) => {
 						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
 
 						if(res) {
+							await OrderCollection.setOrder(res?._id, interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
 							msg = `Your orders were saved successfully!`;
 						}
 					}
@@ -758,6 +758,7 @@ process.on('uncaughtException', (e, origin) => {
 						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
 
 						if(res) {
+							await OrderCollection.setOrder(res?._id, interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
 							msg = `Your orders were saved successfully!`;
 						}
 					}
@@ -804,6 +805,7 @@ process.on('uncaughtException', (e, origin) => {
 						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
 
 						if(res) {
+							await OrderCollection.setOrder(res?._id, interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
 							msg = `Your orders were saved successfully!`;
 						}
 					}
@@ -852,6 +854,7 @@ process.on('uncaughtException', (e, origin) => {
 						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
 
 						if(res) {
+							await OrderCollection.setOrder(res?._id, interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
 							msg = `Your orders were saved successfully!`;
 						}
 					}
@@ -1231,7 +1234,8 @@ process.on('uncaughtException', (e, origin) => {
 					const { tokenAddress } = tokenDataByInteraction;
 					console.log("tokenAddress: " + tokenAddress);
 
-					const orderList = await getOrders(interaction.user.id, tokenAddress);
+					// const orderList = await getOrders(interaction.user.id, tokenAddress);
+					const orderList = await OrderCollection.getOrders(interaction.user.id, tokenAddress);
 
 					if(!orderList || orderList.length == 0) {
 						return interaction.reply({ content: 'No order sets on this token.', ephemeral: true});
@@ -1295,7 +1299,8 @@ process.on('uncaughtException', (e, origin) => {
 				}
 
 				case 'show_limit_order': {
-					const orderList = await getOrders(interaction.user.id);
+					// const orderList = await getOrders(interaction.user.id);
+					const orderList = await OrderCollection.getOrders(interaction.user.id);
 
 					if(!orderList || orderList.length == 0) {
 						return interaction.reply({ content: 'You set no order.', ephemeral: true});
@@ -1615,9 +1620,11 @@ process.on('uncaughtException', (e, origin) => {
 			if(interaction.customId.startsWith(`deleteorder`)) {
 				const customId = interaction.customId;
 				const dataId = customId.split('_')[1];
-				const orderData = await getOrderById(dataId);
+				const orderData = await OrderCollection.getOrderById(dataId);
 				const deletedFromDB = await deleteOrder(dataId);
 				if(deletedFromDB) {
+					const deletedOnCollection = await OrderCollection.deleteOrder(dataId); 
+					console.log(`deletedOnCollection: ${deletedOnCollection}`);
 					await interaction.update({
 						content: `This order was deleted by user`, 
 						ephemeral: true,
@@ -1636,14 +1643,15 @@ process.on('uncaughtException', (e, origin) => {
 						],
 						components: []
 					});
-					const message = await interaction.channel.messages.fetch(interaction.message.id);
-					// await message.delete();
+					
 					await interaction.followUp({ content: 'The order was deleted successfully!', ephemeral: true });
 				}
 
 				return;
 			}
 		}
+
+		console.log(`OrderCollection: ${JSON.stringify(OrderCollection.orderList)}`);
 	});
 
 	client.once(Events.ClientReady, async (c) => {
@@ -1711,7 +1719,11 @@ process.on('uncaughtException', (e, origin) => {
 		// }
 
 		// save config
-		await fs.writeFileSync('conf.json', JSON.stringify(content));
+		fs.writeFileSync('conf.json', JSON.stringify(content));
+
+		// Deine order and user
+		await OrderCollection.init();
+		await UserCollection.init();
 
 		await content.mainchannel.send({ 
 			content: 'Welcome, what do you want me to do?', 

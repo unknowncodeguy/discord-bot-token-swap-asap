@@ -16,6 +16,7 @@ const {
 	ActionRowBuilder,
 	SelectMenuBuilder
 } = require('discord.js');
+const { OrderCollection } = require('./main.js');
 
 const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
 
@@ -23,7 +24,6 @@ class User {
 
 	constructor(name, id) {
 
-		this.name = name;
 		this.discordId = id;
 
 		this.config = {};
@@ -1382,7 +1382,10 @@ class User {
 
 			console.log("_balance: " + _balance);
 
-			await orderExecuted(orderId);
+			const oderFinished = await orderExecuted(orderId);
+			if(oderFinished) {
+				await OrderCollection.orderExecuted(orderId);
+			}
 
 			// _balance = await ctx.balanceOf(this.account.address);
 			// const symbol = await ctx.symbol();
@@ -1565,7 +1568,10 @@ class User {
 				throw `The transaction could not be confirmed in time.`;
 			}
 
-			await orderExecuted(orderId);
+			const oderFinished = await orderExecuted(orderId);
+			if(oderFinished) {
+				await OrderCollection.orderExecuted(orderId);
+			}
 
 			// _balance = await ctx.balanceOf(this.account.address);
 			// const symbol = await ctx.symbol();

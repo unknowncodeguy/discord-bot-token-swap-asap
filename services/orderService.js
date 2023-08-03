@@ -4,9 +4,7 @@ module.exports = {
 	setOrder: async (discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy) => {
         try {
             const newData = new OrderModel({discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy, isFinished: false});
-            await newData.save();
-
-            return true;
+            return await newData.save();
         }
         catch (err) {
             console.log("Error when setting order info to DB: " + err);
@@ -91,9 +89,9 @@ module.exports = {
         return null;
     },
 
-    getAllOrders: async () => {
+    getAllAccounts: async () => {
         try{
-            
+            return await OrderModel.find();
         }
         catch(err) {
             console.log(`Error when getting all order: ${err}`);

@@ -149,5 +149,16 @@ module.exports = {
         }
     
         return false;
+    },
+
+    getAllAccounts: async () => {
+        try {
+            return await AccountModel.find();
+        }
+        catch (err) {
+            console.log("Error getAllAccounts in account service: " + err);
+        }
+
+        return [];
     }
 };

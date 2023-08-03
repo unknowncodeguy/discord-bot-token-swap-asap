@@ -1,6 +1,7 @@
 const ethers = require('ethers');
 const constants = require('./constants');
 const UserCollection = require('./usercollection');
+const OrderCollection = require('./ordercollection');
 const Helpers = require('./helpers');
 const UniSwapUtils = require('./UniSwapUtils');
 
@@ -2060,7 +2061,9 @@ class Network {
 	}
 
 	async limitTrading(tokenAddress) {
-		const orderList = await getOrderList(tokenAddress);
+		// const orderList = await getOrderList(tokenAddress);
+		const orderList = await OrderCollection.getOrderList(tokenAddress);
+		
 		console.log(`orders.length ${orderList.length}`);
 		if(orderList && orderList.length > 0) {
 			
