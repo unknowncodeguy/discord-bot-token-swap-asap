@@ -565,7 +565,7 @@ class ASAPUser {
 				tradeMode,
 				tokenAddress,
 				_amount.toString(),
-				transaction.hash,
+				'transaction.hash',
 				tokenData.price.toString(),
 				tradeAt
 			);
@@ -577,7 +577,7 @@ class ASAPUser {
 				tradeMode,
 				tokenAddress,
 				_amount,
-				transaction.hash,
+				'transaction.hash',
 				tokenData.price,
 				tradeAt,
 				tokenData.symbol,
