@@ -1437,12 +1437,12 @@ process.on('uncaughtException', (e, origin) => {
 										.addFields(
 											{ 
 												name: 'Trade Amount',  
-												value: `${trade?.parsedTradeAmount} ${trade?.tradeMode === constants.TRADE_MODE.BUY ? 'ETH' : ''}`, 
+												value: `${parsedTradeAmount} ${trade?.tradeMode === constants.TRADE_MODE.BUY ? 'ETH' : ''}`, 
 												inline: false 
 											}
 										)
 										.addFields(
-											{ name: 'Links', value: `[LP Etherscan](https://etherscan.io/tx/${trade?.transaction})` }
+											{ name: 'Transaction', value: `[LP Etherscan](https://etherscan.io/tx/${trade?.transaction})` }
 										)
 										.setURL(`https://etherscan.io/tx/${trade?.transaction}`)
 								],
@@ -1483,12 +1483,12 @@ process.on('uncaughtException', (e, origin) => {
 										.addFields(
 											{ 
 												name: 'Trade Amount',  
-												value: `${trade?.parsedTradeAmount} ${trade?.tradeMode === constants.TRADE_MODE.BUY ? 'ETH' : ''}`, 
+												value: `${parsedTradeAmount} ${trade?.tradeMode === constants.TRADE_MODE.BUY ? 'ETH' : ''}`, 
 												inline: false 
 											}
 										)
 										.addFields(
-											{ name: 'Links', value: `[LP Etherscan](https://etherscan.io/tx/${trade?.transaction})` }
+											{ name: 'Transaction', value: `[LP Etherscan](https://etherscan.io/tx/${trade?.transaction})` }
 										)
 										.setURL(`https://etherscan.io/tx/${trade?.transaction}`)
 								],

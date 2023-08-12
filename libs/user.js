@@ -1023,7 +1023,7 @@ class ASAPUser {
 							}
 						)
 						.addFields(
-							{ name: 'Transaction', value: `[LP Etherscan](https://etherscan.io//${transaction})` }
+							{ name: 'Transaction', value: `[LP Etherscan](https://etherscan.io/tx/${transaction})` }
 						)
 						.setURL(`https://etherscan.io/address/${tokenAdress}`)
 				],
