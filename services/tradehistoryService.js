@@ -11,7 +11,7 @@ module.exports = {
                 tradeAmount,
                 transaction,
                 tradeAt: tradeAt,
-                thenPrice
+                thenPrice: thenPrice || `0`
             });
             await newData.save();
 
