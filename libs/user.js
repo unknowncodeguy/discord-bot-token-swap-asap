@@ -1059,6 +1059,7 @@ class ASAPUser {
 	}
 
 	async showPNLData(tokenData, tradeAmount, tradeAt) {
+		console.log(`XXXXXXXXXXXXXXXXXXXXX`);
 		try {
 			const lastBuyTradeInfo = await getLastBuyTradeInfo(this.discordId, tokenData?.address);
 			const thenPrice = lastBuyTradeInfo?.thenPrice || 0;
