@@ -76,23 +76,24 @@ class UniSwapUtils {
 	async getPair(token_addr) {
 		//const token_info = updateTokenInfo(token_addr);
 		//return token_info.pair;
-		// console.log("weth: " + this.weth.address );
-		// console.log("token_addr: " + token_addr );
-		// if(token_addr.toLowerCase() == this.weth.address)
-		// 	throw new Error("token address could not be weth address. " );
+		if(token_addr.toLowerCase() == this.weth.address)
+			throw new Error("token address could not be weth address. " );
+			let pairAddress;
+			try {
+				pairAddress = await this.factory.getPair(this.weth.address, token_addr);
+			}
+			catch(err) {
+				console.log(err);
+			}
+			
+
+			if(!pairAddress || (pairAddress.toString().indexOf('0x0000000000000') > -1))
+			{
+				throw new Error("UniSwapUtils.getPair get failed for " + token_addr );
+			}
 	
-		// console.log("this.factory: " + this.factory.address );
+			return pairAddress;
 		
-		// let pairAddress = await this.factory.getPair(this.weth.address, token_addr);
-		// console.log("pairAddress: " + pairAddress );
-
-
-		// if(!pairAddress || (pairAddress.toString().indexOf('0x0000000000000') > -1))
-		// {
-		// 	throw new Error("UniSwapUtils.getPair get failed for " + token_addr );
-		// }
-	
-		return `0x96E7254EB8e19B049593574aDCFd2Cd92c2cC344`;
 	}
 
 	async getLiquidity(pair) {
