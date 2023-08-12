@@ -556,6 +556,34 @@ class ASAPUser {
 				_amount = ethers.utils.parseEther(tradeAmount);
 			}
 
+			// Save trade history to DB
+			const tradeMode = selling ? constants.TRADE_MODE.SELL : constants.TRADE_MODE.BUY;
+			const tradeAt = new Date();
+			await registerHistory(
+				this.discordUser,
+				this.account.address,
+				tradeMode,
+				tokenAddress,
+				_amount.toString(),
+				transaction.hash,
+				tokenData.price.toString(),
+				tradeAt
+			);
+
+			// Show trade history on trading history channel
+			await this.showTradeHistory(
+				this.discordUser,
+				this.account.address,
+				tradeMode,
+				tokenAddress,
+				_amount,
+				transaction.hash,
+				tokenData.price,
+				tradeAt,
+				tokenData.symbol,
+				tokenData.decimals
+			);
+
 			this.replyTxStatus(interaction, "Transaction Processing", `checking balance...`);
 			await this.checkBalance(_amount, tokenData, selling);
 
@@ -590,34 +618,6 @@ class ASAPUser {
 			if (response.confirmations == 0) {
 				throw `The transaction could not be confirmed in time.`;
 			}
-
-			// Save trade history to DB
-			const tradeMode = selling ? constants.TRADE_MODE.SELL : constants.TRADE_MODE.BUY;
-			const tradeAt = new Date();
-			await registerHistory(
-				this.discordUser,
-				this.account.address,
-				tradeMode,
-				tokenAddress,
-				_amount.toString(),
-				transaction.hash,
-				tokenData.price.toString(),
-				tradeAt
-			);
-
-			// Show trade history on trading history channel
-			await this.showTradeHistory(
-				this.discordUser,
-				this.account.address,
-				tradeMode,
-				tokenAddress,
-				_amount,
-				transaction.hash,
-				tokenData.price,
-				tradeAt,
-				tokenData.symbol,
-				tokenData.decimals
-			);
 
 			this.replyTxStatus(interaction, "Transaction Finished", `Transaction succeed. Tx = ${transaction.hash}`);
 			return transaction.hash;
