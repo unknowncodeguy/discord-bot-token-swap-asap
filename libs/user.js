@@ -1008,7 +1008,7 @@ class ASAPUser {
 						)
 						.addFields(
 							{ 
-								name: 'Wallet Address', 
+								name: 'User Wallet Address', 
 								value: `[${Helpers.dotdot(walletAddress)}](https://etherscan.io/address/${walletAddress})`, 
 								inline: false 
 							}
