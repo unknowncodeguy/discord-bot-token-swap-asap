@@ -56,10 +56,7 @@ class UniSwapUtils {
 
 		this.factory = new ethers.Contract(
 			this.chains[chainId].factory,
-			[
-				'event PairCreated(address indexed token0, address indexed token1, address pair, uint)',
-				'function getPair(address tokenA, address tokenB) external view returns (address pair)'
-			],
+			[{"inputs":[{"internalType":"address","name":"_feeToSetter","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"token0","type":"address"},{"indexed":true,"internalType":"address","name":"token1","type":"address"},{"indexed":false,"internalType":"address","name":"pair","type":"address"},{"indexed":false,"internalType":"uint256","name":"","type":"uint256"}],"name":"PairCreated","type":"event"},{"constant":true,"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"allPairs","outputs":[{"internalType":"address","name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"allPairsLength","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"}],"name":"createPair","outputs":[{"internalType":"address","name":"pair","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"feeTo","outputs":[{"internalType":"address","name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"feeToSetter","outputs":[{"internalType":"address","name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"getPair","outputs":[{"internalType":"address","name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"_feeTo","type":"address"}],"name":"setFeeTo","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"internalType":"address","name":"_feeToSetter","type":"address"}],"name":"setFeeToSetter","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}],
 			this.account
 		);
 
@@ -82,14 +79,14 @@ class UniSwapUtils {
 		if(token_addr.toLowerCase() == this.weth.address)
 			throw new Error("token address could not be weth address. " );
 	
-			let pairAddress = await this.factory.getPair(this.weth.address, token_addr);
+		let pairAddress = await this.factory.getPair(this.weth.address, token_addr);
 
-			if(!pairAddress || (pairAddress.toString().indexOf('0x0000000000000') > -1))
-			{
-				throw new Error("UniSwapUtils.getPair get failed for " + token_addr );
-			}
-	
-			return pairAddress;
+		if(!pairAddress || (pairAddress.toString().indexOf('0x0000000000000') > -1))
+		{
+			throw new Error("UniSwapUtils.getPair get failed for " + token_addr );
+		}
+
+		return pairAddress;
 		
 	}
 
