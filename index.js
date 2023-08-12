@@ -1403,9 +1403,8 @@ process.on('uncaughtException', (e, origin) => {
 
 					for (let i = 0; i < tradeHistoryByUser.length; i++) {
 						const trade = tradeHistoryByUser[i];
-
+						const parsedTradeAmount = ethers.utils.formatUnits(ethers.BigNumber.from(trade?.tradeAmount), trade?.tokenDecimals);
 						if (i == 0) {
-							const parsedTradeAmount = ethers.utils.formatUnits(ethers.BigNumber.from(trade?.tradeAmount), trade?.tokenDecimals);
 							const msg = await interaction.reply({
 								content: `Show Trade History`,
 								ephemeral: true,
