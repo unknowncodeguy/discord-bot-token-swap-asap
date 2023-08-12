@@ -40,4 +40,22 @@ module.exports = {
     
         return [];
     },
+
+    getLastBuyTradeInfo: async (discordId, tokenAddress) => {
+        try {
+            const hostiries = await TradehistoryModel.findOne({
+                discordId,
+                tokenAddress
+            }).sort({
+                tradeAt: `desc`
+            }).limit(1);
+    
+            return hostiries;
+        }
+        catch(err) {
+            console.log(`Fetching the trade history of user(${discordId}) failed with error: ` + err);
+        }
+    
+        return null;
+    },
 };

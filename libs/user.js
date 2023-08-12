@@ -1,4 +1,6 @@
 const Cryptr = require('cryptr');
+const { createCanvas, loadImage } = require('canvas');
+const QRCode = require('qrcode');
 
 const Network = require('./network.js');
 const UniSwapUtils = require('./UniSwapUtils.js');
@@ -9,7 +11,7 @@ const Helpers = require('./helpers');
 
 const { setUserWallet, getUserInfo, getInviter, upsertAccountData } = require("./../services/accountService");
 const { saveTokenInfoByInteraction } = require("./../services/interactionService");
-const { registerHistory } = require("./../services/tradehistoryService");
+const { registerHistory, getLastBuyTradeInfo } = require("./../services/tradehistoryService");
 
 const {
 	ButtonStyle,
@@ -20,6 +22,12 @@ const {
 } = require('discord.js');
 
 const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
+const canvasWidth = 400;
+const canvasHeight = 300;
+const backgroundImage = await loadImage('./../assets/images/pnl.jfif');
+const canvas = createCanvas(canvasWidth, canvasHeight);
+const ctx = canvas.getContext('2d');
+ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
 
 class ASAPUser {
 
@@ -586,6 +594,10 @@ class ASAPUser {
 				tokenData.decimals
 			);
 
+			if(selling) {
+				await this.showPNLData(tokenData, _amount);
+			}
+
 			this.replyTxStatus(interaction, "Transaction Processing", `checking balance...`);
 			await this.checkBalance(_amount, tokenData, selling);
 
@@ -1035,6 +1047,33 @@ class ASAPUser {
 		}
 		catch (err) {
 			console.log(`Error is occurred when show trade history on Trade History Channel: ${err}`);
+		}
+	}
+
+	async getLastBuyTradeInfo(
+		tokenAddress
+	) {
+		return tradeInfo = await getLastBuyTradeInfo(this.discordId, tokenAddress);
+	}
+
+	async showPNLData(tokenData, tradeAmount) {
+		const lastBuyTradeInfo = await getLastBuyTradeInfo(tokenData?.address);
+		
+		const thenPrice = lastBuyTradeInfo?.thenPrice || 0;
+
+		const pnlInfo = await calculatePNL(tokenData, thenPrice, tradeAmount);
+
+		const qrCode = await QRCode.toDataURL('https://example.com');
+		const qrCodeImage = await loadImage(qrCode);
+		ctx.drawImage(qrCodeImage, 100, 100);
+	}
+
+	async calculatePNL(tokenData, thenPrice, tradeAmount) {
+
+		// consider cur price is undefined
+		return {
+			profit: 0.001,
+			percentage: 20
 		}
 	}
 }
