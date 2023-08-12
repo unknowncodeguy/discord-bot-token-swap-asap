@@ -77,6 +77,7 @@ class UniSwapUtils {
 		//const token_info = updateTokenInfo(token_addr);
 		//return token_info.pair;
 		console.log("getPair: " + this.weth.address );
+		console.log("token_addr: " + token_addr );
 		if(token_addr.toLowerCase() == this.weth.address)
 			throw new Error("token address could not be weth address. " );
 	
