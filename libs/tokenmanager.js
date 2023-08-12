@@ -18,7 +18,7 @@ class TokenManger {
 		);
 	}
 	async init(account, chainId, networkInstance){
-		console.log(`Tokn manager is initializing...`);
+		console.log(`Token manager is initializing...`);
 		this.tokens = {}
 		this.uniSwapUtils = new UniSwapUtils( account, chainId);
 		this.network = networkInstance;

@@ -71,6 +71,9 @@ class UniSwapUtils {
 		);
 
 		this.tokenList = [];
+
+		console.log(`Uniswap utils account is ${this.account}`);
+		console.log(`Uniswap utils chainId is ${chainId}`);
 	}
 
 	async getPair(token_addr) {

@@ -123,7 +123,7 @@ async function initUsers(discordClient) {
 			discordClient.joinerCounter[inviteCode] = new_user.userInfo.joiners?.length;
 		}
 	}))
-	console.log("User list is initilialized....");
+	console.log("User list is initialized...");
 }
 process.on('uncaughtException', (e, origin) => {
 
