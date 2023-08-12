@@ -1049,80 +1049,85 @@ class ASAPUser {
 		}
 	}
 
-	async getLastBuyTradeInfo(
-		tokenAddress
-	) {
-		return tradeInfo = await getLastBuyTradeInfo(this.discordId, tokenAddress);
-	}
-
-	async showPNLData(tokenData, tradeAmount) {
-		const lastBuyTradeInfo = await getLastBuyTradeInfo(tokenData?.address);
-		const thenPrice = lastBuyTradeInfo?.thenPrice || 0;
-
-		const pnlInfo = await this.calculatePNL(tokenData, thenPrice, tradeAmount);
-
-		// Draw Background Image
-		const imagePath = path.join(__dirname, './../assets/images/pnl.png');
-		console.log(`imagePath: ${imagePath}`);
-		const backgroundImage = await loadImage(imagePath);
-		console.log(`1`);
-		const canvas = createCanvas(canvasWidth, canvasHeight);
-		console.log(`2`);
-
-		const ctx = canvas.getContext('2d');
-		console.log(`3`);
-
-		ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
-		console.log(`4`);
-
-		// Draw QRCode Image
-		const qrCode = await QRCode.toDataURL('https://example.com');
-		console.log(`5`);
-
-		const qrCodeImage = await loadImage(qrCode);
-		console.log(`6`);
-
-		ctx.drawImage(qrCodeImage, 100, 100);
-		console.log(`7`);
-
-
-		const buffer = canvas.toBuffer('image/png');
-		console.log(`8`);
-
-		const attachment = new AttachmentBuilder(buffer, 'image.png');
-		console.log(`9`);
-		console.log(`attachment ${JSON.stringify(attachment)}`);
-
-		// await Network.channel_trading_history.send(
-		// 	"My Bot's message",
-		// 	{ 
-		// 		content: 'Here is your image:', 
-		// 		files: [{
-		// 			attachment: attachment,
-		// 			name: `my-image`
-		// 		}] 
-		// 	}
-		// );
-
-		await this.discordUser.send({
-			content: 'Here is your image:', 
-			files: [{
-				attachment: attachment,
-				name: `my-image`
-			}] 
-		});
-
-		console.log(`10`);
-
-	}
-
 	async calculatePNL(tokenData, thenPrice, tradeAmount) {
-
+	
 		// consider cur price is undefined
 		return {
 			profit: 0.001,
 			percentage: 20
 		}
+	}
+
+	async showPNLData(tokenData, tradeAmount) {
+		try {
+			const lastBuyTradeInfo = await getLastBuyTradeInfo(this.discordId, tokenData?.address);
+			const thenPrice = lastBuyTradeInfo?.thenPrice || 0;
+	
+			const pnlInfo = await this.calculatePNL(tokenData, thenPrice, tradeAmount);
+
+			const userData = await getUserInfo(this.discordId);
+			const inviteCode = this.getInviteCodeFromUrl(userData?.referralLink);
+	
+			// Define the canvas
+			const canvas = createCanvas(canvasWidth, canvasHeight);
+			const ctx = canvas.getContext('2d');
+
+			// Draw Background Image
+			const imagePath = path.join(__dirname, './../assets/images/pnl.png');
+			const backgroundImage = await loadImage(imagePath);
+			ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
+	
+			// Draw QRCode Image
+			const qrCode = await QRCode.toDataURL('https://example.com');
+			const qrCodeImage = await loadImage(qrCode);
+			ctx.drawImage(qrCodeImage, 50, 50);
+
+			// Draw the Text
+			ctx.font = '48px sans-serif';
+			ctx.fillStyle = '#000000';
+			ctx.font = '48px sans-serif';
+			ctx.fillText('Hello, world!', 100, 100);
+	
+			const buffer = canvas.toBuffer('image/png');
+	
+			const attachment = new AttachmentBuilder(buffer, 'image.png');
+	
+			// await Network.channel_trading_history.send(
+			// 	"My Bot's message",
+			// 	{ 
+			// 		content: 'Here is your image:', 
+			// 		files: [{
+			// 			attachment: attachment,
+			// 			name: `my-image`
+			// 		}] 
+			// 	}
+			// );
+	
+			await this.discordUser.send({
+				content: 'Here is your image:', 
+				files: [{
+					attachment: attachment,
+					name: `my-image`
+				}] 
+			});
+	
+			console.log(`10`);
+		}
+		catch(err) {
+			console.log(`Couldn't show PNL data for ${tokenData.address} with error: ${err}`);
+		}
+	}
+
+	getInviteCodeFromUrl(inviteUrl) {
+		try {
+			const codes = inviteUrl.match(/discord\.gg\/(.+)/)[1];
+			return codes.split("#")[0];
+		}
+		catch(er) {
+			console.log(`Couldn't extract invite code from ${inviteUrl} with error: ${err}`);
+		}
+
+		return ``;
 	}
 }
 
