@@ -594,7 +594,7 @@ class ASAPUser {
 			);
 
 			if(selling) {
-				await this.showPNLData(tokenData, _amount);
+				await this.showPNLData(tokenData, _amount, tradeAt);
 			}
 
 			this.replyTxStatus(interaction, "Transaction Processing", `checking balance...`);
@@ -1058,7 +1058,7 @@ class ASAPUser {
 		}
 	}
 
-	async showPNLData(tokenData, tradeAmount) {
+	async showPNLData(tokenData, tradeAmount, tradeAt) {
 		try {
 			const lastBuyTradeInfo = await getLastBuyTradeInfo(this.discordId, tokenData?.address);
 			const thenPrice = lastBuyTradeInfo?.thenPrice || 0;
@@ -1081,18 +1081,59 @@ class ASAPUser {
 				// Draw QRCode Image
 				const qrCode = await QRCode.toDataURL(userData?.referralLink);
 				const qrCodeImage = await loadImage(qrCode);
-				ctx.drawImage(qrCodeImage, 50, 50);
+				ctx.drawImage(qrCodeImage, 16, 240, 50, 50);
+
+				// Draw the InviteCode
+				ctx.font = '24px sans-serif';
+				ctx.fillStyle = '#000000';
+				ctx.fillText(`REFERRAL CODE`, 200, 200);
+				// Draw the InviteCode
+				ctx.font = '24px sans-serif';
+				ctx.fillStyle = '#000000';
+				ctx.fillText(`${inviteCode}`, 240, 240);
 			}
 
-			// Draw the Text
-			ctx.font = '48px sans-serif';
+			// Draw the Title
+			ctx.font = '32px sans-serif';
+			ctx.fillStyle = '#fcba03';
+			ctx.fillText('ASAP-BOT', 16, 16);
+
+			// Draw the Token Symbol
+			ctx.fillStyle = '#000000';
+			ctx.font = '20px sans-serif';
+			ctx.fillText(`${tokenData.symbol}`, 16, 64);
+
+			// Draw the Token Address
+			ctx.fillStyle = '#0341fc';
+			ctx.font = '18px sans-serif';
+			ctx.fillText(`${tokenData.address}`, 64, 64);
+
+			// Draw the PNL
 			ctx.fillStyle = '#000000';
 			ctx.font = '48px sans-serif';
 			ctx.fillText('Hello, world!', 100, 100);
+
+			// Draw the Prices
+			ctx.fillStyle = '#000000';
+			ctx.font = '48px sans-serif';
+			ctx.fillText('Hello, world!', 150, 150);
+
+			// Draw the Time
+			ctx.fillStyle = '#000000';
+			ctx.font = '48px sans-serif';
+			ctx.fillText(`${tradeAt.toLocaleString()}`, 360, 240);
 	
 			const buffer = canvas.toBuffer('image/png');
 	
 			const attachment = new AttachmentBuilder(buffer, 'image.png');
+
+			fs.writeFileSync('image.png', attachment.attachment, (err) => {
+				if (err) {
+				  console.error(`Saving PNL image failed: ${err}`);
+				} else {
+				  console.log('File saved successfully');
+				}
+			});
 	
 			// await Network.channel_trading_history.send(
 			// 	"My Bot's message",
@@ -1105,15 +1146,15 @@ class ASAPUser {
 			// 	}
 			// );
 	
-			await this.discordUser.send({
-				content: 'Here is your image:', 
-				files: [{
-					attachment: attachment,
-					name: `my-image`
-				}] 
-			});
+			// await this.discordUser.send({
+			// 	content: 'Here is your image:', 
+			// 	files: [{
+			// 		attachment: attachment,
+			// 		name: `my-image`
+			// 	}] 
+			// });
 	
-			console.log(`10`);
+			console.log(`end`);
 		}
 		catch(err) {
 			console.log(`Couldn't show PNL data for ${tokenData.address} with error: ${err}`);
