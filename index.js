@@ -7,8 +7,8 @@ const Cryptr = require('cryptr');
 const mongoose = require('mongoose');
 
 const { getTokenInfoByInteraction, saveTokenInfoByInteraction } = require("./services/interactionService");
-const { setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData, getTradeHistory } = require("./services/accountService");
-const { getAllAccounts } = require('./services/accountService');
+const { setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData, getAllAccounts } = require("./services/accountService");
+const { getTradeHistory } = require('./services/tradehistoryService');
 const { ASAPUser, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
 require('dotenv').config()
