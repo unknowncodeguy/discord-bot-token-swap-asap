@@ -257,7 +257,7 @@ contract AsapSwapV1 is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
              _referalFees[referralCode] = 0;
              emit ReferralCodeGenerated(discordID, referralCode);
          }
-         require( _referrerWallets[referralCode] != _msgSender(), "[Validation] This discord ID is registered for other wallet." );                 
+         require( _referrerWallets[referralCode] == _msgSender(), "[Validation] This discord ID is registered for other wallet." );                 
     }
     function getReferralCode(string memory discordID) public view returns(bytes8){
 
@@ -265,7 +265,7 @@ contract AsapSwapV1 is Initializable, OwnableUpgradeSafe, PausableUpgradeSafe {
     }
     function getClaimableAmount(bytes8 referralCode) public view returns(uint256)
     {
-         require( _referrerWallets[referralCode] != _msgSender(), "[Validation] Referral code is not registered for this user" );
+         require( _referrerWallets[referralCode] == _msgSender(), "[Validation] Referral code is not registered for this user" );
          return  _referalFees[referralCode];
     }
     /// change user's default wallet

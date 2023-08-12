@@ -69,41 +69,89 @@ class UniSwapUtils {
 			constants.UNISWAP_ABI,
 			this.account
 		);
+
+		this.tokenList = [];
 	}
-	updateTokenInfo(token_addr){
-		//pair
-		//address
-		// liqudity
-		// updateAt 
-		// set interval of update token info at .env
-	}
+
 	async getPair(token_addr) {
+		//const token_info = updateTokenInfo(token_addr);
+		//return token_info.pair;
+		if(token_addr.toLowerCase() == this.weth.address)
+			throw new Error("token address could not be weth address. " );
+	
+			let pairAddress = await this.factory.getPair(this.weth.address, token_addr);
 
-		let pairAddress = await this.factory.getPair(this.weth.address, token_addr);
-
-		if(!pairAddress || (pairAddress.toString().indexOf('0x0000000000000') > -1))
-			return false;
-
-	    return pairAddress;
+			if(!pairAddress || (pairAddress.toString().indexOf('0x0000000000000') > -1))
+			{
+				throw new Error("UniSwapUtils.getPair get failed for " + token_addr );
+			}
+	
+			return pairAddress;
+		
 	}
 
 	async getLiquidity(pair) {
-
-		let liquidity = await this.weth.balanceOf(pair);
-
-
+		
+		try{
+			let liquidity = await this.weth.balanceOf(pair);
 		return liquidity;
-
+		}
+		catch(e)	{
+			console.log("UniSwapUtils.getLiquidity: " + pair );
+			console.log("UniSwapUtils.getLiquidity: " + e );
+			return null;
+		}
 	}
 
 	decodeFactory(method, data){
-		return this.factory.interface.decodeFunctionData(method, data);
+		try{
+			return this.factory.interface.decodeFunctionData(method, data);
+		}
+		catch(e)	{
+			console.log("UniSwapUtils.decodeFactory: " + method );
+			console.log("UniSwapUtils.decodeFactory: " + data );
+			console.log("UniSwapUtils.decodeFactory: " + e );
+			return null;
+		}
 	}
 
-	decodeRouther(method, data){
-		return this.router.interface.decodeFunctionData(method, data);
+	decodeRouter(method, data){
+
+		try{
+			return this.router.interface.decodeFunctionData(method, data);
+		}
+		catch(e)	{
+			console.log("UniSwapUtils.decodeRouter: " + method );
+			console.log("UniSwapUtils.decodeRouter: " + data );
+			console.log("UniSwapUtils.decodeRouter: " + e );
+			return null;
+		}
 	}
-	
-}
+	async getPairReserves(contractAddr)
+	{
+		let reserves = {}
+		try{
+			const abi = await etherscan.call({
+				module: 'contract',
+				action: 'getabi',
+				address: token_address
+			});
+			const ctx = new ethers.Contract(
+				contractAddr,
+				abi,
+				this.account
+			);
+			const _reserves = await ctx.getReserves();
+			reserves.isPair = true;
+			const token0 = await ctx.token0();
+			const token1 = await ctx.token1();
+			reserves.token = token0.toLowerCase() == this.weth.address ? token1 : token0;
+		}
+		catch(e){
+			reserves.isPair = false;
+		}
+		return reserves;
+	}
+}	
 
 module.exports = UniSwapUtils;

@@ -1,9 +1,9 @@
 const OrderModel = require('./../models/order');
-
+const constants = require('./../libs/constants');
 module.exports = {
-	setOrder: async (discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy) => {
+	createOrder: async (discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy) => {
         try {
-            const newData = new OrderModel({discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy, isFinished: false});
+            const newData = new OrderModel({discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy, status: constants.ORDER_STATUS.WAITING, createAt: new Date(), updateAt: new Date(), result: ``});
             return await newData.save();
         }
         catch (err) {
@@ -12,38 +12,18 @@ module.exports = {
     
         return null;
     },
-
-    getOrders: async (discordId, tokenAddress = ``) => {
-        try{
-            if(!tokenAddress) {
-                return await OrderModel.find({
-                    discordId
-                });
-            }
-            return await OrderModel.find({
-                discordId,
-                tokenAddress
-            });
-        }
-        catch(err) {
-            console.log(`Error when getting order data per user and token: ${err}`);
-        }
-
-        return [];
+    /**
+     * ex: [{key:discordID, value:00000}, {key:tokenAddress, value:0x333333}, {key:status, value:{ $gt :  0, $lt : 3}}}]
+     */
+    queryOrders: async(params)=>{
+        if(params.length < 1) return [];
+        let queryCondition = {}
+        params.forEach(element => {
+            queryCondition[element.key] = element.value
+        });
+        return await OrderModel.find(queryCondition);
     },
 
-    getOrderList: async (tokenAddress) => {
-        try{
-            return await OrderModel.find({
-                tokenAddress
-            });
-        }
-        catch(err) {
-            console.log(`Error when getting order data per user and token: ${err}`);
-        }
-
-        return [];
-    },
 
     deleteOrder: async (_id) => {
         try{
@@ -56,18 +36,18 @@ module.exports = {
             }
         }
         catch(err) {
-            console.log(`Error when deleting order data per user and token: ${err}`);
+            console.log(`Error when deleting order: ${err}`);
         }
 
         return false;
     },
 
-    orderExecuted: async (_id) => {
+    updateOrder: async (_id, status, result) => {
         try{
             const order =  await OrderModel.findById(_id);
 
             if(order) {
-                await OrderModel.updateOne({_id: _id}, {isFinished: true});
+                await OrderModel.updateOne({_id: _id}, {status, result,updateAt:new Date()});
                 return true;
             }
         }
@@ -76,27 +56,5 @@ module.exports = {
         }
 
         return false;
-    },
-
-    getOrderById: async (_id) => {
-        try{
-            return await OrderModel.findById(_id);
-        }
-        catch(err) {
-            console.log(`Error getOrderById: ${err}`);
-        }
-
-        return null;
-    },
-
-    getAllAccounts: async () => {
-        try{
-            return await OrderModel.find();
-        }
-        catch(err) {
-            console.log(`Error when getting all order: ${err}`);
-        }
-
-        return [];
     }
 };

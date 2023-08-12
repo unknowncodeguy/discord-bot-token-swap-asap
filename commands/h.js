@@ -1,9 +1,5 @@
 const { Network, Helpers, User, UserCollection } = require('../libs/main.js');
 
-const ethers = require('ethers');
-const constants = require('../libs/constants');
-const etherscan = new (require('../libs/etherscan'))('W8RQSKKRJJHTFIMUEFYNJ84UVVZJUGVVS9');
-
 const { 
 	SlashCommandBuilder, 
 	ActionRowBuilder, 

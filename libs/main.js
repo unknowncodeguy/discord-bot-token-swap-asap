@@ -1,9 +1,8 @@
 require('dotenv').config()
 
-const User = require('./user.js');
+const ASAPUser = require('./user.js');
 const UserCollection = require('./usercollection.js');
-const OrderCollection = require('./ordercollection.js');
 const Helpers = require('./helpers.js');
 const Network = require('./network.js');
 
-module.exports = { User, UserCollection, Helpers, Network, OrderCollection }
+module.exports = { ASAPUser, UserCollection, Helpers, Network }

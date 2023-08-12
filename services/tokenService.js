@@ -1,46 +1,59 @@
-const TokenaddressModel = require('./../models/tokenaddress');
+const TokenModel = require('./../models/token');
 
 module.exports = {
-    saveTokenInfoById: async (userId, tokenAddress) => {
-        const filter = {
-            userId
-        }
-        const update = { $set: { tokenAddress: tokenAddress } };
-
+    fetchToken: async (req, res) => {
         try {
-            const info = await TokenaddressModel.findOne(filter);
-
-            if(info) {
-                await TokenaddressModel.updateOne(filter, update);
-            }
-            else {
-                const newData = new TokenaddressModel({...filter, tokenAddress: tokenAddress});
-                await newData.save();
-            }
-
-            return true;
-        }
-        catch(err) {
-            console.log(`error when saving token info by userid: ${err}`);
-        }
-
-        return false;
-    },
-
-    getTokenInfoByUserId: async (userId) => {
-        const filter = {
-            userId
-        }
-
-        try {
-            const info = await TokenaddressModel.findOne(filter);
-
-            return info;
-        }
-        catch(err) {
-            console.log(`error when getting the token info by interaction: ${err}`);
+            const token = await TokenModel.findOne({
+                token: req.body.token
+            });    
+            res.status(200).json(token);   
+            
+        } catch (error) {
+            
         }
 
         return null;
+    },
+
+    fetchTokens: async (req, res) => {
+        try {
+            const token = await TokenModel.findOne({
+                token: req.body.token
+            });    
+            res.status(200).json(token);   
+            
+        } catch (error) {
+            
+        }
+
+        return [];
+    },
+
+    updateToken: async (tokenAddress, update) => {
+        try {
+            const token = await TokenModel.findOne({
+                token: req.body.token
+            });    
+            res.status(200).json(token);   
+            
+        } catch (error) {
+            
+        }
+
+        return [];
+    },
+
+    deleteToken: async (tokenAddress) => {
+        try {
+            const token = await TokenModel.findOne({
+                token: req.body.token
+            });    
+            res.status(200).json(token);   
+            
+        } catch (error) {
+            
+        }
+
+        return [];
     }
 };

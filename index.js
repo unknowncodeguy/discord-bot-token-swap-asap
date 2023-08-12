@@ -6,89 +6,134 @@ const Cryptr = require('cryptr');
 
 const mongoose = require('mongoose');
 
-const { getTokenInfoByInteraction } = require("./services/interactionService");
-const { getTokenInfoByUserId } = require("./services/tokenService");
-const { setOrder, getOrders, deleteOrder, getOrderById } = require("./services/orderService");
+const { getTokenInfoByInteraction, saveTokenInfoByInteraction } = require("./services/interactionService");
 const { setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData } = require("./services/accountService");
-const { setTokenPrice } = require("./services/priceService");
-
-const { User, UserCollection, Helpers, Network, OrderCollection } = require('./libs/main.js');
+const { getAllAccounts } = require('./services/accountService');
+const { ASAPUser, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
 require('dotenv').config()
-const { 
-	Client, 
+const {
+	Client,
 	Collection,
-	ButtonStyle, 
+	ButtonStyle,
 	ButtonBuilder,
 	SelectMenuBuilder,
-	EmbedBuilder, 
-	Events, 
+	EmbedBuilder,
+	Events,
 	InteractionType,
 	Invite,
 	ChannelType,
 	PermissionsBitField,
 	ModalBuilder,
-	TextInputBuilder, 
-	TextInputStyle, 
-	ActionRowBuilder, 
+	TextInputBuilder,
+	TextInputStyle,
+	ActionRowBuilder,
 	GatewayIntentBits,
 	GatewayDispatchEvents,
 	ActivityType
 } = require('discord.js');
-const paginationEmbed = require('discord.js-pagination');
-const Fetch = require('./libs/fetchcoins');
-
-const etherscan = new(require('./libs/etherscan'))(process.env.EHTERSCAN_API_KEY);
-
-const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
 
 let originalLog = console.log;
 
-console.log = function(msg) {
+console.log = function (msg) {
+	const time = new Date();
+	let date = new Date();
 
-	fs.appendFile('debug.log', `[${getFormattedDate()}] ${msg}\n`, err => {
-	  if (err) {
-	    console.error(err);
-	  }
-	});
+	let hours = "", minutes = "", seconds = "";
 
-	return originalLog(`[${getFormattedDate()}] ${msg}`);
+	if (date.getHours() < 10)
+		hours = "0" + date.getHours();
+	else
+		hours = date.getHours();
+
+	if (date.getMinutes() < 10)
+		minutes = "0" + date.getMinutes();
+	else
+		minutes = date.getMinutes();
+
+	if (date.getSeconds() < 10)
+		seconds = "0" + date.getSeconds();
+	else
+		seconds = date.getSeconds();
+
+	const curtime = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + hours + ":" + minutes + ":" + seconds;
+	const log_file = "./Logs/ASAPLog_" + date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + ".log";
+	// if (fs.existsSync(log_file)) {
+	// 	fs.appendFile(log_file, `[${curtime}] ${msg}\n`, err => {
+	// 		if (err) throw err;
+	// 	});
+	// } else {
+	// 	const dirPath = './Logs';
+
+	// 	if (!fs.existsSync(dirPath)) {
+	// 		fs.mkdir(dirPath, (err) => {
+	// 			if (err) {
+	// 				console.error(err);
+	// 			}
+	// 		});
+	// 	}
+	// 	fs.writeFile(log_file, `[${curtime}] ${msg}\n`, function (err) {
+	// 		if (err) throw err;
+	// 	});
+
+	// }
+	return originalLog(`[${curtime}] ${msg}`);
 }
 
 function getFormattedDate() {
-    let date = new Date();
+	let date = new Date();
 
-    let hours = "", minutes = "", seconds = "";
+	let hours = "", minutes = "", seconds = "";
 
-    if(date.getHours() < 10)
-        hours = "0" + date.getHours();
-    else 
-        hours = date.getHours();
+	if (date.getHours() < 10)
+		hours = "0" + date.getHours();
+	else
+		hours = date.getHours();
 
-    if(date.getMinutes() < 10)
-        minutes = "0" + date.getMinutes();
-    else 
-        minutes = date.getMinutes();
+	if (date.getMinutes() < 10)
+		minutes = "0" + date.getMinutes();
+	else
+		minutes = date.getMinutes();
 
-    if(date.getSeconds() < 10)
-        seconds = "0" + date.getSeconds();
-    else 
-        seconds = date.getSeconds();
+	if (date.getSeconds() < 10)
+		seconds = "0" + date.getSeconds();
+	else
+		seconds = date.getSeconds();
 
-    let str = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + hours + ":" + minutes + ":" + seconds;
+	let str = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + hours + ":" + minutes + ":" + seconds;
 
-    return str;
+	return str;
 }
+async function initUsers(discordClient) {
+	const allRegisteredUsers = await getAllAccounts();
 
+	console.log("Initializing User List from DB....");
+	await Promise.all(allRegisteredUsers.map(async asap_user => {
+		UserCollection.add(
+			asap_user.discordId,
+			new ASAPUser(asap_user.discordId, asap_user.username)
+		);
+		const new_user = UserCollection.get(asap_user.discordId);
+		await new_user.init();
+		if (new_user.userInfo.referralLink && new_user.userInfo.inviteCode) {
+
+			// Extract the invite code from the link using a regular expression
+			const codes = new_user.userInfo.referralLink.match(/discord\.gg\/(.+)/)[1];
+			const inviteCode = codes.split("#")[0];
+			discordClient.joinerCounter[inviteCode] = new_user.userInfo.joiners?.length;
+		}
+	}))
+	console.log("User list is initilialized....");
+}
 process.on('uncaughtException', (e, origin) => {
 
-    let error = e.error ? e.error : e;
+	let error = e.error ? e.error : e;
 
-    console.log(`Exception: ${error}`);
+	console.log(`Exception: ${error}`);
 
-    if(e.stack) {
-    	console.log(e.stack);
-    }
+	if (e.stack) {
+		console.log(e.stack);
+	}
 
 });
 
@@ -111,27 +156,29 @@ process.on('uncaughtException', (e, origin) => {
 	// load network
 	await Network.load();
 
+
 	// initialize client
-	const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers ] });
+	const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 	client.commands = new Collection();
-	client.invites = {}
+	client.joinerCounter = {}
+	Network.discordClient = client;
 
 	// listen for commands
 	client.on(Events.InteractionCreate, async (interaction) => {
-		
-		// if(!UserCollection.exists(interaction.user.id)) {
-		// 	UserCollection.add(
-		// 		interaction.user.id, 
-		// 		new User(interaction.user.id)
-		// 	);
-		// 	const new_user = UserCollection.get(interaction.user.id);
-		// 	await new_user.init();
-		// }
+
+		if (!UserCollection.exists(interaction.user.id)) {
+			UserCollection.add(
+				interaction.user.id,
+				new ASAPUser(interaction.user.id, interaction.user.username)
+			);
+			const new_user = UserCollection.get(interaction.user.id);
+			await new_user.init();
+		}
 
 		// fetch user
 		let _user = UserCollection.get(interaction.user.id);
 
-		if(interaction.isChatInputCommand()) {
+		if (interaction.isChatInputCommand()) {
 
 			const command = interaction.client.commands.get(interaction.commandName);
 
@@ -152,9 +199,9 @@ process.on('uncaughtException', (e, origin) => {
 		}
 
 		// interactions that don't care about auth (use return to stop code)
-		if(interaction.isButton()) {
+		if (interaction.isButton()) {
 
-			switch(interaction.customId) {
+			switch (interaction.customId) {
 
 				case 'setup': {
 
@@ -166,21 +213,21 @@ process.on('uncaughtException', (e, origin) => {
 				case 'set_wallet': {
 
 					const modal = new ModalBuilder()
-				        .setCustomId('set_wallet_key')
-				        .setTitle('Set Wallet')
-				        .addComponents([
-				          	new ActionRowBuilder().addComponents(
-				            	new TextInputBuilder()
-				              	.setCustomId('wallet-key').setLabel('Enter your wallet private key')
-				              	.setStyle(TextInputStyle.Paragraph).setMinLength(64)
-				              	.setPlaceholder('0x1234..')
-				              	.setRequired(true),
-				          	),
-				        ]);
+						.setCustomId('set_wallet_key')
+						.setTitle('Set Wallet')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('wallet-key').setLabel('Enter your wallet private key')
+									.setStyle(TextInputStyle.Paragraph).setMinLength(64)
+									.setPlaceholder('0x1234..')
+									.setRequired(true),
+							),
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
-				   	return;
+					return;
 				}
 
 				case 'setup_auto': {
@@ -203,7 +250,7 @@ process.on('uncaughtException', (e, origin) => {
 					_user.autoBuySettings.requireHoneypotCheck = !_user.autoBuySettings.requireHoneypotCheck;
 
 					await _user.showAutoBuyFilters(interaction, true);
-					
+
 					return;
 				}
 
@@ -212,7 +259,7 @@ process.on('uncaughtException', (e, origin) => {
 					_user.autoBuySettings.requireLiquidityLock = !_user.autoBuySettings.requireLiquidityLock;
 
 					await _user.showAutoBuyFilters(interaction, true);
-					
+
 					return;
 				}
 
@@ -221,28 +268,28 @@ process.on('uncaughtException', (e, origin) => {
 					_user.autoBuySettings.allowPrevContracts = !_user.autoBuySettings.allowPrevContracts;
 
 					await _user.showAutoBuyFilters(interaction, true);
-					
+
 					return;
 				}
 
 				case 'uc_set_btax': {
 
 					const modal = new ModalBuilder()
-				        .setCustomId('set_btax')
-				        .setTitle('Set Max. Buy Tax')
-				        .addComponents([
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('b-tax').setLabel('Max Buy Tax')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setRequired(false)
-					              	.setMaxLength(3)
-					              	.setValue(_user.autoBuySettings.maximumBuyTax)
-					              	.setPlaceholder('A value between 0 and 100.'),
-				            ),
-				        ]);
+						.setCustomId('set_btax')
+						.setTitle('Set Max. Buy Tax')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('b-tax').setLabel('Max Buy Tax')
+									.setStyle(TextInputStyle.Short)
+									.setRequired(false)
+									.setMaxLength(3)
+									.setValue(_user.autoBuySettings.maximumBuyTax)
+									.setPlaceholder('A value between 0 and 100.'),
+							),
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					return;
 				}
@@ -250,21 +297,21 @@ process.on('uncaughtException', (e, origin) => {
 				case 'uc_set_stax': {
 
 					const modal = new ModalBuilder()
-				        .setCustomId('set_stax')
-				        .setTitle('Set Max. Sell Tax')
-				        .addComponents([
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('s-tax').setLabel('Max Sell Tax')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setRequired(false)
-					              	.setMaxLength(3)
-					              	.setValue(_user.autoBuySettings.maximumSellTax)
-					              	.setPlaceholder('A value between 0 and 100.'),
-				            ),
-				        ]);
+						.setCustomId('set_stax')
+						.setTitle('Set Max. Sell Tax')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('s-tax').setLabel('Max Sell Tax')
+									.setStyle(TextInputStyle.Short)
+									.setRequired(false)
+									.setMaxLength(3)
+									.setValue(_user.autoBuySettings.maximumSellTax)
+									.setPlaceholder('A value between 0 and 100.'),
+							),
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					return;
 				}
@@ -272,21 +319,21 @@ process.on('uncaughtException', (e, origin) => {
 				case 'uc_set_tholder_threshold': {
 
 					const modal = new ModalBuilder()
-				        .setCustomId('set_tholder')
-				        .setTitle('Set Max Top Holder Threshold')
-				        .addComponents([
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('holder_threshold').setLabel('Threshold')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setRequired(false)
-					              	.setMaxLength(3)
-					              	.setValue(_user.autoBuySettings.topHolderThreshold)
-					              	.setPlaceholder('A value between 0 and 100.'),
-				            ),
-				        ]);
+						.setCustomId('set_tholder')
+						.setTitle('Set Max Top Holder Threshold')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('holder_threshold').setLabel('Threshold')
+									.setStyle(TextInputStyle.Short)
+									.setRequired(false)
+									.setMaxLength(3)
+									.setValue(_user.autoBuySettings.topHolderThreshold)
+									.setPlaceholder('A value between 0 and 100.'),
+							),
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					return;
 				}
@@ -294,20 +341,20 @@ process.on('uncaughtException', (e, origin) => {
 				case 'uc_set_lock_liquidity': {
 
 					const modal = new ModalBuilder()
-				        .setCustomId('set_lockedliq')
-				        .setTitle('Set Min. Locked Liquidity Percentage')
-				        .addComponents([
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('locked_liq').setLabel('Min. Locked Liquidity')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setRequired(false)
-					              	.setValue(ethers.utils.formatEther(_user.autoBuySettings.minimumLockedLiq))
-					              	.setPlaceholder('A value ETH value.'),
-				            ),
-				        ]);
+						.setCustomId('set_lockedliq')
+						.setTitle('Set Min. Locked Liquidity Percentage')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('locked_liq').setLabel('Min. Locked Liquidity')
+									.setStyle(TextInputStyle.Short)
+									.setRequired(false)
+									.setValue(ethers.utils.formatEther(_user.autoBuySettings.minimumLockedLiq))
+									.setPlaceholder('A value ETH value.'),
+							),
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					return;
 				}
@@ -315,96 +362,115 @@ process.on('uncaughtException', (e, origin) => {
 				case 'uc_set_min_liq': {
 
 					const modal = new ModalBuilder()
-				        .setCustomId('set_min_liq')
-				        .setTitle('Set Min. Liquidity')
-				        .addComponents([
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('min_liq').setLabel('Min. Liquidity In ETH')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setRequired(false)
-					              	.setValue(ethers.utils.formatEther(_user.autoBuySettings.minimumLiquidity))
-					              	.setPlaceholder('A valid ETH value.'),
-				            ),
-				        ]);
+						.setCustomId('set_min_liq')
+						.setTitle('Set Min. Liquidity')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('min_liq').setLabel('Min. Liquidity In ETH')
+									.setStyle(TextInputStyle.Short)
+									.setRequired(false)
+									.setValue(ethers.utils.formatEther(_user.autoBuySettings.minimumLiquidity))
+									.setPlaceholder('A valid ETH value.'),
+							),
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					return;
 				}
-				
+
 				case 'create_wallet': {
-					console.log(`start create wallet`);
+					await interaction.reply({ content: 'Creating new wallet started...', ephemeral: true, fetchReply: true });
 					let msg = `Wallet Creating is failed. Please try again!`;
 					try {
 						const userInfo = await getUserInfo(interaction.user.id);
-						if(userInfo?.createdWalletNumber >= constants.MAX_CREATABLE_WALLET) {
-							return interaction.reply({ content: 'You have reached the maximum number of wallets you can create.', ephemeral: true});
+						if (userInfo?.createdWalletNumber >= constants.MAX_CREATABLE_WALLET) {
+							return await interaction.editReply({ content: 'You have reached the maximum number of wallets you can create.', ephemeral: true });
 						}
 
 						const wallet = ethers.Wallet.createRandom();
 
-						if(wallet?.address) {
-							const res_before_change = await _user.beforeChangeWallet(wallet.privateKey, interaction)
-							if(res_before_change?.result) {
+						if (wallet?.address) {
+
+							let = res_before_change = {
+								result: true,
+								msg: ''
+							}
+
+							if (_user?.account?.address) {
+								res_before_change = await _user.beforeChangeWallet(wallet.privateKey, interaction)
+							}
+
+							if (res_before_change?.result) {
 								const res = await _user.setWallet(wallet.privateKey, true);
-							
-								if(res) {
+
+								if (res) {
 									let cnt = userInfo?.createdWalletNumber;
-									if(!userInfo?.createdWalletNumber) {
+									if (!userInfo?.createdWalletNumber) {
 										cnt = 0
 									}
 									msg = `Private key is: ${wallet.privateKey}\nPublic Key is: ${wallet.address}`;
-									await upsertAccountData(interaction.user.id, {createdWalletNumber: cnt + 1});
+									await upsertAccountData(interaction.user.id, { createdWalletNumber: cnt + 1 });
 								}
 							}
 							else {
-								if(res_before_change?.msg) {
+								if (res_before_change?.msg) {
 									msg = res_before_change?.msg;
 								}
 							}
 						}
 					}
-					catch(err) {
+					catch (err) {
 						console.log(`Error when creating wallet: ${err}`)
 					}
-					await interaction.reply({ content: msg, ephemeral: true});
+					await interaction.editReply({ content: msg, ephemeral: true });
 					return;
 				}
 			}
 
-		} else if(interaction.isModalSubmit()) {
+		} else if (interaction.isModalSubmit()) {
 
-			switch(interaction.customId) {
+			switch (interaction.customId) {
 
-				case 'set_wallet_key': {	
+				case 'set_wallet_key': {
 
-					if(!_user.isValidPrivateKey(interaction.fields.getTextInputValue('wallet-key').trim())) {
-						return interaction.reply({ content: 'Invalid private key specified.', ephemeral: true});
+					await interaction.reply({ content: 'Importing new wallet key...!', ephemeral: true, fetchReply: true });
+					if (!_user.isValidPrivateKey(interaction.fields.getTextInputValue('wallet-key').trim())) {
+						return await interaction.editReply({ content: 'Invalid private key specified.', ephemeral: true });
 					}
-					const res_before_change = await _user.beforeChangeWallet(interaction.fields.getTextInputValue('wallet-key').trim(), interaction)
 
-					if(res_before_change?.result) {
+					let = res_before_change = {
+						result: true,
+						msg: ''
+					}
+
+					if (_user?.account?.address) {
+						res_before_change = await _user.beforeChangeWallet(interaction.fields.getTextInputValue('wallet-key').trim(), interaction)
+					}
+
+
+					if (res_before_change?.result) {
 						const res = await _user.setWallet(interaction.fields.getTextInputValue('wallet-key').trim(), true);
-						if(res) {
-							await _user.showSettings(interaction, true);
-							return;
+						if (res) {
+							// await _user.showSettings(interaction, true);
+							return await interaction.editReply({ content: `New wallet is imported! Address is ${_user.account.address}`, ephemeral: true });
 						}
 					}
 
-					if(!res_before_change?.result && res_before_change?.msg) {
-						return interaction.reply({ content: res_before_change?.msg, ephemeral: true});
+					if (!res_before_change?.result && res_before_change?.msg) {
+						return await interaction.editReply({ content: res_before_change?.msg, ephemeral: true });
 					}
 
-					return interaction.reply({ content: 'Wallet setting is failed. Plaese try again!', ephemeral: true});
+					return await interaction.editReply({ content: 'Wallet setting is failed. Plaese try again!', ephemeral: true });
 				}
 
 				case 'set_btax': {
 
 					let tax = interaction.fields.getTextInputValue('b-tax');
 
-					if(!Helpers.isInt(tax) || tax > 100 || tax < 1) {
-						return interaction.reply({ content: 'Buy tax must be a valid number between 0 and 100.', ephemeral: true});
+					if (!Helpers.isInt(tax) || tax > 100 || tax < 1) {
+						return interaction.reply({ content: 'Buy tax must be a valid number between 0 and 100.', ephemeral: true });
 					}
 
 					_user.autoBuySettings.maximumBuyTax = tax;
@@ -418,14 +484,14 @@ process.on('uncaughtException', (e, origin) => {
 
 					let tax = interaction.fields.getTextInputValue('s-tax');
 
-					if(!Helpers.isInt(tax) || tax > 100 || tax < 1) {
-						return interaction.reply({ content: 'Sell tax must be a valid number between 0 and 100.', ephemeral: true});
+					if (!Helpers.isInt(tax) || tax > 100 || tax < 1) {
+						return interaction.reply({ content: 'Sell tax must be a valid number between 0 and 100.', ephemeral: true });
 					}
 
 					_user.autoBuySettings.maximumSellTax = tax;
 
 					await _user.showAutoBuyFilters(interaction, true);
-					
+
 					return;
 				}
 
@@ -433,14 +499,14 @@ process.on('uncaughtException', (e, origin) => {
 
 					let tax = interaction.fields.getTextInputValue('holder_threshold');
 
-					if(!Helpers.isInt(tax) || tax > 100 || tax < 1) {
-						return interaction.reply({ content: 'Threshold must be a valid number between 0 and 100.', ephemeral: true});
+					if (!Helpers.isInt(tax) || tax > 100 || tax < 1) {
+						return interaction.reply({ content: 'Threshold must be a valid number between 0 and 100.', ephemeral: true });
 					}
 
 					_user.autoBuySettings.topHolderThreshold = tax;
 
 					await _user.showAutoBuyFilters(interaction, true);
-					
+
 					return;
 				}
 
@@ -448,14 +514,14 @@ process.on('uncaughtException', (e, origin) => {
 
 					let tax = interaction.fields.getTextInputValue('locked_liq');
 
-					if(!Helpers.isFloat(tax)) {
-						return interaction.reply({ content: 'ETH value must be a valid float.', ephemeral: true});
+					if (!Helpers.isFloat(tax)) {
+						return interaction.reply({ content: 'ETH value must be a valid float.', ephemeral: true });
 					}
 
 					_user.autoBuySettings.minimumLockedLiq = ethers.utils.parseEther(tax);
 
 					await _user.showAutoBuyFilters(interaction, true);
-					
+
 					return;
 				}
 
@@ -463,14 +529,14 @@ process.on('uncaughtException', (e, origin) => {
 
 					let tax = interaction.fields.getTextInputValue('min_liq');
 
-					if(!Helpers.isFloat(tax)) {
-						return interaction.reply({ content: 'ETH value must be a valid float.', ephemeral: true});
+					if (!Helpers.isFloat(tax)) {
+						return interaction.reply({ content: 'ETH value must be a valid float.', ephemeral: true });
 					}
 
 					_user.autoBuySettings.minimumLiquidity = ethers.utils.parseEther(tax);
 
 					await _user.showAutoBuyFilters(interaction, true);
-					
+
 					return;
 				}
 			}
@@ -478,22 +544,22 @@ process.on('uncaughtException', (e, origin) => {
 		}
 
 		// if we've gotten till here, that means that we're looking for auth
-		if(!_user.account) {
+		if (!_user.account) {
 			return interaction.reply({
 				content: 'You must set a default wallet first.',
 				ephemeral: true,
 				embeds: [],
 				components: []
 			});
-		} 
+		}
 
-		if(interaction.isStringSelectMenu()) {
+		if (interaction.isStringSelectMenu()) {
 
-			switch(interaction.customId) {
+			switch (interaction.customId) {
 
 				case 'select_token': {
 
-					if(_user.tokenList[interaction.values[0]] == null) {
+					if (_user.tokenList[interaction.values[0]] == null) {
 						return interaction.reply({
 							content: 'Something went wrong..',
 							ephemeral: true
@@ -509,14 +575,14 @@ process.on('uncaughtException', (e, origin) => {
 			}
 
 		}
-		else if(interaction.isModalSubmit()) {
+		else if (interaction.isModalSubmit()) {
 
-			switch(interaction.customId) {
+			switch (interaction.customId) {
 
 				case 'set_sell_percentage': {
 
-					if(!Helpers.isInt(interaction.fields.getTextInputValue('sell-percentage'))) {
-						return interaction.reply({ content: 'Sell percentage must be a valid number.', ephemeral: true});
+					if (!Helpers.isInt(interaction.fields.getTextInputValue('sell-percentage'))) {
+						return interaction.reply({ content: 'Sell percentage must be a valid number.', ephemeral: true });
 					}
 
 					_user.defaultConfig.sellPercentage = interaction.fields.getTextInputValue('sell-percentage');
@@ -551,106 +617,66 @@ process.on('uncaughtException', (e, origin) => {
 				// }
 
 				case 'buy_new': {
-
-					if(!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
-						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
+					await interaction.reply({ content: 'Checking buy requirements....', ephemeral: true, fetchReply: true });
+					if (!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
+						return interaction.editReply({ content: 'Invalid token address specified.', ephemeral: true });
 					}
-					console.log(`token_address is ${interaction.fields.getTextInputValue('token-address')}`);
-					// let slippage = interaction.fields.getTextInputValue('slippage-percentage');
-					// console.log(`slippage is ${slippage}`);
-					// if(!Helpers.isInt(slippage) || parseInt(slippage) < 1 || parseInt(slippage) > 100) {
-					// 	return interaction.reply({ content: 'Slippage percentage must be a valid number (1-100).', ephemeral: true});
-					// }
-
 					let gaslimit = interaction.fields.getTextInputValue('gas-limit');
-					console.log(`gaslimit is ${gaslimit}`);
-
-					if(gaslimit.length != 0 && !Helpers.isInt(gaslimit)) {
-						return interaction.reply({ content: 'Gas limit must be a valid number.', ephemeral: true })
+					if (gaslimit.length != 0 && !Helpers.isInt(gaslimit)) {
+						return interaction.editReply({ content: 'Gas limit must be a valid number.', ephemeral: true })
 					}
-
 					let input = interaction.fields.getTextInputValue('token-amount-eth').toString();
-					console.log(`input is ${input}`);
-					if(!Helpers.isFloat(input)) {
-						return interaction.reply({ content: 'Token amount must be a valid number.', ephemeral: true});
+					if (!Helpers.isFloat(input)) {
+						return interaction.editReply({ content: 'Token amount must be a valid number.', ephemeral: true });
 					}
 
-					// check if balance is enough
-					let _balance = await _user.getBalance();
-					console.log(`_balance is ${_balance}`);
-
-					// not enough
-					if(_balance.lt(ethers.utils.parseUnits(input, 18)) || _balance.eq(0)) {
-						return interaction.reply({ content: 'You don\'t have enough ETH', ephemeral: true});
-					}
-					console.log(`_balance is enough`);
-					await interaction.reply({
+					await interaction.editReply({
 						content: 'Transaction has been sent.',
 						embeds: [],
 						ephemeral: true
 					});
-
 					// overwrite with defaultConfig
-					_user.config = _user.defaultConfig;				
+					_user.config = _user.defaultConfig;
 
 					// store gaslimit
-					_user.config.gasLimit = !gaslimit ? null : gaslimit;
-					console.log(`_user.config.gasLimit is ${_user.config.gasLimit}`);
-					// set contractethers
-					// await _user.setContract(interaction.fields.getTextInputValue('token-address'));
+					_user.config.gasLimit = !gaslimit ? _user.defaultConfig.gasLimit : gaslimit;
 
 					// set values from form
 					_user.config.inputAmount = ethers.utils.parseUnits(
-						input, 
+						input,
 						18
 					);
 
-					console.log(`_user.config.inputAmount is ${_user.config.inputAmount}`);
-
-					// _user.defaultConfig.inputAmount = ethers.utils.parseUnits(
-					// 	input, 
-					// 	18
-					// );
-					// consol.log(_user.defaultConfig.inputAmount)
-
-					// set slippage
-					// _user.config.slippage = slippage;
-					// console.log(`_user.config.slippage is ${_user.config.slippage}`);
-
-					// do buying action
-					await _user.sendNormalTransaction(interaction.fields.getTextInputValue('token-address'), interaction);
+					try {
+						await _user.sendTransaction(interaction.fields.getTextInputValue('token-address'), input, _user.config.gasLimit, false);
+					}
+					catch (e) {
+						console.log(`unexpected error on buying,  user : ${_user.discordId}` + e);
+					}
 
 					break;
 				}
 
 				case 'sell_new': {
-
-					if(!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
-						return await interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
+					await interaction.reply({ content: 'Checking sell requirements....', ephemeral: true, fetchReply: true });
+					if (!ethers.utils.isAddress(interaction.fields.getTextInputValue('token-address'))) {
+						return await interaction.editReply({ content: 'Invalid token address specified.', ephemeral: true });
 					}
 					console.log(`token address input is ${interaction.fields.getTextInputValue('token-address')}`);
 
-					// let slippage = interaction.fields.getTextInputValue('slippage-percentage');
-					// console.log(`slippage input is ${interaction.fields.getTextInputValue('slippage-percentage')}`);
-					// if(!Helpers.isInt(slippage) || parseInt(slippage) < 1 || parseInt(slippage) > 100) {
-					// 	return await interaction.reply({ content: 'Slippage percentage must be a valid number (1-100).', ephemeral: true});
-					// }
-
 					let gaslimit = interaction.fields.getTextInputValue('gas-limit');
-					console.log(`gaslimit input is ${interaction.fields.getTextInputValue('gas-limit')}`);
 
-					if(gaslimit.length != 0 && !Helpers.isInt(gaslimit)) {
-						return await interaction.reply({ content: 'Gas limit must be a valid number.', ephemeral: true })
+					if (gaslimit.length != 0 && !Helpers.isInt(gaslimit)) {
+						return await interaction.editReply({ content: 'Gas limit must be a valid number.', ephemeral: true })
 					}
 
 					let percentage = interaction.fields.getTextInputValue('sell-percentage');
-					console.log(`percentage input is ${interaction.fields.getTextInputValue('sell-percentage')}`);
-					
-					if(!Helpers.isInt(percentage) || parseInt(percentage) < 1 || parseInt(percentage) > 100) {
-						return await interaction.reply({ content: 'Sell percentage must be a valid number (1-100).', ephemeral: true});
+
+					if (!parseFloat(percentage) || parseFloat(percentage) < 0.01 || parseFloat(percentage) > 100) {
+						return await interaction.editReply({ content: 'Sell percentage must be a valid number (0.01-100).', ephemeral: true });
 					}
 
-					await interaction.reply({
+					await interaction.editReply({
 						content: 'Transaction has been sent.',
 						embeds: [],
 						ephemeral: true
@@ -660,181 +686,168 @@ process.on('uncaughtException', (e, origin) => {
 					_user.config = _user.defaultConfig;
 
 					// store gaslimit
-					_user.config.gasLimit = !gaslimit ? null : gaslimit;
-					console.log(`_user.config.gasLimit is ${_user.config.gasLimit}`);
+					_user.config.gasLimit = !gaslimit ? _user.defaultConfig.gasLimit : gaslimit;
 
 					_user.config.sellPercentage = percentage;
-					console.log(`_user.config.gasLimit is ${_user.config.gasLimit}`);
-
-					// check if balance is enough
-					let _balance = await _user.getBalanceOf(interaction.fields.getTextInputValue('token-address'));
-					console.log(`_balance ${_balance}`);
-
-					console.log(`_balance.div(100).mul(_user.config.sellPercentage): ${_balance.div(100).mul(_user.config.sellPercentage)}`);
-
-					// not enough
-					if(_balance.lt(_balance.mul(_user.config.sellPercentage).div(100)) || _balance.eq(0)) {
-						return await interaction.followUp({ content: 'You don\'t have enough tokens.', ephemeral: true});
-					}
 
 					// set values from form
 					_user.config.sellPercentage = percentage;
 					console.log(`_user.config.sellPercentage: ${_user.config.sellPercentage}`);
-
-
-					// // set slippage
-					// _user.config.slippage = slippage;
-					// console.log(`_user.config.slippage: ${_user.config.slippage}`);
-
 					// do selling action
-					await _user.sendNormalTransaction(interaction.fields.getTextInputValue('token-address'), interaction, true);
+					try {
+						await _user.sendTransaction(interaction.fields.getTextInputValue('token-address'), percentage, _user.config.gasLimit, true);
+					}
+					catch (e) {
+						console.log(`unexpected error on selling,  user : ${_user.discordId}` + e);
+					}
 
 					break;
 				}
 
 				case 'show_select_order_buy': {
+					await interaction.reply({ content: 'Checking buy order requirements....', ephemeral: true, fetchReply: true });
 					const orderAmount = interaction.fields.getTextInputValue('show_select_order_buy_amount').toString();
 					console.log(`orderAmount when buying: ${orderAmount}`);
-					if(!Helpers.isFloat(orderAmount)) {
-						return interaction.reply({ content: 'Order amount must be a valid number.', ephemeral: true});
+					if (!Helpers.isFloat(orderAmount)) {
+						return interaction.editReply({ content: 'Order amount must be a valid number.', ephemeral: true });
 					}
 
 					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_buy_percentage').toString();
 					console.log(`orderPercentage when buying: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 1 and 100.', ephemeral: true});
+					if (orderPercentage > 100 || orderPercentage <= 0) {
+						return interaction.editReply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true });
 					}
 
-					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
-					console.log("interaction:" + interaction);
-					console.log("message:" + interaction.message.id);
-					const { tokenAddress } = tokenDataByInteraction;
-					console.log("tokenAddress: " + tokenAddress);
 
-					const curPrice = await _user.getCurTokenPrice(tokenAddress, orderAmount, true);
-
+					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
+					const tokenAddress = tokenDataByInteraction?.tokenAddress;
+					let curPrice;
+					await interaction.editReply({ content: `Saving order for token(${tokenAddress}) data...`, ephemeral: true, fetchReply: true });
+					try {
+						curPrice = await _user.getCurTokenPrice(tokenAddress, orderAmount, true);
+					}
+					catch (err) {
+						return await interaction.editReply({ content: err, ephemeral: true });
+					}
 					let msg = `Your orders were not saved! Please check your network!`;
 					try {
-						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
-
-						if(res) {
-							await OrderCollection.setOrder(res?._id, interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
+						const newOrder = await Network.orderMnager.createOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
+						if (newOrder) {
 							msg = `Your orders were saved successfully!`;
 						}
 					}
-					catch(err) {
-						console.log(`error when saving limit values to DB: ${err}`)
+					catch (err) {
+						console.log(`create order get failed: ${err}`)
 					}
 
-					await interaction.reply({ content: msg, ephemeral: true });
+					await interaction.editReply({ content: msg, ephemeral: true });
 
 					break;
 				}
 
 				case 'set_limit_order_buy': {
-
+					let msg = `Your orders were not saved! Please check you network!`;
+					await interaction.reply({ content: 'Checking buy order requirements....', ephemeral: true, fetchReply: true });
 					const orderAmount = interaction.fields.getTextInputValue('set_limit_order_buy_amount').toString();
 					console.log(`orderAmount when buying: ${orderAmount}`);
-					if(!Helpers.isFloat(orderAmount)) {
-						return interaction.reply({ content: 'Order amount must be a valid number.', ephemeral: true});
+					if (!Helpers.isFloat(orderAmount)) {
+						return interaction.editReply({ content: 'Order amount must be a valid number.', ephemeral: true });
 					}
 
 					const orderPercentage = interaction.fields.getTextInputValue('set_limit_order_buy_percentage').toString();
 					console.log(`orderPercentage when buying: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 1 and 100.', ephemeral: true});
+					if (orderPercentage > 100 || orderPercentage <= 0) {
+						return interaction.editReply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true });
 					}
 
 					const tokenAddress = interaction.fields.getTextInputValue('set_limit_order_buy_token').toString();
-					if(!ethers.utils.isAddress(tokenAddress)) {
-						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
+					if (!ethers.utils.isAddress(tokenAddress)) {
+						return interaction.editReply({ content: 'Invalid token address specified.', ephemeral: true });
 					}
 					console.log("tokenAddress: " + tokenAddress);
 
-					const curPrice = await _user.getCurTokenPrice(tokenAddress, orderAmount, true);
 
-					let msg = `Your orders were not saved! Please check you network!`;
+					await interaction.editReply({ content: `Saving order for token(${tokenAddress}) data...`, ephemeral: true, fetchReply: true });
+					let curPrice;
 					try {
-						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
+						curPrice = await _user.getCurTokenPrice(tokenAddress, orderAmount, true);
 
-						if(res) {
-							await OrderCollection.setOrder(res?._id, interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
+						const newOrder = await Network.orderMnager.createOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), true);
+						if (newOrder) {
 							msg = `Your orders were saved successfully!`;
 						}
 					}
-					catch(err) {
+					catch (err) {
 						console.log(`error when saving limit values to DB: ${err}`)
+						msg = `Creating limit order get failed! Error : ` + err;
 					}
 
-					await interaction.reply({ content: msg, ephemeral: true });
+					await interaction.editReply({ content: msg, ephemeral: true });
 
 					break;
 				}
 
 				case 'show_select_order_sell': {
-
+					await interaction.reply({ content: 'Checking sell order requirements....', ephemeral: true, fetchReply: true });
 					const orderAmount = interaction.fields.getTextInputValue('show_select_order_sell_amount').toString();
 					console.log(`orderAmount when selling: ${orderAmount}`);
-					if(!Helpers.isInt(orderAmount) || orderAmount > 100 || orderAmount < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 1 and 100.', ephemeral: true});
+					if (orderAmount > 100 || orderAmount <= 0) {
+						return interaction.editReply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true });
 					}
 
 					const orderPercentage = interaction.fields.getTextInputValue('show_select_order_sell_percentage').toString();
 					console.log(`orderPercentage when selling: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true});
+					if (orderPercentage > 100 || orderPercentage <= 0) {
+						return interaction.editReply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true });
 					}
 
-					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
-					const { tokenAddress } = tokenDataByInteraction;
+					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
+					const tokenAddress = tokenDataByInteraction?.tokenAddress;
 					console.log("tokenAddress: " + tokenAddress);
 
-					const ctx = new ethers.Contract(
-						tokenAddress,
-						constants.TOKEN_ABI,
-						_user.account
-					);
-		
-					const decimals = await ctx.decimals(); 
-					console.log("decimals is : " + decimals);
 
-					const curPrice = await _user.getCurTokenPrice(tokenAddress, ethers.utils.parseUnits(`1000000`, decimals), false);
-
+					await interaction.editReply({ content: `Saving order for token(${tokenAddress}) data...`, ephemeral: true, fetchReply: true });
+					let curPrice;
+					try {
+						curPrice = await _user.getCurTokenPrice(tokenAddress, 0, false);
+					}
+					catch (err) {
+						return interaction.editReply({ content: "" + err, ephemeral: true });
+					}
 					let msg = `Your orders were not saved! Please check you network!`;
 					try {
-						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
-
-						if(res) {
-							await OrderCollection.setOrder(res?._id, interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
+						const newOrder = await Network.orderMnager.createOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
+						if (newOrder) {
 							msg = `Your orders were saved successfully!`;
 						}
 					}
-					catch(err) {
+					catch (err) {
 						console.log(`error when saving limit values to DB: ${err}`)
+						msg = `Creating limit order get failed! Error : ` + err;
 					}
 
-					await interaction.reply({ content: msg, ephemeral: true });
+					await interaction.editReply({ content: msg, ephemeral: true });
 
 					break;
 				}
 
 				case 'set_limit_order_sell': {
-
+					await interaction.reply({ content: 'Checking sell order requirements....', ephemeral: true, fetchReply: true });
 					const orderAmount = interaction.fields.getTextInputValue('set_limit_order_sell_amount').toString();
 					console.log(`orderAmount when selling: ${orderAmount}`);
-					if(!Helpers.isInt(orderAmount) || orderAmount > 100 || orderAmount < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 1 and 100.', ephemeral: true});
+					if (orderAmount > 100 || orderAmount <= 0) {
+						return interaction.editReply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true });
 					}
 
 					const orderPercentage = interaction.fields.getTextInputValue('set_limit_order_sell_percentage').toString();
 					console.log(`orderPercentage when selling: ${orderPercentage}`);
-					if(!Helpers.isInt(orderPercentage) || orderPercentage > 100 || orderPercentage < 1) {
-						return interaction.reply({ content: 'Percentage must be a valid number between 1 and 100.', ephemeral: true});
+					if (orderPercentage > 100 || orderPercentage <= 0) {
+						return interaction.editReply({ content: 'Percentage must be a valid number between 0 and 100.', ephemeral: true });
 					}
 
 					const tokenAddress = interaction.fields.getTextInputValue('set_limit_order_sell_token').toString();
-					if(!ethers.utils.isAddress(tokenAddress)) {
-						return interaction.reply({ content: 'Invalid token address specified.', ephemeral: true});
+					if (!ethers.utils.isAddress(tokenAddress)) {
+						return interaction.editReply({ content: 'Invalid token address specified.', ephemeral: true });
 					}
 					console.log("tokenAddress: " + tokenAddress);
 
@@ -843,33 +856,41 @@ process.on('uncaughtException', (e, origin) => {
 						constants.TOKEN_ABI,
 						_user.account
 					);
-		
-					const decimals = await ctx.decimals(); 
-					console.log("decimals is : " + decimals);
 
-					const curPrice = await _user.getCurTokenPrice(tokenAddress, ethers.utils.parseUnits(`1000000`, decimals), false);
 
+
+					await interaction.editReply({ content: `Saving order for token(${tokenAddress}) data...`, ephemeral: true, fetchReply: true });
+					let curPrice;
+
+					try {
+						curPrice = await _user.getCurTokenPrice(tokenAddress, 0, false);
+						await interaction.editReply({ content: `Saving your order, token price is ${curPrice}`, ephemeral: true });
+					}
+					catch (err) {
+						console.log(`error when get price of token `);
+						return await interaction.editReply({ content: `Get error when get price of token`, ephemeral: true });
+					}
+					console.log(`waiting for store order on db`);
 					let msg = `Your orders were not saved! Please check you network!`;
 					try {
-						const res = await setOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
-
-						if(res) {
-							await OrderCollection.setOrder(res?._id, interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
+						const newOrder = await Network.orderMnager.createOrder(interaction.user.id, tokenAddress, curPrice.toString(), Number(orderAmount), Number(orderPercentage), false);
+						if (newOrder) {
 							msg = `Your orders were saved successfully!`;
 						}
 					}
-					catch(err) {
+					catch (err) {
 						console.log(`error when saving limit values to DB: ${err}`)
+						msg = `Creating limit order get failed! Error : ` + err;
 					}
 
-					await interaction.reply({ content: msg, ephemeral: true });
+					await interaction.editReply({ content: msg, ephemeral: true });
 
 					break;
 				}
 
 				case 'set_priority_fee': {
-					if(!Helpers.isFloat(interaction.fields.getTextInputValue('priority-fee'))) {
-						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true});
+					if (!Helpers.isFloat(interaction.fields.getTextInputValue('priority-fee'))) {
+						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true });
 					}
 
 					_user.defaultConfig.maxPriorityFee = ethers.utils.parseUnits(interaction.fields.getTextInputValue('priority-fee'), 'gwei');
@@ -880,19 +901,19 @@ process.on('uncaughtException', (e, origin) => {
 				}
 
 				case 'set_input_amount': {
-					if(!Helpers.isFloat(interaction.fields.getTextInputValue('input-amount'))) {
-						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true});
+					if (!Helpers.isFloat(interaction.fields.getTextInputValue('input-amount'))) {
+						return interaction.reply({ content: 'Input must be a valid number.', ephemeral: true });
 					}
 
 					let formattedInput = ethers.utils.parseUnits(
-						interaction.fields.getTextInputValue('input-amount').toString(), 
+						interaction.fields.getTextInputValue('input-amount').toString(),
 						18
 					);
 
 					let bal = await _user.getBalance();
 
-					if(bal.lt(formattedInput)) {
-						return interaction.reply({ content: 'You don\'t have enough ETH.', ephemeral: true});
+					if (bal.lt(formattedInput)) {
+						return interaction.reply({ content: 'You don\'t have enough ETH.', ephemeral: true });
 					}
 
 					// store formatted input
@@ -904,9 +925,9 @@ process.on('uncaughtException', (e, origin) => {
 				}
 
 				case 'set_slippage': {
-			
-					if(!Helpers.isInt(interaction.fields.getTextInputValue('slippage'))) {
-						return interaction.reply({ content: 'Slippage must be a valid number.', ephemeral: true});
+
+					if (!Helpers.isInt(interaction.fields.getTextInputValue('slippage'))) {
+						return interaction.reply({ content: 'Slippage must be a valid number.', ephemeral: true });
 					}
 
 					// store in private key cfg
@@ -918,169 +939,105 @@ process.on('uncaughtException', (e, origin) => {
 				}
 			}
 
-		} else if(interaction.isButton()) {
+		} else if (interaction.isButton()) {
 
 			// actions that require a valid wallet
-			switch(interaction.customId) {
-				
+			switch (interaction.customId) {
+
 				case 'start': {
 
 					await _user.showStart(interaction);
 
 					break;
-				} 
+				}
 
 				case 'set_limit_order': {
-					await _user.showOrderSetting(interaction, _user.setOrder);
+					await _user.showOrderSetting(interaction);
 
 					break;
-				} 
-				
-				// case 'start_auto': {
-
-				// 	if(!_user.isConfigCompleted()) {
-				// 		return interaction.reply({
-				// 			content: 'You must fill in all the fields in the config.',
-				// 			ephemeral: true,
-				// 			embeds: [],
-				// 			components: []
-				// 		});
-				// 	}
-
-				// 	_user.defaultConfig.autoBuying = true;
-
-				// 	await _user.showAutoStart(interaction);
-
-				// 	Network.handleLiquidityTokens({
-				// 		hash: '0x53029d961cc27b3410052d0aab4a4b9054d4de5de4dfd8d702bbcad34875b20d',
-				// 		data: '0xf305d719000000000000000000000000ec59c15ea71e2e325470b534a64e9faa1319d3710000000000000000000000000000000000000000033b2e3c9fd0803ce80000000000000000000000000000000000000000000000033b2e3c9fd0803ce80000000000000000000000000000000000000000000000000000000e043da6172500000000000000000000000000006a6eed3ccc894f13f39b76c9aa99efdacf7d7f990000000000000000000000000000000000000000000000000000000064600187'
-				// 	});
-
-				// 	break;
-				// }
-
-				// case 'refresh_auto': {
-				// 	await _user.showAutoStart(interaction);
-				// 	break;
-				// }
-
-				// case 'stop_auto': {
-
-				// 	_user.defaultConfig.autoBuying = false;
-
-				// 	await _user.showAutoStart(interaction);
-
-				// 	break;
-				// }
-
+				}
 				case 'buy': {
-
-					// if interaction id is found, set contract
-					// for(let i = 0; i < Network.availableTokens.length; i++) {
-
-					// 	if(Network.availableTokens[i].interaction != interaction.message.id)
-					// 		continue;
-
-					// 	await _user.setContract(Network.availableTokens[i].address);
-
-					// 	break;
-
-					// }
-
 					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
 
 					const modal = new ModalBuilder()
-				        .setCustomId('buy_new')
-				        .setTitle('Buy A Token')
-				        .addComponents([
-				          	new ActionRowBuilder().addComponents(
-				            	new TextInputBuilder()
-					              	.setCustomId('token-address').setLabel('Token Address')
-					              	.setStyle(TextInputStyle.Short).setMaxLength(42)
-					              	.setValue(``)
+						.setCustomId('buy_new')
+						.setTitle('Buy A Token')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('token-address').setLabel('Token Address')
+									.setStyle(TextInputStyle.Short).setMaxLength(42)
+									.setValue(``)
 									.setPlaceholder('0x123')
-					              	.setRequired(true),
-				            ),
-				            new ActionRowBuilder().addComponents(
-				            	new TextInputBuilder()
-					              	.setCustomId('token-amount-eth').setLabel('Amount In ETH')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(_user.defaultConfig.inputAmount != null ? ethers.utils.formatUnits(_user.defaultConfig.inputAmount.toString(), 18) : '0.1').setPlaceholder('0.001')
-					              	.setRequired(true),
-				            ),
-				            // new ActionRowBuilder().addComponents(
-					        //     new TextInputBuilder()
-					        //       	.setCustomId('slippage-percentage').setLabel('Slippage Percentage')
-					        //       	.setStyle(TextInputStyle.Short)
-					        //       	.setValue(_user.defaultConfig.slippage).setPlaceholder('10')
-					        //       	.setRequired(true),
-				            // ),
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('gas-limit').setLabel('Gas Limit')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setRequired(false)
-					              	.setMaxLength(10)
-					              	.setPlaceholder('Leave empty to retrieve gaslimit automatically.'),
-				            ),
-				        ]);
+									.setRequired(true),
+							),
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('token-amount-eth').setLabel('Amount In ETH')
+									.setStyle(TextInputStyle.Short)
+									.setValue(_user.defaultConfig.inputAmount != null ? ethers.utils.formatUnits(_user.defaultConfig.inputAmount.toString(), 18) : '0.1').setPlaceholder('0.001')
+									.setRequired(true),
+							),
+							// new ActionRowBuilder().addComponents(
+							//     new TextInputBuilder()
+							//       	.setCustomId('slippage-percentage').setLabel('Slippage Percentage')
+							//       	.setStyle(TextInputStyle.Short)
+							//       	.setValue(_user.defaultConfig.slippage).setPlaceholder('10')
+							//       	.setRequired(true),
+							// ),
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('gas-limit').setLabel('Gas Limit')
+									.setStyle(TextInputStyle.Short)
+									.setRequired(false)
+									.setMaxLength(10)
+									.setPlaceholder('Leave empty to retrieve gaslimit automatically.'),
+							),
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					break;
 				}
 
 				case 'sell': {
-
-					// if interaction id is found, set contract
-					// for(let i = 0; i < Network.availableTokens.length; i++) {
-
-					// 	if(Network.availableTokens[i].interaction != interaction.message.id)
-					// 		continue;
-
-					// 	await _user.setContract(Network.availableTokens[i].address);
-
-					// 	break;
-
-					// }
-
 					const modal = new ModalBuilder()
-				        .setCustomId('sell_new')
-				        .setTitle('Sell A Token')
-				        .addComponents([
-				          	new ActionRowBuilder().addComponents(
-				            	new TextInputBuilder()
-					              	.setCustomId('token-address').setLabel('Token Address')
-					              	.setStyle(TextInputStyle.Short).setMaxLength(42)
-					              	.setValue(``)
+						.setCustomId('sell_new')
+						.setTitle('Sell A Token')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('token-address').setLabel('Token Address')
+									.setStyle(TextInputStyle.Short).setMaxLength(42)
+									.setValue(``)
 									.setPlaceholder('0x123')
-					              	.setRequired(true),
-				            ),
-				            new ActionRowBuilder().addComponents(
-				            	new TextInputBuilder()
-					              	.setCustomId('sell-percentage').setLabel('Sell Percentage')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(_user.defaultConfig.sellPercentage).setPlaceholder('10')
-					              	.setRequired(true),
-				            ),
-				            // new ActionRowBuilder().addComponents(
-					        //     new TextInputBuilder()
-					        //       	.setCustomId('slippage-percentage').setLabel('Slippage Percentage')
-					        //       	.setStyle(TextInputStyle.Short)
-					        //       	.setValue(_user.defaultConfig.slippage).setPlaceholder('10')
-					        //       	.setRequired(true),
-				            // ),
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('gas-limit').setLabel('Gas Limit')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setRequired(false)
-					              	.setMaxLength(10)
-					              	.setPlaceholder('Leave empty to retrieve gaslimit automatically.'),
-				            ),
-				        ]);
+									.setRequired(true),
+							),
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('sell-percentage').setLabel('Sell Percentage')
+									.setStyle(TextInputStyle.Short)
+									.setValue(_user.defaultConfig.sellPercentage).setPlaceholder('10')
+									.setRequired(true),
+							),
+							// new ActionRowBuilder().addComponents(
+							//     new TextInputBuilder()
+							//       	.setCustomId('slippage-percentage').setLabel('Slippage Percentage')
+							//       	.setStyle(TextInputStyle.Short)
+							//       	.setValue(_user.defaultConfig.slippage).setPlaceholder('10')
+							//       	.setRequired(true),
+							// ),
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('gas-limit').setLabel('Gas Limit')
+									.setStyle(TextInputStyle.Short)
+									.setRequired(false)
+									.setMaxLength(10)
+									.setPlaceholder('Leave empty to retrieve gaslimit automatically.'),
+							),
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					break;
 				}
@@ -1090,174 +1047,184 @@ process.on('uncaughtException', (e, origin) => {
 
 					break
 				}
+				case 'claimable_amount': {
+					await _user.showClaimableAmount(interaction);
+
+					break
+				}
 
 				case 'set_limit_order_buy': {
 					const modal = new ModalBuilder()
-				        .setCustomId('set_limit_order_buy')
-				        .setTitle('Set Order for Buying')
-				        .addComponents([
+						.setCustomId('set_limit_order_buy')
+						.setTitle('Set Order for Buying')
+						.addComponents([
 							new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_buy_token').setLabel('The Token Address')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(``)
+								new TextInputBuilder()
+									.setCustomId('set_limit_order_buy_token').setLabel('The Token Address')
+									.setStyle(TextInputStyle.Short)
+									.setValue(``)
 									.setPlaceholder('Enter the token address')
-					              	.setRequired(true),
-				            ),
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_buy_percentage').setLabel('The % of Token Price Drops')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`0`)
-									.setPlaceholder('Enter the percentage between 0 and -100')
-					              	.setRequired(true),
-				            ),
+									.setRequired(true),
+							),
 							new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_buy_amount').setLabel('Buy Amount In ETH')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`0`)
+								new TextInputBuilder()
+									.setCustomId('set_limit_order_buy_percentage').setLabel('The % of Token Price Drops')
+									.setStyle(TextInputStyle.Short)
+									.setValue(`0`)
+									.setPlaceholder('Enter the percentage between 1 and 100')
+									.setRequired(true),
+							),
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('set_limit_order_buy_amount').setLabel('Buy Amount In ETH')
+									.setStyle(TextInputStyle.Short)
+									.setValue(`0`)
 									.setPlaceholder('Enter the amount in ETH for buying token')
-					              	.setRequired(true),
-				            )
-				        ]);
+									.setRequired(true),
+							)
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					break;
-				} 
+				}
 
 				case 'set_limit_order_sell': {
 					const modal = new ModalBuilder()
-				        .setCustomId('set_limit_order_sell')
-				        .setTitle('Set Order for Selling')
-				        .addComponents([
+						.setCustomId('set_limit_order_sell')
+						.setTitle('Set Order for Selling')
+						.addComponents([
 							new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_sell_token').setLabel('The Token Address')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(``)
+								new TextInputBuilder()
+									.setCustomId('set_limit_order_sell_token').setLabel('The Token Address')
+									.setStyle(TextInputStyle.Short)
+									.setValue(``)
 									.setPlaceholder('Enter the token address')
-					              	.setRequired(true),
-				            ),
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_sell_percentage').setLabel('The % of Token Price Increases')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`0`)
-									.setPlaceholder('Enter the percentage between 0 and 100')
-					              	.setRequired(true),
-				            ),
+									.setRequired(true),
+							),
 							new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('set_limit_order_sell_amount').setLabel('The % of The Tokens To Sell')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`0`)
-									.setPlaceholder('Enter the percentage between 0 and 100')
-					              	.setRequired(true),
-				            )
-				        ]);
+								new TextInputBuilder()
+									.setCustomId('set_limit_order_sell_percentage').setLabel('The % of Token Price Increases')
+									.setStyle(TextInputStyle.Short)
+									.setValue(`0`)
+									.setPlaceholder('Enter the percentage between 1 and 100')
+									.setRequired(true),
+							),
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('set_limit_order_sell_amount').setLabel('The % of The Tokens To Sell')
+									.setStyle(TextInputStyle.Short)
+									.setValue(`0`)
+									.setPlaceholder('Enter the percentage between 1 and 100')
+									.setRequired(true),
+							)
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					break;
-				} 
+				}
 
 				case 'show_select_order_buy': {
-					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
-					const { tokenAddress } = tokenDataByInteraction;
+
+					const reply_ = interaction.message.reference;
+
+					const tokenDataByInteraction = await getTokenInfoByInteraction(reply_.messageId);
+					const tokenAddress = tokenDataByInteraction?.tokenAddress;
 					console.log("tokenAddress: " + tokenAddress);
 
+					await saveTokenInfoByInteraction(interaction.message.id, tokenAddress);
 					const modal = new ModalBuilder()
-				        .setCustomId('show_select_order_buy')
-				        .setTitle('Set Buy Order')
-				        .addComponents([
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_buy_percentage').setLabel(`The % of Drops`)
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`0`)
-									.setPlaceholder('Enter the percentage between 0 and -100')
-					              	.setRequired(true)
-				            ),
+						.setCustomId('show_select_order_buy')
+						.setTitle('Set Buy Order')
+						.addComponents([
 							new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_buy_amount').setLabel('Limit amount of order')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`0`)
+								new TextInputBuilder()
+									.setCustomId('show_select_order_buy_percentage').setLabel(`The % of Drops`)
+									.setStyle(TextInputStyle.Short)
+									.setValue(`0`)
+									.setPlaceholder('Enter the percentage between 1 and 100')
+									.setRequired(true)
+							),
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('show_select_order_buy_amount').setLabel('Limit amount of order')
+									.setStyle(TextInputStyle.Short)
+									.setValue(`0`)
 									.setPlaceholder('Enter the amount in ETH for buying token')
-					              	.setRequired(true)
-				            )
-				        ]);
+									.setRequired(true)
+							)
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					break;
 				}
 
 				case 'show_select_order_sell': {
-					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
-					const { tokenAddress } = tokenDataByInteraction;
+					const reply_ = interaction.message.reference;
+
+					const tokenDataByInteraction = await getTokenInfoByInteraction(reply_.messageId);
+					const tokenAddress = tokenDataByInteraction?.tokenAddress;
 					const ctx = Network.createContract(tokenAddress);
-					const decimals = await ctx.decimals();
 					console.log("tokenAddress: " + tokenAddress);
 
 					const modal = new ModalBuilder()
-				        .setCustomId('show_select_order_sell')
-				        .setTitle('Set Sell Order')
-				        .addComponents([
-				            new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_sell_percentage').setLabel(`The % of Increases`)
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`0`)
-									.setPlaceholder('Enter the percentage between 0 and 100')
-					              	.setRequired(true),
-				            ),
+						.setCustomId('show_select_order_sell')
+						.setTitle('Set Sell Order')
+						.addComponents([
 							new ActionRowBuilder().addComponents(
-					            new TextInputBuilder()
-					              	.setCustomId('show_select_order_sell_amount').setLabel('The % of The Tokens To Sell')
-					              	.setStyle(TextInputStyle.Short)
-					              	.setValue(`0`)
-									.setPlaceholder('Enter the percentage between 0 and 100')
-					              	.setRequired(true),
-				            )
-				        ]);
+								new TextInputBuilder()
+									.setCustomId('show_select_order_sell_percentage').setLabel(`The % of Selling`)
+									.setStyle(TextInputStyle.Short)
+									.setValue(`0`)
+									.setPlaceholder('Enter the percentage between 1 and 100')
+									.setRequired(true),
+							),
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('show_select_order_sell_amount').setLabel('The % of The Tokens To Sell')
+									.setStyle(TextInputStyle.Short)
+									.setValue(`0`)
+									.setPlaceholder('Enter the percentage between 1 and 100')
+									.setRequired(true),
+							)
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
 					break;
 				}
 
 				case 'show_select_order_list': {
-					const tokenDataByInteraction = await getTokenInfoByUserId(_user.discordId);
-					const { tokenAddress } = tokenDataByInteraction;
+					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
+					const tokenAddress = tokenDataByInteraction?.tokenAddress;
 					console.log("tokenAddress: " + tokenAddress);
 
-					// const orderList = await getOrders(interaction.user.id, tokenAddress);
-					const orderList = await OrderCollection.getOrders(interaction.user.id, tokenAddress);
+					const orderList = await Network.orderMnager.getWaitingOrdersByUser(interaction.user.id, tokenAddress);
 
-					if(!orderList || orderList.length == 0) {
-						return interaction.reply({ content: 'No order sets on this token.', ephemeral: true});
+					if (!orderList || orderList.length == 0) {
+						return interaction.reply({ content: 'No order sets on this token.', ephemeral: true });
 					}
 
-					for(let i = 0; i < orderList.length; i++) {
+					for (let i = 0; i < orderList.length; i++) {
 						const order = orderList[i];
-						if(i == 0) {
+						if (i == 0) {
 							const msg = await interaction.reply({
-								content: `Show Order List`, 
+								content: `Show Order List`,
 								ephemeral: true,
 								embeds: [
 									new EmbedBuilder()
-										.setColor(order?.isFinished ? 0x38761D : 0x000000)
+										.setColor(0x000000)
 										.setTitle(`Order List`)
 										.setDescription(`This shows the order list`)
 										.addFields(
 											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
 											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
-											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
-											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
-											{ name: 'Status', value: `${order?.isFinished ? `Executed` : `Pending`}` , inline: false }
+											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})`, inline: false },
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%`, inline: false },
+											{ name: 'Status', value: `Waiting...`, inline: false },
+											{ name: 'Transaction', value: order?.result ? order?.result : `waiting`, inline: false }
 										)
 								],
 								components: [
@@ -1275,15 +1242,16 @@ process.on('uncaughtException', (e, origin) => {
 								ephemeral: true,
 								embeds: [
 									new EmbedBuilder()
-										.setColor(order?.isFinished ? 0x38761D : 0x000000)
+										.setColor(0x000000)
 										.setTitle(`Order List`)
 										.setDescription(`This shows the order list`)
 										.addFields(
 											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
 											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
-											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
-											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
-											{ name: 'Status', value: `${order?.isFinished ? `Executed` : `Pending`}` , inline: false }
+											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})`, inline: false },
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%`, inline: false },
+											{ name: 'Status', value: `Waiting...`, inline: false },
+											{ name: 'Transaction', value: order?.result ? order?.result : `waiting`, inline: false }
 										)
 								],
 								components: [
@@ -1299,30 +1267,33 @@ process.on('uncaughtException', (e, origin) => {
 				}
 
 				case 'show_limit_order': {
-					// const orderList = await getOrders(interaction.user.id);
-					const orderList = await OrderCollection.getOrders(interaction.user.id);
+					const orderList = await Network.orderMnager.getOrdersByStatus(interaction.user.id, constants.ORDER_STATUS.WAITING);
 
-					if(!orderList || orderList.length == 0) {
-						return interaction.reply({ content: 'You set no order.', ephemeral: true});
+					if (!orderList || orderList.length == 0) {
+						return interaction.reply({ content: 'You set no order.', ephemeral: true });
 					}
 
-					for(let i = 0; i < orderList.length; i++) {
+					for (let i = 0; i < orderList.length; i++) {
 						const order = orderList[i];
-						if(i == 0) {
+						if (order?.status > 1) {
+							continue;
+						}
+
+						if (i == 0) {
 							const msg = await interaction.reply({
 								content: `Show Order List`,
 								ephemeral: true,
 								embeds: [
 									new EmbedBuilder()
-										.setColor(order?.isFinished ? 0x38761D : 0x000000)
+										.setColor(0x000000)
 										.setTitle(`Order List`)
 										.setDescription(`This shows the order list`)
 										.addFields(
 											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
 											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
-											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
-											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
-											{ name: 'Status', value: `${order?.isFinished ? `Executed` : `Pending`}` , inline: false },
+											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})`, inline: false },
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%`, inline: false },
+											{ name: 'Status', value: `Waiting...`, inline: false },
 										)
 								],
 								components: [
@@ -1340,15 +1311,15 @@ process.on('uncaughtException', (e, origin) => {
 								ephemeral: true,
 								embeds: [
 									new EmbedBuilder()
-										.setColor(order?.isFinished ? 0x38761D : 0x000000)
+										.setColor(0x000000)
 										.setTitle(`Order List`)
 										.setDescription(`This shows the order list`)
 										.addFields(
 											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
 											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
-											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})` , inline: false },
-											{ name: 'Percentage', value: `${order?.slippagePercentage}%` , inline: false },
-											{ name: 'Status', value: `${order?.isFinished ? `Executed` : `Pending`}` , inline: false }
+											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})`, inline: false },
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%`, inline: false },
+											{ name: 'Status', value: `Waiting...`, inline: false },
 										)
 								],
 								components: [
@@ -1362,11 +1333,71 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 
+				case 'show_order_history': {
+					const orderList = await Network.orderMnager.getOrdersByStatus(interaction.user.id, constants.ORDER_STATUS.SUCCESS);
+
+					if (!orderList || orderList.length == 0) {
+						return interaction.reply({ content: 'You have no finished orders.', ephemeral: true });
+					}
+
+					for (let i = 0; i < orderList.length; i++) {
+						const order = orderList[i];
+						if (order?.status < 2) {
+							continue;
+						}
+
+						if (i == 0) {
+							const msg = await interaction.reply({
+								content: `Show Finished Order List`,
+								ephemeral: true,
+								embeds: [
+									new EmbedBuilder()
+										.setColor(0x008000)
+										.setTitle(`Finished Order List`)
+										.setDescription(`This shows the finished order list`)
+										.addFields(
+											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
+											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
+											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})`, inline: false },
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%`, inline: false },
+											{ name: 'Status', value: `Finished`, inline: false },
+											{ name: 'Transaction', value: order?.result || ``, inline: false }
+										)
+								],
+								components: []
+							});
+
+						}
+						else {
+							const msg = await interaction.followUp({
+								content: `Show Finished Order List`,
+								ephemeral: true,
+								embeds: [
+									new EmbedBuilder()
+										.setColor(0x008000)
+										.setTitle(`Finished Order List`)
+										.setDescription(`This shows the finished order list`)
+										.addFields(
+											{ name: 'Mode', value: order?.isBuy ? `Buy` : `Sell`, inline: false },
+											{ name: 'Amount', value: order?.isBuy ? `${order?.purchaseAmount.toFixed(3)}ETH` : `${order?.purchaseAmount.toFixed(3)}%`, inline: false },
+											{ name: 'Token Address', value: `[${(Helpers.dotdot(order?.tokenAddress))}](https://etherscan.io/address/${order?.tokenAddress})`, inline: false },
+											{ name: 'Percentage', value: `${order?.slippagePercentage}%`, inline: false },
+											{ name: 'Status', value: `Finished`, inline: false },
+											{ name: 'Transaction', value: order?.result || ``, inline: false }
+										)
+								],
+								components: []
+							});
+						}
+					}
+					break;
+				}
+
 				case 'limit_order': {
-					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction.message.id);
+					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction?.message?.id);
 					const tokenAddress = tokenDataByInteraction?.tokenAddress;
 
-					if(tokenAddress) {
+					if (tokenAddress) {
 						await _user.showSelectOrder(interaction, tokenAddress);
 					}
 					else {
@@ -1378,17 +1409,7 @@ process.on('uncaughtException', (e, origin) => {
 
 				// case 'ape': {
 
-				// 	// if interaction id is found, set contract
-				// 	// for(let i = 0; i < Network.availableTokens.length; i++) {
 
-				// 	// 	if(Network.availableTokens[i].interaction != interaction.message.id)
-				// 	// 		continue;
-
-				// 	// 	await _user.setContract(Network.availableTokens[i].address);
-
-				// 	// 	break;
-
-				// 	// }
 
 				// 	// overwrite with defaultConfig
 				// 	_user.config = _user.defaultConfig;
@@ -1408,49 +1429,49 @@ process.on('uncaughtException', (e, origin) => {
 				case 'set_input': {
 
 					const modal = new ModalBuilder()
-				        .setCustomId('set_input_amount')
-				        .setTitle('Set Input Amount')
-				        .addComponents([
-				          	new ActionRowBuilder().addComponents(
-				            new TextInputBuilder()
-				              	.setCustomId('input-amount').setLabel('Enter the amount you wish to spend.')
-				              	.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(64)
-				              	.setValue(_user.defaultConfig.inputAmount != null ? ethers.utils.formatUnits(_user.defaultConfig.inputAmount.toString(), 18) : '0.1').setPlaceholder('0.1')
-				              	.setRequired(true),
-				          	),
-				        ]);
+						.setCustomId('set_input_amount')
+						.setTitle('Set Input Amount')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('input-amount').setLabel('Enter the amount you wish to spend.')
+									.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(64)
+									.setValue(_user.defaultConfig.inputAmount != null ? ethers.utils.formatUnits(_user.defaultConfig.inputAmount.toString(), 18) : '0.1').setPlaceholder('0.1')
+									.setRequired(true),
+							),
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
-				    break;
+					break;
 				}
 
 				case 'set_slippage': {
 
 					const modal = new ModalBuilder()
-				        .setCustomId('set_slippage')
-				        .setTitle('Set Slippage')
-				        .addComponents([
-				          	new ActionRowBuilder().addComponents(
-				            	new TextInputBuilder()
-				              	.setCustomId('slippage').setLabel('Enter the buy slippage')
-				              	.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(3)
-				              	.setValue(_user.defaultConfig.slippage || '10').setPlaceholder('10')
-				              	.setRequired(true),
-				            )
-				        ]);
+						.setCustomId('set_slippage')
+						.setTitle('Set Slippage')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('slippage').setLabel('Enter the buy slippage')
+									.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(3)
+									.setValue(_user.defaultConfig.slippage || '10').setPlaceholder('10')
+									.setRequired(true),
+							)
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
-				    break;
+					break;
 				}
 
-				case 'test': {
+				// case 'test': {
 
-					await Network.limitTrading(`0x6982508145454Ce325dDbE47a25d4ec3d2311933`);
+				// 	await Network.limitTrading(`0x6982508145454Ce325dDbE47a25d4ec3d2311933`);
 
-				    break;
-				}
+				// 	break;
+				// }
 
 				// case 'add_token_to_list': {
 
@@ -1483,41 +1504,41 @@ process.on('uncaughtException', (e, origin) => {
 				case 'set_sell_percentage': {
 
 					const modal = new ModalBuilder()
-				        .setCustomId('set_sell_percentage')
-				        .setTitle('Set Sell Percentage')
-				        .addComponents([
-				          	new ActionRowBuilder().addComponents(
-				            	new TextInputBuilder()
-				              	.setCustomId('sell-percentage').setLabel('Enter the sell percentage')
-				              	.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(3)
-				              	.setValue(_user.defaultConfig.sellPercentage).setPlaceholder('10')
-				              	.setRequired(true),
-				            )
-				        ]);
+						.setCustomId('set_sell_percentage')
+						.setTitle('Set Sell Percentage')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('sell-percentage').setLabel('Enter the sell percentage')
+									.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(3)
+									.setValue(_user.defaultConfig.sellPercentage).setPlaceholder('10')
+									.setRequired(true),
+							)
+						]);
 
-				    await interaction.showModal(modal);
-					
+					await interaction.showModal(modal);
+
 					break;
 				}
 
 				case 'set_priority_fee': {
 
 					const modal = new ModalBuilder()
-				        .setCustomId('set_priority_fee')
-				        .setTitle('Set Max Priority Fee')
-				        .addComponents([
-				          	new ActionRowBuilder().addComponents(
-				            	new TextInputBuilder()
-				              	.setCustomId('priority-fee').setLabel('Enter the max priority fee in gwei')
-				              	.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(3)
-				              	.setValue(ethers.utils.formatUnits(_user.defaultConfig.maxPriorityFee.toString(), 'gwei')).setPlaceholder('10')
-				              	.setRequired(true),
-				            )
-				        ]);
+						.setCustomId('set_priority_fee')
+						.setTitle('Set Max Priority Fee')
+						.addComponents([
+							new ActionRowBuilder().addComponents(
+								new TextInputBuilder()
+									.setCustomId('priority-fee').setLabel('Enter the max priority fee in gwei')
+									.setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(3)
+									.setValue(ethers.utils.formatUnits(_user.defaultConfig.maxPriorityFee.toString(), 'gwei')).setPlaceholder('10')
+									.setRequired(true),
+							)
+						]);
 
-				    await interaction.showModal(modal);
+					await interaction.showModal(modal);
 
-				    break;
+					break;
 				}
 
 				case 'enable_auto_buying': {
@@ -1534,7 +1555,7 @@ process.on('uncaughtException', (e, origin) => {
 				case 'delete': {
 
 					// if token is not found, show start
-					if(_user.tokenList[_user.savedToken] == null) {
+					if (_user.tokenList[_user.savedToken] == null) {
 						return _user.showStart(interaction, true);
 					}
 
@@ -1559,53 +1580,52 @@ process.on('uncaughtException', (e, origin) => {
 
 				case 'create_invite': {
 					await interaction.reply({ content: `Creating invite link...`, ephemeral: true, fetchReply: true });
+
 					const user = interaction.user;
+
 					const userInfo = await getUserInfo(user.id);
-					if(userInfo?.referralLink && userInfo?.inviteCode) {
-						return await interaction.editReply({ content: 'You already have your invite link', ephemeral: true });
+					console.log(`User(${user.id}) is trying to generate invite link... `);
+
+					if (userInfo?.referralLink && userInfo?.inviteCode) {
+						return await interaction.editReply({ content: `You already have your invite link.(${userInfo?.referralLink})`, ephemeral: true });
 					}
 
-					let ctx, decimals, tokenNumber;
+					const asap_token = await Network.tokenManager.update(process.env.ASAP_TOKEN);
+					const _balance = await asap_token.ctx.balanceOf(_user.account.address);
 
-					try {
-						ctx = Network.createContract(constants.REFERRAL_TOKEN_ADDRESS);
-						decimals = await ctx.decimals();
-						tokenNumber = await _user.getTokenNumber(constants.REFERRAL_TOKEN_ADDRESS, decimals);
-					}
-					catch(err) {
-						return await interaction.editReply({ content: 'Creating Invite Link was failed!', ephemeral: true });
-					}
 
-					if(tokenNumber.gte(ethers.utils.parseUnits(`${constants.REFERRAL_DETECT_TOKEN_NUMBER}`, decimals))) {
-						const inviteCode = await _user.generateReferralCode();
-
-						if(inviteCode) {
+					if (_balance.gte(ethers.utils.parseUnits(`${process.env.GEN_IVITLINK_MINIUM_TOKEN}`, asap_token.decimals))) {
+						const inviteCode = await _user.generateReferralCode(interaction);
+						console.log(`check whether user have referral code on contract before create invite link ... ${inviteCode}`);
+						if (inviteCode) {
 							const invite = await interaction.guild.systemChannel.createInvite({
 								maxAge: constants.REFERRAL_LINK_EXPIRE_SEC,
 								maxUses: constants.REFERRAL_LINK_MAX_USE,
 								unique: true,
-							  });
+							});
 
 							const userInviteLink = `${invite?.url}#${interaction.user.username}`;
 
-							if(invite?.url) {
+							if (invite?.url) {
 								const result = await setReferralLink(_user.discordId, userInviteLink, inviteCode);
-	
-								if(result) {
-									client.invites[invite.code] = 0;
-									await interaction.editReply({ content: `Invite Link is ${userInviteLink}`, ephemeral: true });
+
+								if (result) {
+									client.joinerCounter[invite.code] = 0;
+									console.log(`User(${user.id}) generate referral link  ${userInviteLink}`);
+									await interaction.editReply({ content: `Congratulation! Your invite link is ${userInviteLink}`, ephemeral: true });
 								}
 								else {
+									console.log(`User(${user.id}) get failed when generate referral code while store referral link to DB`);
 									await interaction.editReply({ content: 'Creating Invite Link was failed!', ephemeral: true });
 								}
 							}
 							else {
-								await interaction.editReply({ content: 'Creating Invite Link was failed!', ephemeral: true });
+								console.log(`User(${user.id}) get failed when generate referral code from Discord API`);
+								await interaction.editReply({ content: 'Creating Invite Link was failed! please try again..', ephemeral: true });
 							}
 						}
 						else {
-							console.log(`get invite code is failed!`)
-							await interaction.editReply({ content: 'Creating Invite Link was failed!', ephemeral: true });
+							console.log(`User(${user.id}) get failed when generate referral code from contract `);
 						}
 
 					}
@@ -1617,16 +1637,13 @@ process.on('uncaughtException', (e, origin) => {
 				}
 			}
 
-			if(interaction.customId.startsWith(`deleteorder`)) {
+			if (interaction.customId.startsWith(`deleteorder`)) {
 				const customId = interaction.customId;
 				const dataId = customId.split('_')[1];
-				const orderData = await OrderCollection.getOrderById(dataId);
-				const deletedFromDB = await deleteOrder(dataId);
-				if(deletedFromDB) {
-					const deletedOnCollection = await OrderCollection.deleteOrder(dataId); 
-					console.log(`deletedOnCollection: ${deletedOnCollection}`);
+				const orderData = await Network.orderMnager.cancelOrder(dataId);
+				if (orderData) {
 					await interaction.update({
-						content: `This order was deleted by user`, 
+						content: `This order was deleted by user`,
 						ephemeral: true,
 						embeds: [
 							new EmbedBuilder()
@@ -1636,14 +1653,14 @@ process.on('uncaughtException', (e, origin) => {
 								.addFields(
 									{ name: 'Mode', value: orderData?.isBuy ? `Buy` : `Sell`, inline: false },
 									{ name: 'Amount', value: orderData?.isBuy ? `${orderData?.purchaseAmount.toFixed(3)}ETH` : `${orderData?.purchaseAmount.toFixed(3)}%`, inline: false },
-									{ name: 'Token Address', value: `[${(Helpers.dotdot(orderData?.tokenAddress))}](https://etherscan.io/address/${orderData?.tokenAddress})` , inline: false },
-									{ name: 'Percentage', value: `${orderData?.slippagePercentage}%` , inline: false },
-									{ name: 'Status', value: `${orderData?.isFinished ? `Executed` : `Pending`}` , inline: false }
+									{ name: 'Token Address', value: `[${(Helpers.dotdot(orderData?.tokenAddress))}](https://etherscan.io/address/${orderData?.tokenAddress})`, inline: false },
+									{ name: 'Percentage', value: `${orderData?.slippagePercentage}%`, inline: false },
+									{ name: 'Status', value: orderData.status == constants.ORDER_STATUS.WAITING ? `Canceled` : 'Processed', inline: false }
 								)
 						],
 						components: []
 					});
-					
+
 					await interaction.followUp({ content: 'The order was deleted successfully!', ephemeral: true });
 				}
 
@@ -1651,7 +1668,6 @@ process.on('uncaughtException', (e, origin) => {
 			}
 		}
 
-		console.log(`OrderCollection: ${JSON.stringify(OrderCollection.orderList)}`);
 	});
 
 	client.once(Events.ClientReady, async (c) => {
@@ -1665,29 +1681,30 @@ process.on('uncaughtException', (e, origin) => {
 		Network.channel_locked_liquidity = c.channels.cache.get(process.env.CHANNEL_LOCKED_LIQUIDITY);
 		Network.channel_open_trading = c.channels.cache.get(process.env.CHANNEL_OPEN_TRADING);
 		Network.channel_burnt_liquidity = c.channels.cache.get(process.env.CHANNEL_BURNT_ALERT);
+		Network.channel_trading_history = c.channels.cache.get(process.env.CHANNEL_TRADING_HISTORY);
 
 		// if channel is stored, delete the old one
-		if(content.mainchannel) {
+		if (content.mainchannel) {
 
 			let channel = c.channels.cache.get(content.mainchannel.id);
 
-			if(channel) {
+			if (channel) {
 				await channel.delete();
 			}
 		}
-		
+
 		let guild = c.guilds.cache.get(process.env.SERVER_ID);
-	
+
 		// create new one
 		content.mainchannel = await guild.channels.create({
-		    name: process.env.BOT_NAME,
-		    type: ChannelType.GuildText,
-		    permissionOverwrites: [
-		    	{
-		    		id: guild.roles.everyone,
-		    		allow: [PermissionsBitField.Flags.ViewChannel],
-		    	}
-		    ]
+			name: process.env.BOT_NAME,
+			type: ChannelType.GuildText,
+			permissionOverwrites: [
+				{
+					id: guild.roles.everyone,
+					allow: [PermissionsBitField.Flags.ViewChannel],
+				}
+			]
 		});
 
 		// add to parent
@@ -1704,7 +1721,7 @@ process.on('uncaughtException', (e, origin) => {
 		// 					.then(messages => {
 		// 						adminChannel.bulkDelete(messages);
 		// 					})
-  		// 					.catch((err) => {
+		// 					.catch((err) => {
 		// 						console.log(`Error in clearing in the admin channel: ${err}`);
 		// 					});
 
@@ -1721,12 +1738,8 @@ process.on('uncaughtException', (e, origin) => {
 		// save config
 		fs.writeFileSync('conf.json', JSON.stringify(content));
 
-		// Deine order and user
-		await OrderCollection.init();
-		await UserCollection.init();
-
-		await content.mainchannel.send({ 
-			content: 'Welcome, what do you want me to do?', 
+		await content.mainchannel.send({
+			content: 'Welcome, what do you want me to do?',
 			components: [
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('start').setLabel('Start').setStyle(ButtonStyle.Primary),
@@ -1736,7 +1749,8 @@ process.on('uncaughtException', (e, origin) => {
 				),
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('create_invite').setLabel('Create Invite Link').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('claim_invite_rewards').setLabel('Claim Invite Rewards').setStyle(ButtonStyle.Success)
+					new ButtonBuilder().setCustomId('claim_invite_rewards').setLabel('Claim Invite Rewards').setStyle(ButtonStyle.Success),
+					new ButtonBuilder().setCustomId('claimable_amount').setLabel('Claimable Amount').setStyle(ButtonStyle.Success)
 				),
 				// new ActionRowBuilder().addComponents(
 				// 	new ButtonBuilder().setCustomId('start_auto').setLabel('Start Auto Buying').setStyle(ButtonStyle.Primary),
@@ -1744,39 +1758,44 @@ process.on('uncaughtException', (e, origin) => {
 				// ),
 				new ActionRowBuilder().addComponents(
 					new ButtonBuilder().setCustomId('set_limit_order').setLabel('Set Limit Order').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('show_limit_order').setLabel('Show Limit Orders').setStyle(ButtonStyle.Secondary),
+					new ButtonBuilder().setCustomId('show_limit_order').setLabel('Show Live Orders').setStyle(ButtonStyle.Secondary),
+					new ButtonBuilder().setCustomId('show_order_history').setLabel('Order History').setStyle(ButtonStyle.Success),
 					// new ButtonBuilder().setCustomId('test').setLabel('test').setStyle(ButtonStyle.Secondary),
 				)
 			]
 		});
+		Network.main_channel = content.mainchannel;
 	});
 
 	client.on(Events.GuildMemberAdd, async member => {
 		const inviteManager = member.guild.invites;
-		const invites = await inviteManager.fetch();
 
-		const usedInvite = invites.find(
+		const guild_invites = await inviteManager.fetch();
+
+		const usedInvite = guild_invites.find(
 			(invite) => {
 				try {
-					if(client?.invites[invite.code] != null && client?.invites[invite.code] != undefined) {
-						return invite.uses > client?.invites[invite.code]
+					if (client?.joinerCounter[invite.code] != null && client?.joinerCounter[invite.code] != undefined) {
+						return invite.uses > client?.joinerCounter[invite.code]
+
 					}
-					
 				}
-				catch(err){
+				catch (err) {
 					console.log(`err in fetch invites: ${err}`);
 				}
 				return false;
 			}
 		);
-		
-		if(usedInvite && usedInvite?.code && usedInvite?.url) {
-			client.invites[usedInvite?.code] = client.invites[usedInvite?.code] + 1;
-			
+		console.log(`User(${member.displayName}) joined our server using ${usedInvite?.url}`);
+		if (usedInvite && usedInvite?.code && usedInvite?.url) {
+
+			client.joinerCounter[usedInvite?.code] = client.joinerCounter[usedInvite?.code] + 1;
+
 			const creatorData = await getCreator(usedInvite?.url);
+			console.log(`Get referral link's owner using link, ${creatorData?.discordId}`);
 			const creator = creatorData?.discordId;
 
-			if(creator) {
+			if (creator) {
 				try {
 					await upsertAccountData(member.user.id, {
 						joinType: constants.MEMBER_ADD_TYPE.REFERRAL,
@@ -1784,7 +1803,7 @@ process.on('uncaughtException', (e, origin) => {
 					});
 					await increaseReferralCount(creator, member.user.id);
 				}
-				catch(err) {
+				catch (err) {
 					console.log(`err increaseReferralCount ${err}`)
 				}
 			}
@@ -1799,8 +1818,9 @@ process.on('uncaughtException', (e, origin) => {
 				joinType: constants.MEMBER_ADD_TYPE.DIRECT
 			});
 		}
-	  });
+	});
 
 	// login
 	await client.login(process.env.TOKEN);
+	await initUsers(client);
 })();

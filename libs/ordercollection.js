@@ -1,176 +1,122 @@
-const { getAllOrders } = require('../services/orderService');
-
+const { queryOrders, createOrder, updateOrder } = require('../services/orderService');
+const constants = require('./constants');
 class OrderCollection {
 
 	constructor() {
+		/**
+		 * this variable holds orders that are waiting for swap. 
+		 * tokenAddress=>[orderData]
+		 */
 		this.orderList = {};
 	}
 
 	async init() {
+		console.log("Initializing Limit Order List from DB....");
 		try {
-			const orderData = await getAllOrders();
-			console.log(`orderData is ${orderData?.length}`);
+			const orderFilter = [
+				{ key: "status", value: constants.ORDER_STATUS.WAITING }
+			]
+			const orderDetails = await queryOrders(orderFilter);
 
-			for(let i = 0; i < orderData?.length; i++) {
-				const discordId = orderData[i]?.discordId;
-				if(discordId) {
-					this.orderList[discordId] = new Array();
-					this.orderList[discordId].push({
-						_id: orderData[i]._id.toString(),
-						tokenAddress: orderData[i]?.tokenAddress,
-						mentionedPrice: orderData[i]?.mentionedPrice,
-						purchaseAmount: orderData[i]?.purchaseAmount,
-						slippagePercentage: orderData[i]?.slippagePercentage,
-						isBuy: orderData[i]?.isBuy,
-						isFinished: orderData[i]?.isFinished
-					});
+			console.log(`Loaded ${orderDetails?.length} orders to swap`);
+
+			for (let i = 0; i < orderDetails?.length; i++) {
+				const token_addr = orderDetails[i]?.tokenAddress;
+				if (token_addr) {
+					if (!Array.isArray(this.orderList[token_addr]))
+						this.orderList[token_addr] = new Array();
+					this.orderList[token_addr].push(orderDetails[i]);
 				}
 			}
 		}
-		catch(err) {
-			conosle.log(`When getting all orders from DB and set it to order collection: ${err}`);
+		catch (err) {
+			console.log(`OrderCollection initialization get failed : ${err}`);
 		}
+
+		console.log("Limit Order List is initialized from DB.");
 	}
 
-	async setOrder (_id, discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy) {
+	async createOrder(discordId, tokenAddress, mentionedPrice, purchaseAmount, slippagePercentage, isBuy) {
 		try {
-			if(!this.orderList[discordId]) {
-				this.orderList[discordId] = new Array();
+			const res = await createOrder(discordId, tokenAddress, mentionedPrice, Number(purchaseAmount), Number(slippagePercentage), isBuy);
+			if (res) {
+				if (!this.orderList[tokenAddress]) {
+					this.orderList[tokenAddress] = new Array();
+				}
+				this.orderList[tokenAddress].push(res);
+				return res;
 			}
-			this.orderList[discordId].push({
-				_id: _id.toString(),
-				tokenAddress,
-				mentionedPrice,
-				purchaseAmount,
-				slippagePercentage,
-				isBuy,
-				isFinished: false	
-			});
 		}
-		catch(err) {
-			conosle.log(`When set order to order collection: ${err}`);
+		catch (err) {
+			console.log(`CreateOrder get failed for user(${discordId}), token(${tokenAddress}): ${err}`);
 		}
-    }
+		return null;
+	}
 
-    async getOrders (discordId, tokenAddress = ``) {
-        try{
-			if(tokenAddress === '') {
-				return this.orderList[discordId];
-			}
+	getOrderDataByID(tokenAddr, orderId)
+	{
+		console.log(`getOrderDataByID (${tokenAddr}, ${orderId})`);
+		const order_data = this.orderList[tokenAddr].find(order => order._id.toString() == orderId);
+		console.log(`getOrderDataByID result : (${JSON.stringify(order_data)})`);
+		return order_data;
+	}
+	//async getOrderList(tokenAddress) {
+	async getWaitingOrdersByTokenaddress(tokenAddress) {
+		return this.orderList[tokenAddress];
+	}
+	async getOrdersByStatus(discordID, status) {
+		const orderFilter = [
+			{ key: "discordId", value: discordID },
+			{ key: "status", value: status }
+		]
+		const orderDetails = await queryOrders(orderFilter);
+		return orderDetails;
+	}
+	async getWaitingOrdersByUser(discordID, tokenAddress) {
+		const orderFilter = [
+			{ key: "discordId", value: discordID },
+			{ key: "status", value: constants.ORDER_STATUS.WAITING },
+			{ key: "tokenAddress", value: tokenAddress }
+		]
+		const orderDetails = await queryOrders(orderFilter);
+		return orderDetails;
+	}
 
-			return this.orderList[discordId].filter(order => order.tokenAddress === tokenAddress);
-        }
-        catch(err) {
-            console.log(`Error when getting order data from order collection: ${err}`);
-        }
+	async processOrder(_id, token_addr) {
+		if (!this.orderList[token_addr]) {
 
-        return [];
-    }
+			return false;
+		}
+		if(this.getOrderDataByID(token_addr, _id).status > constants.ORDER_STATUS.WAITING) return false;
+		
+		this.orderList[token_addr] = this.orderList[token_addr].filter(order => order._id.toString() != _id);
+		await updateOrder(_id, constants.ORDER_STATUS.PENDING, "");
+	}
+	async cancelOrder(_id) {
 
-    async getOrderList (tokenAddress) {
-        try{
-			let orderListByToken = [];
-			const userDiscordIds = Object.keys(this.orderList);
-
-			for(let i = 0; i < userDiscordIds?.length; i++) {
-				const orderListByUserId = this.orderList[userDiscordIds[i]];
-				for(let j = 0; j < orderListByUserId.length; j++) {
-					const order = orderListByUserId[j];
-					if(order.tokenAddress === tokenAddress) {
-                        orderListByToken.push({...order, discordId: userDiscordIds[i]});
-                    }
+		const orderFilter = [
+			{ key: "_id", value: _id }
+		]
+		const orderDetails = await queryOrders(orderFilter);
+		if(orderDetails && Array.isArray(orderDetails) && orderDetails.length > 0)
+		{
+			const canceled_order = orderDetails[0];
+			if(canceled_order.status != constants.ORDER_STATUS.WAITING)
+				{
+					console.log(`This order(${_id}) is already processed, user can't cancel it.`);
+					return canceled_order;
 				}
-			}
-
-			return orderListByToken;
-        }
-        catch(err) {
-            console.log(`Error when getOrderList from order colletion: ${err}`);
-        }
-
-        return [];
-    }
-
-    async deleteOrder (_id) {
-		let result = false;
-
-        try{
-			const userDiscordIds = Object.keys(this.orderList);
-
-			for(let i = 0; i < userDiscordIds?.length; i++) {
-				const orderListByUserId = this.orderList[userDiscordIds[i]];
-				for(let j = 0; j < orderListByUserId.length; j++) {
-					const order = orderListByUserId[j];
-
-					if(order._id.toString() === _id.toString()) {
-						this.orderList[userDiscordIds[i]].splice(j, 1);
-						result = true;
-					}
-				}
-			}
-        }
-        catch(err) {
-            console.log(`Error deleteOrder from order collection: ${err}`);
-        }
-
-        return result;
-    }
-
-    async orderExecuted (_id) {
-		let result = false;
-
-        try{
-			const userDiscordIds = Object.keys(this.orderList);
-
-			for(let i = 0; i < userDiscordIds?.length; i++) {
-				const orderListByUserId = this.orderList[userDiscordIds[i]];
-				for(let j = 0; j < orderListByUserId.length; j++) {
-					const order = orderListByUserId[j];
-
-					if(order._id.toString() === _id.toString()) {
-						this.orderList[userDiscordIds[i]][j] = {
-							...order,
-							isFinished: true
-						}
-						result = true;
-					}
-				}
-			}
-        }
-        catch(err) {
-            console.log(`Error deleteOrder from order collection: ${err}`);
-        }
-
-        return result;
-    }
-
-    async getOrderById (_id) {
-		let result = null;
-
-        try{
-			const userDiscordIds = Object.keys(this.orderList);
-
-			for(let i = 0; i < userDiscordIds?.length; i++) {
-				if(result) {
-					break;
-				}
-				const orderListByUserId = this.orderList[userDiscordIds[i]];
-				for(let j = 0; j < orderListByUserId.length; j++) {
-					const order = orderListByUserId[j];
-
-					if(order._id.toString() === _id.toString()) {
-						result = order;
-						break;
-					}
-				}
-			}
-        }
-        catch(err) {
-            console.log(`Error deleteOrder from order collection: ${err}`);
-        }
-
-        return result;
-    }
+			this.orderList[canceled_order.tokenAddress] = this.orderList[canceled_order.tokenAddress].filter(order => order._id.toString() != _id);
+			await updateOrder(_id, constants.ORDER_STATUS.CANCELED, "User canceled.");
+			return canceled_order;	
+		}
+		return null;
+	}
+	async closeOrder(_id, status, result) {
+		
+		await updateOrder(_id, status, result);
+	}
+	
 }
 
-module.exports = new OrderCollection();
+module.exports = OrderCollection;

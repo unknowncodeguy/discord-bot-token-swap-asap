@@ -1,16 +1,14 @@
 const ethers = require('ethers');
 const constants = require('./constants');
 const UserCollection = require('./usercollection');
-const OrderCollection = require('./ordercollection');
 const Helpers = require('./helpers');
 const UniSwapUtils = require('./UniSwapUtils');
+const LimitOrderManager = require('./limitordermanager');
+const TokenManager = require('./tokenManager');
 
-const axios = require("axios");
 const { saveTokenInfoByInteraction } = require("./../services/interactionService");
-const { getOrderList } = require('../services/orderService');
-const { setTokenPrice } = require('../services/priceService');
 
-const etherscan = new (require('./etherscan'))(process.env.EHTERSCAN_API_KEY);
+const etherscan = new (require('./etherscan'))();
 const {
 	Client,
 	ButtonStyle,
@@ -32,23 +30,19 @@ const order = require('../models/order');
 
 console.warn = function (e) { }
 
-const delayTime = time => new Promise(res=>setTimeout(res,time));
+const delayTime = time => new Promise(res => setTimeout(res, time));
 
 class Network {
 
 	async load() {
 
 		try {
-			try {
-				if (process.env.NODE_URL.startsWith('http')) {
-					this.node = new ethers.providers.JsonRpcProvider(process.env.NODE_URL);
-				} else {
-					this.node = new ethers.providers.WebSocketProvider(process.env.NODE_URL);
-				}
+			if (process.env.NODE_URL.startsWith('http')) {
+				this.node = new ethers.providers.JsonRpcProvider(process.env.NODE_URL);
+			} else {
+				this.node = new ethers.providers.WebSocketProvider(process.env.NODE_URL);
 			}
-			catch (err) {
-				console.log(`this.node occurs the error: ` + err);
-			}
+
 
 			// config for open trading alert
 			this.maxBuyTax = 100;
@@ -57,32 +51,6 @@ class Network {
 			this.executeTx = true;
 
 			this.minLiquidity = ethers.utils.parseEther('0.0001');
-			this.blockedFunctions = [
-				'0x3c59639b',
-				'0x9d83fc32',
-				'0x0bffdcf4',
-				'0xef176b98',
-				'0x1507bd2f',
-				'0x8f283970',
-				'0x5932ead1',
-				'0x357dae04',
-				'0xba2a80ae',
-				'0xdafd18e9',
-				'0x96642ad9',
-				'0xa1c17686',
-				'0x57ae5708',
-				'0x9d83fc32',
-				'0x9d83fc32',
-
-				// contract
-				'60a060405260405162000d4b38038062000d4b83398101604081905262000026916200027b565b818484600362000037838262000394565b50600462000046828262000394565b50505060ff1660805280620000ae5760405162461bcd60e51b8152602060048201526024808201527f5374616e6461726445524332303a20737570706c792063616e6e6f74206265206044820152637a65726f60e01b60648201526084015b60405180910390fd5b620000ba3382620000c4565b5050505062000487565b6001600160a01b0382166200011c5760405162461bcd60e51b815260206004820152601f60248201527f45524332'
-			];
-
-			this.openTradingFunctions = [
-				'0xc9567bf9',
-				'0x01339c21',
-				'0x293230b8'
-			];
 
 			this.availableTokens = [];
 
@@ -90,7 +58,7 @@ class Network {
 			try {
 				this.network = await this.node.getNetwork();
 			}
-			catch (err){
+			catch (err) {
 				console.log("this.node.getNetwork() err is " + err);
 			}
 
@@ -98,9 +66,6 @@ class Network {
 
 			this.uniSwapUtils = new UniSwapUtils(this.networkaccount, this.network.chainId);
 
-			this.maxWalletSizeFuncNames = [
-				'_maxWalletSize',
-			];
 
 			this.asapswap = new ethers.Contract(
 				this.uniSwapUtils.chains[this.network.chainId].swap,
@@ -108,308 +73,24 @@ class Network {
 				this.networkaccount
 			);
 
-			this.teamFinance = new ethers.Contract(
-				'0xe2fe530c047f2d85298b07d9333c05737f1435fb',
-				[
-					{ "inputs": [{ "internalType": "address", "name": "_tokenAddress", "type": "address" }], "name": "getTotalTokenBalance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-				],
-				this.networkaccount
-			);
+			this.teamFinance = new ethers.Contract(constants.TEAM_FINANCE_LOCKER_ADDRESS, constants.TEAM_FINANCE_ABI, this.networkaccount);
 
-			this.uniCrypt = new ethers.Contract(
-				'0x663A5C229c09b049E36dCc11a9B0d4a8Eb9db214',
-				[
-					{ "inputs": [{ "internalType": "address", "name": "_lpToken", "type": "address" }], "name": "getNumLocksForToken", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-					{ "inputs": [{ "internalType": "address", "name": "", "type": "address" }, { "internalType": "uint256", "name": "", "type": "uint256" }], "name": "tokenLocks", "outputs": [{ "internalType": "uint256", "name": "lockDate", "type": "uint256" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "initialAmount", "type": "uint256" }, { "internalType": "uint256", "name": "unlockDate", "type": "uint256" }, { "internalType": "uint256", "name": "lockID", "type": "uint256" }, { "internalType": "address", "name": "owner", "type": "address" }], "stateMutability": "view", "type": "function" }
-				],
-				this.networkaccount
-			);
+			this.uniCrypt = new ethers.Contract(constants.UNICRYPT_LOCKER_ADDRESS, constants.UNICRYPT_ABI, this.networkaccount);
 
+			this.orderMnager = new LimitOrderManager();
+			await this.orderMnager.init(this);
+
+			this.tokenManager = new TokenManager();
+			await this.tokenManager.init(this.networkaccount, this.network.chainId, this);
+
+			// this.updatedTokens = {};
+			this.blocks = {}
+			this.readblocks = 0;
+			const fetchingTXs = setInterval(() => this.analyzeBlock(), constants.ANALYZE_BLOCK_TIME_INTERVAL);
+			while (this.readblocks < constants.DEFAULT_READ_BLOCKS) {
+				await this.wait(1);
+			}
 			console.log('Network loaded.');
-
-			// listen for tx events
-			this.node.on('pending', async (transaction) => {
-
-				if (transaction == null) return;
-
-				let tx = transaction;
-
-				if (!transaction.hash) {
-					tx = await this.node.getTransaction(transaction);
-				}
-
-				// check if is a tx with data & contains the add liq functions
-				if (tx == null || tx.data == null || tx.to == null) return;
-				// switch
-				switch (tx?.to?.toLowerCase()) {
-					// router
-					case this.uniSwapUtils.router.address.toLowerCase(): {
-						
-						// console.log(`detected uniswap router with ${tx.data.toLowerCase()}`);
-						
-						// process new liquidity added channel
-						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_ETH_FUNC.toLowerCase())) {
-							this.handleLiquidityTokens(tx);
-
-							try {
-								this.detectPriceChange(tx, `addLiquidityETH`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-						
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactETHForTokens.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `swapExactETHForTokens`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapETHForExactTokens.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `swapETHForExactTokens`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactETHForTokensSupportingFeeOnTransferTokens.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `swapExactETHForTokensSupportingFeeOnTransferTokens`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactTokensForETH.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `swapExactTokensForETH`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactTokensForETHSupportingFeeOnTransferTokens.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `swapExactTokensForETHSupportingFeeOnTransferTokens`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactTokensForTokens.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `swapExactTokensForTokens`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapExactTokensForTokensSupportingFeeOnTransferTokens.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `swapExactTokensForTokensSupportingFeeOnTransferTokens`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapTokensForExactETH.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `swapTokensForExactETH`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.swapTokensForExactTokens.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `swapTokensForExactTokens`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.UNISWAP_METHODS.addLiquidity.toLowerCase())) {
-							try {
-								this.detectPriceChange(tx, `addLiquidity`);
-							}
-							catch (e) {
-
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_BURNT_FUNC.toLowerCase())) {
-							this.handleBurntLiquidityTokens(tx);
-
-							break;
-						}
-
-						break;
-					}
-
-					// factory
-					case this.uniSwapUtils.factory.address.toLowerCase(): {
-
-						if (tx.data.toLowerCase().startsWith(constants.CREATE_PAIR_FUNC.toLowerCase())) {
-							try {
-								this.handleNewTokens(tx);
-							}
-							catch (e) {
-								console.log("handleNewTokens error : " + e)
-							}
-						}
-
-						break;
-					}
-
-					case constants.TEAM_FINANCE_LOCKER_ADDRESS.toLowerCase(): {
-
-						if (tx.data.toLowerCase().startsWith(constants.TEAM_FINANCE_LOCK.toLowerCase())) {
-							try {
-								this.handleLiquidityLocked(tx);
-							}
-							catch (e) {
-								console.log("handleLiquidityLocked error : " + e)
-							}
-						}
-
-						break;
-					}
-
-					case constants.UNICRYPT_LOCKER_ADDRESS.toLowerCase(): {
-
-						if (tx.data.toLowerCase().startsWith(constants.UNICRYPT_LOCK.toLowerCase())) {
-							try {
-								this.handleLiquidityLocked(tx,true);
-							}
-							catch (e) {
-								console.log("handleLiquidityLocked error : " + e)
-							}
-						}
-
-						break;
-					}
-
-					case this.asapswap.address.toLowerCase(): {
-						// console.log(`swap start with ${tx.data.toLowerCase()}`);
-						if (tx.data.toLowerCase().startsWith(constants.SWAP_BUY_BY_BOT.toLowerCase())) {
-							console.log(`swap buy with ${tx.data.toLowerCase()}`);
-							try {
-								this.detectPriceChange(tx, `buy_bot`);
-							}
-							catch (e) {
-								
-							}
-
-							break;
-						}
-
-						if (tx.data.toLowerCase().startsWith(constants.SWAP_SELL_BY_BOT.toLowerCase())) {
-							console.log(`swap sell with ${tx.data.toLowerCase()}`);
-							try {
-								this.detectPriceChange(tx, `sell_bot`);
-							}
-							catch (e) {
-								
-							}
-
-							break;
-						}
-
-						break;
-					}
-
-					default: {
-
-						// if not in array skip
-						if (!this.availableTokens.includes(tx.to.toLowerCase()))
-							return;
-
-						const hasEnabledTrading = (tx) => {
-
-							for (let i = 0; i < this.openTradingFunctions.length; i++) {
-
-								// doesn't start with function
-								if (!tx.data.startsWith(this.openTradingFunctions[i]))
-									continue;
-
-								return true;
-							}
-
-							return false;
-
-						};
-						const isFunctionBlocked = (tx) => {
-
-							for (let i = 0; i < this.blockedFunctions.length; i++) {
-
-								// doesn't start with function
-								if (!tx.data.includes(this.blockedFunctions[i]))
-									continue;
-
-								return true;
-							}
-
-							return false;
-
-						};
-
-						// trading not enabled yet
-						if (!hasEnabledTrading(tx)) {
-							return console.log('Enable trading function not detected. Skipping');
-						}
-
-						if (isFunctionBlocked(tx)) {
-							return console.log('Function blocked. Skipping');
-						}
-
-						// show
-						try {
-							this.handleOpenTrading(tx);
-						}
-						catch (e) {
-							console.log("handleOpenTrading error : " + e)
-						}
-
-						break;
-					}
-
-				}
-
-			});
 
 		} catch (e) {
 			console.log(`[error::network] ${e}`);
@@ -417,222 +98,272 @@ class Network {
 		}
 
 	}
+	async analyzeBlock() {
+		const block_number = await this.node.getBlockNumber();
+		if (this.blocks[block_number]) return;
 
+		this.blocks[block_number] = constants.BLOCK_FETCHING_STATUS.FETCHING_TXS;
 
-	// isTokenAvailable(token) {
-	// 	for (let i = 0; i < this.availableTokens.length; i++) {
-
-	// 		if (this.availableTokens[i].address == token.toLowerCase()) {
-	// 			return true;
-	// 		}
-
-	// 	}
-
-	// 	return false;
-	// }
-
-	// async autoBuyForUsers(ctx) {
-
-	// 	// loop through all users
-	// 	Object.keys(UserCollection.users).forEach(async (key) => {
-
-	// 		let user = UserCollection.users[key];
-
-	// 		// if config is completed for user & autobuying is enabled
-	// 		if (user.defaultConfig.autoBuying && user.isConfigCompleted()) {
-
-	// 			// pass filters
-	// 			if (user.autoBuySettings.requireVerfied) {
-
-	// 				let verified = await this.isContractVerified(ctx.address);
-
-	// 				if (!verified)
-	// 					return console.log(`Token ${ctx.address} skipped, not verified.`);
-
-	// 			}
-
-	// 			if (user.autoBuySettings.requireHoneypotCheck) {
-
-	// 				// fetch hp / tax info
-	// 				let simulation = await this.simulateTransaction(ctx.address);
-	// 				let honeypot = simulation.error ? true : false;
-
-	// 				if (honeypot) {
-	// 					return console.log(`Token ${ctx.address} skipped, is honeypot.`);
-	// 				}
-
-	// 				if (simulation.buyTax >= user.autoBuySettings.maximumBuyTax) {
-	// 					return console.log(`Token ${ctx.address} skipped, max buy tax reached (${simulation.buyTax}).`);
-	// 				}
-
-	// 				if (simulation.sellTax >= user.autoBuySettings.maximumSellTax) {
-	// 					return console.log(`Token ${ctx.address} skipped, max sell tax reached (${simulation.sellTax}).`);
-	// 				}
-	// 			}
-
-	// 			if (user.autoBuySettings.allowPrevContracts) {
-
-	// 				// fetch creatorstats
-	// 				let creatorstats = await etherscan.call({
-	// 					module: 'contract',
-	// 					action: 'getcontractcreation',
-	// 					contractaddresses: ctx.address
-	// 				});
-
-	// 				if (!creatorstats)
-	// 					return console.log(`Token ${ctx.address} skipped, could not fetch creator stats.`);
-
-	// 				// get owner
-	// 				let multiple = await this.hasMultipleContracts(creatorstats[0].contractCreator);
-
-	// 				if (multiple)
-	// 					return console.log(`Token ${ctx.address} skipped, deployer has multiple contracts.`);
-
-	// 			}
-
-	// 			if (user.autoBuySettings.requireLiquidityLock || user.autoBuySettings.minimumLiquidity.gt(0)) {
-
-	// 				if (!pair) {
-	// 					return console.log(`Token ${ctx.address} skipped, doesn't have a pair, skipping.`);
-	// 				}
-
-	// 				let liquidityETH = await this.uniSwapUtils.getLiquidity(pair);
-					
-	// 				if (user.autoBuySettings.requireLiquidityLock) {
-	// 					let lockedLiquidity = await this.verifyLockedLiquidity(pair);
-
-	// 					if (user.autoBuySettings.minimumLockedLiq.gte(lockedLiquidity)) {
-	// 						return console.log(`Token ${ctx.address} skipped, not enough liquidity locked (${ethers.utils.parseEther(lockedLiquidity)} ETH).`);
-	// 					}
-	// 				}
-
-	// 				if (user.autoBuySettings.minimumLiquidity.gt(0)) {
-
-	// 					if (liquidityETH.lt(user.autoBuySettings.minimumLiquidity)) {
-	// 						return console.log(`Token ${ctx.address} skipped, not enough liquidity added (${ethers.utils.parseEther(lockedLiquidity)} ETH).`);
-	// 					}
-
-	// 				}
-	// 			}
-
-	// 			// fetch holder info
-	// 			let topholder = this.getTopHolder(ctx.address);
-
-	// 			if (!topholder) {
-
-	// 				let bn = ethers.BigNumber.from(topholder.TokenHolderQuantity);
-	// 				let supply = await ctx.totalSupply();
-
-	// 				// supply / 100 * holdings = %
-	// 				if (supply.div(100).mul(bn).gte(user.autoBuySettings.topHolderThreshold))
-	// 					return console.log(`Token ${ctx.address} skipped, max t-holder threshold reached (${topholder.TokenHolderQuantity}).`);
-
-	// 			}
-
-	// 			// await user.sendAutoBuyTransaction(ctx.address);
-	// 		}
-
-	// 	});
-
-	// }
-
-	async computeSecurityScore(ctx, liquidity, verified) {
-
-		let score = 0;
-
-		// if liquidity > 5
-		if (liquidity.gte(ethers.utils.parseEther('5'))) {
-			score += 1;
+		console.log(`Previous  block ${block_number - 1} 's fetching status ...  ${this.blocks[block_number - 1]}`);
+		if (this.blocks[block_number - 1]) {
+			while (this.blocks[block_number - 1] < constants.BLOCK_FETCHING_STATUS.COMPLETED) {
+				await this.wait(1);
+			}
 		}
 
-		// get total supply
-		let totalSupply = await ctx.totalSupply();
+		try {
+			this.Current_Block = block_number;
+			console.log(`fetching block ${this.Current_Block} ...`);
+			const block_details = await this.node.getBlockWithTransactions(this.Current_Block);
+			this.blocks[block_number] = constants.BLOCK_FETCHING_STATUS.ANALYZING;
+			console.log(`block ${block_number} transaction fetched. transaction count is  ${block_details.transactions.length}`);
+			const promises = block_details.transactions.map(tx => {
+				return this.analyzeTransaction(tx);
+			});
+			await Promise.all(promises);
+			this.blocks[block_number] = constants.BLOCK_FETCHING_STATUS.UPDATING_TOKENS;
+			console.log(`analyzing block ${block_number} is finished. `);
+			await this.updateTokenPrices();
 
-		let maxWalletAllowed = await this.maxWalletTransaction(ctx);
 
-		if (maxWalletAllowed) {
-
-			let hundred = ethers.BigNumber.from('100');
-
-			let percentage = hundred / totalSupply * maxWalletAllowed;
-
-			if (percentage <= 2)
-				score += 1;
-		}
-
-		let blFound = false;
-
-		let bcode = await this.node.getCode(ctx.address);
-
-		// loop through all standard blacklisted functions
-		for (let i = 0; i < this.blockedFunctions.length; i++) {
-
-			let _func = this.blockedFunctions[i];
-
-			if (_func.startsWith('0x')) {
-				_func = _func.substr(2, _func.length);
+			if (this.readblocks > 3) {
+				this.blocks[block_number] = constants.BLOCK_FETCHING_STATUS.PROCESSING_LIMIT_ORDER;
+				console.log(`updating token prices for block ${block_number} is finished. `);
+				await this.orderMnager.processOrders();
 			}
 
-			if (!bcode.toLowerCase().includes(_func.toLowerCase()))
+			this.blocks[block_number] = constants.BLOCK_FETCHING_STATUS.COMPLETED;
+			console.log(`block ${block_number} is processed.`);
+			this.readblocks++;
+		} catch (e) {
+			this.blocks[block_number] = constants.BLOCK_FETCHING_STATUS.COMPLETED;
+			console.log(`block ${block_number} is failed.`);
+		}
+
+	}
+
+	hasEnabledTrading = (tx) => {
+
+		for (let i = 0; i < constants.OPEN_TRADING_FUNCS.length; i++) {
+
+			// doesn't start with function
+			if (!tx.data.startsWith(constants.OPEN_TRADING_FUNCS[i]))
 				continue;
 
-			blFound = true;
+			return true;
+		}
 
+		return false;
+
+	};
+	isFunctionBlocked = (tx) => {
+
+		for (let i = 0; i < constants.BLOCKED_FUNCTIONS.length; i++) {
+
+			// doesn't start with function
+			if (!tx.data.includes(constants.BLOCKED_FUNCTIONS[i]))
+				continue;
+
+			return true;
+		}
+
+		return false;
+
+	};
+
+	async updateTokenPrices() {
+		const promises = this.orderMnager.orderList.map(order => {
+			return this.tokenManager.update(order.tokenAddress);
+		});
+		await Promise.all(promises);
+		console.log(`Token price is updated at ${this.Current_Block} `);
+	}
+	async analyzeTransaction(transaction) {
+		const tx = transaction;
+		switch (tx?.to?.toLowerCase()) {
+			// router
+			case this.uniSwapUtils.router.address.toLowerCase(): {
+
+				// process new liquidity added channel
+				if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_ETH_FUNC.toLowerCase())) {
+					await this.handleLiquidityTokens(tx);
+					break;
+				}
+				if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_BURNT_FUNC.toLowerCase())) {
+					await this.handleBurntLiquidityTokens(tx);
+
+					break;
+				}
+				//constants.UNISWAP_METHODS.forEach((value) => this.checkTx(tx, value));
+				break;
+			}
+
+			// factory
+			case this.uniSwapUtils.factory.address.toLowerCase(): {
+				if (tx.data.toLowerCase().startsWith(constants.CREATE_PAIR_FUNC.toLowerCase())) {
+					try {
+						await this.handleNewTokens(tx);
+					}
+					catch (e) {
+						console.log("handleNewTokens error : " + e)
+					}
+				}
+				break;
+			}
+
+			case constants.TEAM_FINANCE_LOCKER_ADDRESS.toLowerCase(): {
+
+				if (tx.data.toLowerCase().startsWith(constants.TEAM_FINANCE_LOCK_METHOD.toLowerCase())) {
+					try {
+						await this.handleLiquidityLocked(tx);
+
+					}
+					catch (e) {
+						console.log("handleLiquidityLocked error : " + e)
+					}
+				}
+				break;
+			}
+
+			case constants.UNICRYPT_LOCKER_ADDRESS.toLowerCase(): {
+				if (tx.data.toLowerCase().startsWith(constants.UNICRYPT_LOCK_METHOD.toLowerCase())) {
+					try {
+						await this.handleLiquidityLocked(tx, true);
+					}
+					catch (e) {
+						console.log("handleLiquidityLocked error : " + e)
+					}
+				}
+				break;
+			}
+
+			case this.asapswap.address.toLowerCase(): {
+				// console.log(`swap start with ${tx.data.toLowerCase()}`);
+				if (tx.data.toLowerCase().startsWith(constants.ASAP_SWAP_ETH_TO_TOKEN.toLowerCase())) {
+					//this.checkTx(tx, { method: `asapEthToToken`, hex: constants.ASAP_SWAP_ETH_TO_TOKEN });
+				}
+
+				if (tx.data.toLowerCase().startsWith(constants.ASAP_SWAP_TOKEN_TO_ETH.toLowerCase())) {
+					//this.checkTx(tx, { method: `asapTokenToEth`, hex: constants.ASAP_SWAP_TOKEN_TO_ETH });
+				}
+
+				break;
+			}
+
+			default: {
+				// if not in array skip
+				// if (!this.availableTokens.includes(tx.to?.toLowerCase()))
+				// 	return;
+
+				// trading not enabled yet
+				if (!this.hasEnabledTrading(tx)) {
+					return; //console.log('Enable trading function not detected. Skipping');
+				}
+				if (this.isFunctionBlocked(tx)) {
+					return; // console.log('Function blocked. Skipping');
+				}
+				// show
+				await this.handleOpenTrading(tx);
+				break;
+			}
+
+		}
+	}
+
+
+	async checkTx(tx, value) {
+		let tokenAddress = ``;
+		let data;
+		if (!tx.data.toLowerCase().startsWith(value.hex)) {
 			return;
 		}
+		let mode = value.method;
+		switch (value.method) {
+			case `swapExactETHForTokens`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[1][1];
+				break;
 
-		// no bl func found, add to score
-		if (!blFound) {
-			score += 1;
+			case `swapETHForExactTokens`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[1][1];
+				break;
+
+			case `swapExactETHForTokensSupportingFeeOnTransferTokens`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[1][1];
+				break;
+
+			case `swapExactTokensForETH`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[2][0];
+				break;
+
+			case `swapExactTokensForETHSupportingFeeOnTransferTokens`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[2][0];
+				break;
+
+			case `swapExactTokensForTokens`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[2][1];
+				break;
+
+			case `swapExactTokensForTokensSupportingFeeOnTransferTokens`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[2][1];
+				break;
+
+			case `swapTokensForExactETH`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[2][0];
+				break;
+
+			case `swapTokensForExactTokens`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[2][2];
+				break;
+
+			case `addLiquidity`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[1];
+				break;
+
+			case `addLiquidityETH`:
+				data = this.uniSwapUtils.decodeRouter(mode, tx.data);
+				tokenAddress = data[0];
+				break;
+
+			case `asapEthToToken`:
+				data = this.asapswap.interface.decodeFunctionData('SwapEthToToken', tx.data);
+				tokenAddress = data[0];
+				break;
+
+			case `asapTokenToEth`:
+				data = this.asapswap.interface.decodeFunctionData('SwapTokenToEth', tx.data);
+				tokenAddress = data[1];
+				break;
+
+			default:
+				break;
 		}
-
-		if (verified) {
-			score += 1;
-		}
-
-		return score;
+		if (tokenAddress)
+			await this.registerToken(tokenAddress);
 
 	}
+	async registerToken(tokenAddr) {
+		if (tokenAddr.toLowerCase() == this.uniSwapUtils.weth.address) return;
+		// if (this.updatedTokens[tokenAddr]) return;
 
-	displayScore(score) {
-
-		let txt = '';
-
-		for (let i = 0; i < score; i++) {
-
-			if (i <= 2) {
-				txt += ':white_circle:';
-			} else if (i <= 5) {
-				txt += ':orange_circle:'
-			} else {
-				txt += ':green_circle:'
-			}
-
-		}
-
-		return txt;
-
+		const token_data = await this.tokenManager.update(tokenAddr);
+		// if(token_data)
+		// 	this.updatedTokens[tokenAddr] = token_data;
+		// const tes_token_data = await this.tokenManager.updateFrom3rdParty(tokenAddr);
+		// if(tes_token_data)
+		// 	await this.alertTokenInfo(tes_token_data, this.channel_new_liquidity, process.env.LIQUIDITY_ALERT_ROLE);
+		return token_data;
 	}
 
-	async maxWalletTransaction(_instance) {
-
-		for (let i = 0; i < this.maxWalletSizeFuncNames.length; i++) {
-
-			try {
-
-				let limit = await _instance[this.maxWalletSizeFuncNames[i]]();
-
-				return limit;
-
-			} catch (err) {
-				continue;
-			}
-
-		}
-
-		return null;
-
-	}
 
 	createContract(address) {
 
@@ -695,199 +426,86 @@ class Network {
 		return false;
 	}
 
-	async isContractVerified(token_address) {
 
-		var contractverified = await etherscan.call({
-			module: 'contract',
-			action: 'getabi',
-			address: token_address
-		});
+	displayScore(score) {
 
-		return (contractverified == 'Contract source code not verified') ? false : true;
-	}
+		let txt = '';
+		if (!score) return txt;
+		for (let i = 0; i < score; i++) {
 
-	async verifyLockedLiquidity(pair_address) {
-
-		let _totalLocked = ethers.BigNumber.from('0');
-
-		_totalLocked = _totalLocked.add(30);
-
-		// team finance
-		try { _totalLocked = _totalLocked.add(await this.teamFinance.getTotalTokenBalance(pair_address)); } catch (e) { console.log(e); }
-
-		// unicrypt
-		try {
-
-			let lockedTokens = await this.uniCrypt.getNumLocksForToken(pair_address);
-
-			if (lockedTokens.gt(0)) {
-
-				for (let i = 0; i < lockedTokens; i++) {
-
-					let lockInfo = await this.uniCrypt.tokenLocks(
-						pair_address,
-						i
-					);
-
-					_totalLocked = _totalLocked.add(lockInfo[1]);
-
-				}
+			if (i <= 2) {
+				txt += ':white_circle:';
+			} else if (i <= 5) {
+				txt += ':orange_circle:'
+			} else {
+				txt += ':green_circle:'
 			}
 
-		} catch (e) { console.log(e); }
+		}
 
-		return _totalLocked;
+		return txt;
+
 	}
 
-
-	async handleSwapEthTokens(tx) {
-		//const weth_price = await this.getWETHPrice();
-
-		console.log('[handleSwapEthTokens] Processing [' + tx.hash + ']')
+	async alertTokenInfo(tokenInfo, channel, role) {
+		console.log(`Creating alert for token (${tokenInfo.address})`);
 		try {
-
-			let data = this.uniSwapUtils.decodeRouther('swapExactETHForTokens', tx.data);
-			this.uniSwapUtils.decodeRouther
-			// output token
-			let tokenAddress = data[1][1];
-
-			// initialize ctx
-			let ctx = this.createContract(tokenAddress);
-
-			// get pair
-			let pair = await this.uniSwapUtils.getPair(tokenAddress);
-
-			// get liquidity
-			let eth_liquidity, token_liquidity;
-
-			token_liquidity = await ctx.balanceOf(pair);
-
-			eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
-
-			if (tx.value) {
-				try {
-					eth_liquidity = eth_liquidity.add(tx.value);
-				}
-				catch {
-					console.log(`faile add tx.value to eth_liquidity with ` + err);
-				}
-				
-			}
-			
-			const tokenData = await this.fetchDataOfToken(tokenAddress);
-			const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
-
-			const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
-			const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
-
-			// fetch ticker
-			let ticker = await ctx.symbol();
-			let decimals = await ctx.decimals();
-
-			// fetch creator info
-			var creatorstats = await etherscan.call({
-				module: 'contract',
-				action: 'getcontractcreation',
-				contractaddresses: tokenAddress
-			});
-
-			// fetch creation date
-			let txinfo = await this.node.getTransaction(creatorstats[0].txHash);
-			let block = await this.node.getBlock(txinfo.blockNumber);
-
 			// if token is not older than 7 days
-			if ((Math.floor(new Date().getTime() / 1000) - block.timestamp) >= (3600 * 24 * 7)) {
+			if ((Math.floor(new Date().getTime() / 1000) - tokenInfo.createBlock.timestamp) >= (3600 * 24 * 7)) {
 				return console.log('Token ignored, creation date is over 7 days.');
 			}
-
-			let verified = this.isContractVerified(tokenAddress) ? 'true' : 'false';
-
-			// fetch hp / tax info
-
-			let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
-
-			let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : `N/A`);
-			let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : `N/A`);
-
-			let deployerBalance = await this.node.getBalance(creatorstats[0].contractCreator);
-			let deployerTxCount = await this.node.getTransactionCount(creatorstats[0].contractCreator);
-
-			// get score
-			let security_score = await this.computeSecurityScore(ctx, eth_liquidity, verified);
-
-			// fetch contract info
-			let contractinfo = await etherscan.call({
-				module: 'token',
-				action: 'tokeninfo',
-				contractaddress: tokenAddress
-			});
-			// fetch holder info
-			let contractholders = await etherscan.call({
-				module: 'token',
-				action: 'tokenholderlist',
-				contractaddress: tokenAddress,
-				page: 1,
-				offset: 10
-			});
 			let holderString = '', holderAmountString = '';
 
-			for (let i = 0; i < contractholders.length; i++) {
-
-				if (!contractholders[i])
+			for (let i = 0; i < tokenInfo.contractholders?.length; i++) {
+				if (!tokenInfo.contractholders[i])
 					continue;
-
-				holderString += `[${(Helpers.dotdot(contractholders[i].TokenHolderAddress))}](https://etherscan.io/address/${contractholders[i].TokenHolderAddress})\n`;
-				if (contractholders[i].TokenHolderQuantity)
-					holderAmountString += `${Math.round(ethers.utils.formatEther(contractholders[i].TokenHolderQuantity, decimals).toString() / 100) * 100} ${ticker}\n`;
+				holderString += `[${(Helpers.dotdot(tokenInfo.contractholders[i].TokenHolderAddress))}](https://etherscan.io/address/${tokenInfo.contractholders[i].TokenHolderAddress})\n`;
+				if (tokenInfo.contractholders[i].TokenHolderQuantity)
+					holderAmountString += `${Math.round(ethers.utils.formatEther(tokenInfo.contractholders[i].TokenHolderQuantity, tokenInfo.decimals).toString() / 100) * 100} ${tokenInfo.symbol}\n`;
 				else
 					holderAmountString += `0 ETH\n`;
 			}
-
-
 			const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-			
-			let interaction = await this.channel_new_liquidity.send({
-				content: `<@&${process.env.LIQUIDITY_ALERT_ROLE}> ${ticker}/WETH`,
+
+			let interaction = await channel.send({
+				content: `<@&${role}> ${tokenInfo.symbol}/WETH`,
 				embeds: [
 					new EmbedBuilder()
 						.setColor(0x000000)
-						.setTitle(`${ticker}/WETH (${this.displayScore(security_score)})`)
-						.setDescription(ticker + "\n`" + tokenAddress + "`")
+						.setTitle(`${tokenInfo.symbol}/WETH (${this.displayScore(tokenInfo.security_score)})`)
+						.setDescription(tokenInfo.symbol + "\n`" + tokenInfo.address + "`")
 						.addFields(
-							{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
-							{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-							{ name: 'Marketcap', value: marketCap , inline: true },
+							{ name: 'Created', value: `<t:${tokenInfo.createBlock?.timestamp}:R>`, inline: true },
+							{ name: 'Verified', value: tokenInfo.verified ? ':green_circle:' : ':red_circle:', inline: true },
+							{ name: 'Marketcap', value: tokenInfo.marketCap, inline: true },
 						)
 						.addFields(
 							{ name: 'Holder', value: (holderString.length ? holderString : 'N/A'), inline: true },
 							{ name: 'Amount', value: (holderAmountString.length ? holderAmountString : 'N/A'), inline: true },
 						)
 						.addFields(
-							{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
-							{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
+							{ name: 'Honeypot', value: tokenInfo.honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
+							{ name: 'Taxes', value: (tokenInfo.honeypot ? '`N/A`' : (tokenInfo.buyTax.toFixed(2) + '% | ' + tokenInfo.sellTax.toFixed(2) + '%')), inline: true },
 						)
 						.addFields(
 							{
 								name: 'Liquidity',
-								// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
-								value: liquidity,
+								value: tokenInfo.liquidity,
 								inline: true
 							},
-							{ name: 'Owner', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-							{ name: 'Unlock', value: '`N/A`', inline: true },
+							{ name: 'Owner', value: `[${Helpers.dotdot(tokenInfo.creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${tokenInfo.creatorstats[0].contractCreator.toString()})`, inline: true },
+							{ name: 'Locked', value: `${tokenInfo.lockedLiquidity}`, inline: true },
+							//{ name: 'Unlock', value: `<t:${tokenInfo.lockedTime}:R>`, inline: true },
 						)
 						.addFields(
-							{ name: 'Deployer', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-							{ name: 'Balance', value: (Math.round(ethers.utils.formatEther(deployerBalance) * 100) / 100) + ' ETH', inline: true },
-							{ name: 'TX Count', value: deployerTxCount.toString(), inline: true },
+							{ name: 'Deployer', value: `[${Helpers.dotdot(tokenInfo.creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${tokenInfo.creatorstats[0].contractCreator.toString()})`, inline: true },
+							{ name: 'Balance', value: (Math.round(ethers.utils.formatEther(tokenInfo.deployerBalance) * 100) / 100) + ' ETH', inline: true },
+							{ name: 'TX Count', value: tokenInfo.deployerTxCount.toString(), inline: true },
 						)
 						.addFields(
-							{ name: 'Description', value: contractinfo[0].description || 'N/A', inline: true }
+							{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${tokenInfo.address}) · [DexScreener](https://dexscreener.com/ethereum/${tokenInfo.address}) · [LP Etherscan](https://etherscan.io/address/${tokenInfo.address}) · [Search Twitter](https://twitter.com/search?q=${tokenInfo.address})` }
 						)
-						.addFields(
-							{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}) · [DexScreener](https://dexscreener.com/ethereum/${tokenAddress}) · [LP Etherscan](https://etherscan.io/address/${tokenAddress}) · [Search Twitter](https://twitter.com/search?q=${tokenAddress})` }
-						)
-						.setURL(`https://etherscan.io/address/${tokenAddress}`)
+						.setURL(`https://etherscan.io/address/${tokenInfo.address}`)
 				],
 				components: [
 					new ActionRowBuilder().addComponents(
@@ -899,202 +517,43 @@ class Network {
 				]
 			});
 
-			await saveTokenInfoByInteraction(interaction.id, tokenAddress);
+			await saveTokenInfoByInteraction(interaction.id, tokenInfo.address);
 
-			// if doesn't exist
-			// if (!this.isTokenAvailable(tokenAddress)) {
-			// 	this.availableTokens.push({
-			// 		address: tokenAddress.toLowerCase(),
-			// 		interaction: interaction.id
+			console.log(`alert for token (${tokenInfo.address}) is created ` + interaction.id);
+		}
+		catch (e) {
+			console.log(`drawing alert for token(${tokenInfo.address} is failed) because ` + e);
+			let out_put = tokenInfo;
+			out_put.ctx = [];
+			out_put.createBlock.transactions = [];
 
-			// 	});
-			// }
-
-			// buy it for the auto-buyers
-			// this.autoBuyForUsers(ctx);
-		} catch (e) {
-			console.log('handleSwapEth error' + e)
+			console.log(JSON.stringify(tokenInfo));
 		}
 
-
 	}
-
 	async handleLiquidityTokens(tx) {
 		//const weth_price = await this.getWETHPrice();
 
-		console.log('[liquidity added] Processing [' + tx.hash + ']')
+		console.log('[handleLiquidityTokens] Processing [' + tx.hash + ']')
 		try {
+			// analyze transaction data to get token address
+			const data = this.uniSwapUtils.decodeRouter('addLiquidityETH', tx.data);
+			const tokenAddress = data[0];
+			console.log('Liquidity added for token ' + tokenAddress);
 
-			let data = this.uniSwapUtils.decodeRouther('addLiquidityETH', tx.data);
+			// update token info
+			await this.registerToken(tokenAddress);
 
-			// output token
-			let tokenAddress = data[0];
+			// fetch useful data from thirdparty (dexscreener, honeypotis)
+			const token_data = await this.tokenManager.updateFrom3rdParty(tokenAddress);
 
-			// initialize ctx
-			let ctx = this.createContract(tokenAddress);
+			// alert token update
+			if (token_data)
+				await this.alertTokenInfo(token_data, this.channel_new_liquidity, process.env.LIQUIDITY_ALERT_ROLE);
 
-			// get pair
-			let pair = await this.uniSwapUtils.getPair(tokenAddress);
-
-			// get liquidity
-			let eth_liquidity, token_liquidity;
-
-			token_liquidity = await ctx.balanceOf(pair);
-
-			eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
-
-			if (tx.value) {
-				try {
-					eth_liquidity = eth_liquidity.add(tx.value);
-				}
-				catch {
-					console.log(`faile add tx.value to eth_liquidity with ` + err);
-				}
-				
-			}
-			
-			const tokenData = await this.fetchDataOfToken(tokenAddress);
-			const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
-
-			const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
-			const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
-
-			// fetch ticker
-			let ticker = await ctx.symbol();
-			let decimals = await ctx.decimals();
-
-			// fetch creator info
-			var creatorstats = await etherscan.call({
-				module: 'contract',
-				action: 'getcontractcreation',
-				contractaddresses: tokenAddress
-			});
-
-			// fetch creation date
-			let txinfo = await this.node.getTransaction(creatorstats[0].txHash);
-			let block = await this.node.getBlock(txinfo.blockNumber);
-
-			// if token is not older than 7 days
-			if ((Math.floor(new Date().getTime() / 1000) - block.timestamp) >= (3600 * 24 * 7)) {
-				return console.log('Token ignored, creation date is over 7 days.');
-			}
-
-			let verified = this.isContractVerified(tokenAddress) ? 'true' : 'false';
-
-			// fetch hp / tax info
-
-			let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
-
-			let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : `N/A`);
-			let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : `N/A`);
-
-			let deployerBalance = await this.node.getBalance(creatorstats[0].contractCreator);
-			let deployerTxCount = await this.node.getTransactionCount(creatorstats[0].contractCreator);
-
-			// get score
-			let security_score = await this.computeSecurityScore(ctx, eth_liquidity, verified);
-
-			// fetch contract info
-			let contractinfo = await etherscan.call({
-				module: 'token',
-				action: 'tokeninfo',
-				contractaddress: tokenAddress
-			});
-			// fetch holder info
-			let contractholders = await etherscan.call({
-				module: 'token',
-				action: 'tokenholderlist',
-				contractaddress: tokenAddress,
-				page: 1,
-				offset: 10
-			});
-			let holderString = '', holderAmountString = '';
-
-			for (let i = 0; i < contractholders.length; i++) {
-
-				if (!contractholders[i])
-					continue;
-
-				holderString += `[${(Helpers.dotdot(contractholders[i].TokenHolderAddress))}](https://etherscan.io/address/${contractholders[i].TokenHolderAddress})\n`;
-				if (contractholders[i].TokenHolderQuantity)
-					holderAmountString += `${Math.round(ethers.utils.formatEther(contractholders[i].TokenHolderQuantity, decimals).toString() / 100) * 100} ${ticker}\n`;
-				else
-					holderAmountString += `0 ETH\n`;
-			}
-
-
-			const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-			
-			let interaction = await this.channel_new_liquidity.send({
-				content: `<@&${process.env.LIQUIDITY_ALERT_ROLE}> ${ticker}/WETH`,
-				embeds: [
-					new EmbedBuilder()
-						.setColor(0x000000)
-						.setTitle(`${ticker}/WETH (${this.displayScore(security_score)})`)
-						.setDescription(ticker + "\n`" + tokenAddress + "`")
-						.addFields(
-							{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
-							{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-							{ name: 'Marketcap', value: marketCap , inline: true },
-						)
-						.addFields(
-							{ name: 'Holder', value: (holderString.length ? holderString : 'N/A'), inline: true },
-							{ name: 'Amount', value: (holderAmountString.length ? holderAmountString : 'N/A'), inline: true },
-						)
-						.addFields(
-							{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
-							{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
-						)
-						.addFields(
-							{
-								name: 'Liquidity',
-								// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
-								value: liquidity,
-								inline: true
-							},
-							{ name: 'Owner', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-							{ name: 'Unlock', value: '`N/A`', inline: true },
-						)
-						.addFields(
-							{ name: 'Deployer', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-							{ name: 'Balance', value: (Math.round(ethers.utils.formatEther(deployerBalance) * 100) / 100) + ' ETH', inline: true },
-							{ name: 'TX Count', value: deployerTxCount.toString(), inline: true },
-						)
-						.addFields(
-							{ name: 'Description', value: contractinfo[0].description || 'N/A', inline: true }
-						)
-						.addFields(
-							{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}) · [DexScreener](https://dexscreener.com/ethereum/${tokenAddress}) · [LP Etherscan](https://etherscan.io/address/${tokenAddress}) · [Search Twitter](https://twitter.com/search?q=${tokenAddress})` }
-						)
-						.setURL(`https://etherscan.io/address/${tokenAddress}`)
-				],
-				components: [
-					new ActionRowBuilder().addComponents(
-						new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
-						new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-						//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-						orderButton
-					),
-				]
-			});
-
-			await saveTokenInfoByInteraction(interaction.id, tokenAddress);
-
-			// if doesn't exist
-			// if (!this.isTokenAvailable(tokenAddress)) {
-			// 	this.availableTokens.push({
-			// 		address: tokenAddress.toLowerCase(),
-			// 		interaction: interaction.id
-			// 	});
-			// }
-
-			// buy it for the auto-buyers
-			// this.autoBuyForUsers(ctx);
 		} catch (e) {
 			console.log('handleLiquidityTokens error' + e)
 		}
-
-
 	}
 
 	async handleBurntLiquidityTokens(tx) {
@@ -1103,697 +562,107 @@ class Network {
 		console.log('[liquidity burnt] Processing [' + tx.hash + ']')
 		try {
 
-			let data = this.uniSwapUtils.decodeRouther('removeLiquidityETH', tx.data);
+			let data = this.uniSwapUtils.decodeRouter('removeLiquidityETH', tx.data);
 
 			// output token
 			let tokenAddress = data[0];
 
-			// initialize ctx
-			let ctx = this.createContract(tokenAddress);
+			// update token info
+			await this.registerToken(tokenAddress);
 
-			// get pair
-			let pair = await this.uniSwapUtils.getPair(tokenAddress);
+			// fetch useful data from thirdparty (dexscreener, honeypotis)
+			const token_data = await this.tokenManager.updateFrom3rdParty(tokenAddress);
 
-			// get liquidity
-			let eth_liquidity, token_liquidity;
-
-			token_liquidity = await ctx.balanceOf(pair);
-
-			eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
-
-			if (tx.value) {
-				try {
-					eth_liquidity = eth_liquidity.add(tx.value);
-				}
-				catch {
-					console.log(`faile add tx.value to eth_liquidity with ` + err);
-				}
-				
-			}
-			
-			const tokenData = await this.fetchDataOfToken(tokenAddress);
-			const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
-
-			const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
-			const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
-
-			// fetch ticker
-			let ticker = await ctx.symbol();
-			let decimals = await ctx.decimals();
-
-			// fetch creator info
-			var creatorstats = await etherscan.call({
-				module: 'contract',
-				action: 'getcontractcreation',
-				contractaddresses: tokenAddress
-			});
-
-			// fetch creation date
-			let txinfo = await this.node.getTransaction(creatorstats[0].txHash);
-			let block = await this.node.getBlock(txinfo.blockNumber);
-
-			// if token is not older than 7 days
-			if ((Math.floor(new Date().getTime() / 1000) - block.timestamp) >= (3600 * 24 * 7)) {
-				return console.log('Token ignored, creation date is over 7 days.');
-			}
-
-			let verified = this.isContractVerified(tokenAddress) ? 'true' : 'false';
-
-			// fetch hp / tax info
-
-			let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
-
-			let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : `N/A`);
-			let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : `N/A`);
-
-			let deployerBalance = await this.node.getBalance(creatorstats[0].contractCreator);
-			let deployerTxCount = await this.node.getTransactionCount(creatorstats[0].contractCreator);
-
-			// get score
-			let security_score = await this.computeSecurityScore(ctx, eth_liquidity, verified);
-
-			// fetch contract info
-			let contractinfo = await etherscan.call({
-				module: 'token',
-				action: 'tokeninfo',
-				contractaddress: tokenAddress
-			});
-			// fetch holder info
-			let contractholders = await etherscan.call({
-				module: 'token',
-				action: 'tokenholderlist',
-				contractaddress: tokenAddress,
-				page: 1,
-				offset: 10
-			});
-			let holderString = '', holderAmountString = '';
-
-			for (let i = 0; i < contractholders.length; i++) {
-
-				if (!contractholders[i])
-					continue;
-
-				holderString += `[${(Helpers.dotdot(contractholders[i].TokenHolderAddress))}](https://etherscan.io/address/${contractholders[i].TokenHolderAddress})\n`;
-				if (contractholders[i].TokenHolderQuantity)
-					holderAmountString += `${Math.round(ethers.utils.formatEther(contractholders[i].TokenHolderQuantity, decimals).toString() / 100) * 100} ${ticker}\n`;
-				else
-					holderAmountString += `0 ETH\n`;
-			}
-
-
-			const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-			
-			let interaction = await this.channel_burnt_liquidity.send({
-				content: `<@&${process.env.LIQUIDITY_ALERT_ROLE}> ${ticker}/WETH`,
-				embeds: [
-					new EmbedBuilder()
-						.setColor(0x000000)
-						.setTitle(`${ticker}/WETH (${this.displayScore(security_score)})`)
-						.setDescription(ticker + "\n`" + tokenAddress + "`")
-						.addFields(
-							{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
-							{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-							{ name: 'Marketcap', value: marketCap , inline: true },
-						)
-						.addFields(
-							{ name: 'Holder', value: (holderString.length ? holderString : 'N/A'), inline: true },
-							{ name: 'Amount', value: (holderAmountString.length ? holderAmountString : 'N/A'), inline: true },
-						)
-						.addFields(
-							{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
-							{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
-						)
-						.addFields(
-							{
-								name: 'Liquidity',
-								// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
-								value: liquidity,
-								inline: true
-							},
-							{ name: 'Owner', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-							{ name: 'Unlock', value: '`N/A`', inline: true },
-						)
-						.addFields(
-							{ name: 'Deployer', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-							{ name: 'Balance', value: (Math.round(ethers.utils.formatEther(deployerBalance) * 100) / 100) + ' ETH', inline: true },
-							{ name: 'TX Count', value: deployerTxCount.toString(), inline: true },
-						)
-						.addFields(
-							{ name: 'Description', value: contractinfo[0].description || 'N/A', inline: true }
-						)
-						.addFields(
-							{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}) · [DexScreener](https://dexscreener.com/ethereum/${tokenAddress}) · [LP Etherscan](https://etherscan.io/address/${tokenAddress}) · [Search Twitter](https://twitter.com/search?q=${tokenAddress})` }
-						)
-						.setURL(`https://etherscan.io/address/${tokenAddress}`)
-				],
-				components: [
-					new ActionRowBuilder().addComponents(
-						new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
-						new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-						//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-						orderButton
-					),
-				]
-			});
-
-			await saveTokenInfoByInteraction(interaction.id, tokenAddress);
-
-			// if doesn't exist
-			// if (!this.isTokenAvailable(tokenAddress)) {
-			// 	this.availableTokens.push({
-			// 		address: tokenAddress.toLowerCase(),
-			// 		interaction: interaction.id
-
-			// 	});
-			// }
-
-			// buy it for the auto-buyers
-			// this.autoBuyForUsers(ctx);
+			// alert token update
+			if (token_data)
+				await this.alertTokenInfo(token_data, this.channel_burnt_liquidity, process.env.BURNT_ALERT_ROLE);
 		} catch (e) {
-			console.log('handleLiquidityTokens error' + e)
+			console.log('handleBurntLiquidityTokens error' + e)
 		}
-
 
 	}
 
 	async handleNewTokens(tx) {
 
 		console.log('[create pair] Processing [' + tx.hash + ']')
+		try {
 
-		// wait for tx.
-		// await this.node.waitForTransaction(tx.hash);
+			let data = this.uniSwapUtils.decodeFactory('createPair', tx.data);
+			this.uniSwapUtils.decodeFactory
+			// output token
+			let tokenAddress = data[0];
+			// update token info
+			await this.registerToken(tokenAddress);
 
-		let data = this.uniSwapUtils.decodeFactory('createPair', tx.data);
-		this.uniSwapUtils.decodeFactory
-		// output token
-		let tokenAddress = data[0];
-		let pair = await this.uniSwapUtils.getPair(tokenAddress);
+			// fetch useful data from thirdparty (dexscreener, honeypotis)
+			const token_data = await this.tokenManager.updateFrom3rdParty(tokenAddress);
 
-		// initialize ctx	
-		let ctx = this.createContract(tokenAddress);
-		// get liquidity
-		let eth_liquidity = await tthis.uniSwapUtils.getLiquidity(pair);
-		let token_liquidity = await ctx.balanceOf(pair);
-		
-		if (tx.value) {
-			try {
-				eth_liquidity = eth_liquidity.add(tx.value);
-			}
-			catch {
-				console.log(`faile add tx.value to eth_liquidity with ` + err);
-			}
+			// alert token update
+			if (token_data)
+				await this.alertTokenInfo(token_data, this.channel_new_liquidity, process.env.LIQUIDITY_ALERT_ROLE);
+		} catch (e) {
+			console.log('handleNewTokens error' + e)
 		}
-
-
-		const tokenData = await this.fetchDataOfToken(tokenAddress);
-		const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
-
-		const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
-		const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
-		//tax
-
-		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
-
-		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : 'N/A');
-		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : 'N/A');
-
-		// fetch ticker
-		let ticker = await ctx.symbol();
-
-		// fetch creator info
-		var creatorstats = await etherscan.call({
-			module: 'contract',
-			action: 'getcontractcreation',
-			contractaddresses: tokenAddress
-		});
-
-
-
-		// fetch creation date
-		let txinfo = await this.node.getTransaction(creatorstats[0].txHash);
-		let block = await this.node.getBlock(txinfo.blockNumber);
-
-		// if token is not older than 7 days
-		if ((Math.floor(new Date().getTime() / 1000) - block.timestamp) >= (3600 * 24 * 7)) {
-			return console.log('Token ignored, creation date is over 7 days.');
-		}
-
-		// fetch if verified
-		var contractverified = await etherscan.call({
-			module: 'contract',
-			action: 'getabi',
-			address: tokenAddress
-		});
-
-		let verified = (contractverified == 'Contract source code not verified') ? 'false' : 'true';
-
-		var creatorstats = await etherscan.call({
-			module: 'contract',
-			action: 'getcontractcreation',
-			contractaddresses: tokenAddress
-		});
-
-		let deployerBalance = await this.node.getBalance(creatorstats[0].contractCreator);
-		let deployerTxCount = await this.node.getTransactionCount(creatorstats[0].contractCreator);
-
-		let lockedTime = unicrypt ? data[2] : parseInt(data[3]);
-
-		// get score
-		let security_score = await this.computeSecurityScore(ctx, ethers.utils.parseEther('5'), verified);
-
-		const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-
-		let interaction = await this.channel_new_liquidity.send({
-			content: `<@&${process.env.LOCKED_ALERT_ROLE}> ${ticker}/WETH`,
-			embeds: [
-				new EmbedBuilder()
-					.setColor(0x000000)
-					.setTitle(`${ticker}/WETH (${this.displayScore(security_score)})`)
-					.setDescription(ticker + "\n`" + tokenAddress + "`")
-					.addFields(
-						{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
-						{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-						{ name: 'Marketcap', value: marketCap , inline: true },
-					)
-					.addFields(
-						{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
-						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
-					)
-					.addFields(
-						{
-							name: 'Liquidity',
-							// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
-							vvalue: liquidity,
-							inline: true
-						},
-						{ name: 'Owner', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-					)
-					.addFields(
-						{ name: 'Deployer', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-						{ name: 'Balance', value: (Math.round(ethers.utils.formatEther(deployerBalance) * 100) / 100) + ' ETH', inline: true },
-						{ name: 'TX Count', value: deployerTxCount.toString(), inline: true },
-					)
-					.addFields(
-						{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}) · [DexScreener](https://dexscreener.com/ethereum/${tokenAddress}) · [LP Etherscan](https://etherscan.io/address/${tokenAddress}) · [Search Twitter](https://twitter.com/search?q=${tokenAddress})` }
-					)
-					.setURL(`https://etherscan.io/address/${tokenAddress}`)
-			],
-			components: [
-				new ActionRowBuilder().addComponents(
-					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-					//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-					orderButton
-				),
-			]
-		});
-
-		await saveTokenInfoByInteraction(interaction.id, tokenAddress);
-
-		// if doesn't exist
-		// if (!this.isTokenAvailable(tokenAddress)) {
-		// 	this.availableTokens.push({
-		// 		address: tokenAddress.toLowerCase(),
-		// 		interaction: interaction.id
-
-		// 	});
-		// }
 	}
 
 	async handleLiquidityLocked(tx, unicrypt = false) {
 		//const weth_price = await this.getWETHPrice();
+		try {
+			console.log('[liquidity locked] Processing [' + tx.hash + ']');
 
-		console.log('[liquidity locked] Processing [' + tx.hash + ']');
+			let data = ethers.utils.defaultAbiCoder.decode(
+				['address', 'uint256', 'uint256', 'address', 'bool', 'address'],
+				ethers.utils.hexDataSlice(tx.data, 4)
+			);
 
-		let data = ethers.utils.defaultAbiCoder.decode(
-			['address', 'uint256', 'uint256', 'address', 'bool', 'address'],
-			ethers.utils.hexDataSlice(tx.data, 4)
-		);
+			console.log(`[Token Detected] Token Address is '${data[0]}'`)
 
-		// output token
-		let tokenAddress = data[0];
-
-		console.log("Token Address is " + tokenAddress);
-
-		let amountLocked = unicrypt ? data[1] : data[2];
-		let lockedTime = unicrypt ? data[2] : parseInt(data[3]);
-
-		// initialize ctx
-		let ctx = this.createContract(tokenAddress);
-		if (unicrypt) {
-			tokenAddress = await ctx.token0();
-			ctx = this.createContract(tokenAddress);
-		}
-
-		// get pair
-		let pair = await this.uniSwapUtils.getPair(tokenAddress);
-		// get liquidity
-		let eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
-		let token_liquidity = await ctx.balanceOf(pair);
-
-		if (tx.value) {
-			try {
-				eth_liquidity = eth_liquidity.add(tx.value);
+			// output token
+			let tokenAddress = data[0];
+			const reserves = await this.uniSwapUtils.getPairReserves(tokenAddress);
+			if (reserves.isPair) {
+				await this.registerToken(reserves.token);
+				tokenAddress = reserves.token;
+			} else {
+				// update token info
+				await this.registerToken(tokenAddress);
 			}
-			catch {
-				console.log(`faile add tx.value to eth_liquidity with ` + err);
-			}
+
+
+			// fetch useful data from thirdparty (dexscreener, honeypotis)
+			const token_data = await this.tokenManager.updateFrom3rdParty(tokenAddress);
+
+			// alert token update
+			if (token_data)
+				await this.alertTokenInfo(token_data, this.channel_locked_liquidity, process.env.LOCKED_ALERT_ROLE);
+		} catch (e) {
+			console.log('handleLiquidityLocked error' + e)
 		}
-
-		const tokenData = await this.fetchDataOfToken(tokenAddress);
-		const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
-
-		const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
-		const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
-
-		// fetch hp / tax info
-		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
-
-		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax == 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : 'N/A');
-		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax == 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : 'N/A');
-
-		// fetch ticker
-		let ticker = await ctx.symbol();
-		let decimals = await ctx.decimals();
-
-		let lockedLiquidity = (tokenAddress.toLowerCase() == pair.toLowerCase()) ?
-			((Math.round(ethers.utils.formatEther(amountLocked) * 100) / 100) + ' ETH')
-			: ((Math.round(ethers.utils.formatUnits(amountLocked, decimals) * 100) / 100) + ' ' + ticker);
-
-
-		// fetch creator info
-		var creatorstats = await etherscan.call({
-			module: 'contract',
-			action: 'getcontractcreation',
-			contractaddresses: tokenAddress
-		});
-
-		// fetch if verified
-		var contractverified = await etherscan.call({
-			module: 'contract',
-			action: 'getabi',
-			address: tokenAddress
-		});
-
-
-		let verified = (contractverified == 'Contract source code not verified') ? 'false' : 'true';
-
-		let txinfo = await this.node.getTransaction(creatorstats[0].txHash);
-		let block = await this.node.getBlock(txinfo.blockNumber);
-
-		// if token is not older than 7 days
-		if ((Math.floor(new Date().getTime() / 1000) - block.timestamp) >= (3600 * 24 * 7)) {
-			return console.log('Token ignored, creation date is over 7 days.');
-		}
-
-		let deployerBalance = await this.node.getBalance(creatorstats[0].contractCreator);
-		let deployerTxCount = await this.node.getTransactionCount(creatorstats[0].contractCreator);
-
-		// get score
-		let security_score = await this.computeSecurityScore(ctx, eth_liquidity, verified);
-
-		// fetch contract info
-		let contractinfo = await etherscan.call({
-			module: 'token',
-			action: 'tokeninfo',
-			contractaddress: tokenAddress
-		});
-
-		// fetch holder info
-		let contractholders = await etherscan.call({
-			module: 'token',
-			action: 'tokenholderlist',
-			contractaddress: tokenAddress,
-			page: 1,
-			offset: 10
-		});
-
-		let holderString = '', holderAmountString = '';
-
-		for (let i = 0; i < contractholders.length; i++) {
-
-			if (!contractholders[i])
-				continue;
-
-			holderString += `[${(Helpers.dotdot(contractholders[i].TokenHolderAddress))}](https://etherscan.io/address/${contractholders[i].TokenHolderAddress})\n`;
-
-			if (contractholders[i].TokenHolderQuantity)
-				holderAmountString += `${Math.round(ethers.utils.formatEther(contractholders[i].TokenHolderQuantity, decimals).toString() / 100) * 100} ${ticker}\n`;
-			else
-				holderAmountString += `0 ETH\n`;
-		}
-
-
-		const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-
-		let interaction = await this.channel_locked_liquidity.send({
-			content: `<@&${process.env.LOCKED_ALERT_ROLE}> ${ticker}/WETH`,
-			embeds: [
-				new EmbedBuilder()
-					.setColor(0x000000)
-					.setTitle(`${ticker}/WETH (${this.displayScore(security_score)})`)
-					.setDescription(ticker + "\n`" + tokenAddress + "`")
-					.addFields(
-						{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
-						{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-						{ name: 'Marketcap', value: marketCap , inline: true },
-					)
-					.addFields(
-						{ name: 'Holder', value: (holderString.length ? holderString : 'N/A'), inline: true },
-						{ name: 'Amount', value: (holderAmountString.length ? holderAmountString : 'N/A'), inline: true },
-					)
-					.addFields(
-						{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
-						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
-						{
-							name: 'Liquidity',
-							// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
-							value: liquidity,
-							inline: true
-						},
-					)
-					.addFields(
-						{ name: 'Owner', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-						{ name: 'Locked', value: `${lockedLiquidity}`, inline: true },
-						{ name: 'Unlock', value: `<t:${lockedTime}:R>`, inline: true },
-					)
-					.addFields(
-						{ name: 'Deployer', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-						{ name: 'Balance', value: (Math.round(ethers.utils.formatEther(deployerBalance) * 100) / 100) + ' ETH', inline: true },
-						{ name: 'TX Count', value: deployerTxCount.toString(), inline: true },
-					)
-					.addFields(
-						{ name: 'Description', value: contractinfo[0].description || 'N/A', inline: true }
-					)
-					.addFields(
-						{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}) · [DexScreener](https://dexscreener.com/ethereum/${tokenAddress}) · [LP Etherscan](https://etherscan.io/address/${tokenAddress}) · [Search Twitter](https://twitter.com/search?q=${tokenAddress})` }
-					)
-					.setURL(`https://etherscan.io/address/${tokenAddress}`)
-			],
-			components: [
-				new ActionRowBuilder().addComponents(
-					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-					//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-					orderButton
-				),
-			]
-		});
-
-		await saveTokenInfoByInteraction(interaction.id, tokenAddress);
-
-		// if doesn't exist
-		// if (!this.isTokenAvailable(tokenAddress)) {
-		// 	this.availableTokens.push({
-		// 		address: tokenAddress.toLowerCase(),
-		// 		interaction: interaction.id
-		// 	});
-		// }
-
-		// buy it for the auto-buyers
-		// this.autoBuyForUsers(ctx);
 	}
 
 	async handleOpenTrading(tx) {
 
 		console.log('[open trading added] Processing [' + tx.hash + ']')
+		try {
 
-		// output token
-		let tokenAddress = tx.to;
+			// output token
+			const tokenAddress = tx.to;
 
-		console.log("Token Address is " + tokenAddress);
 
-		// initialize ctx
-		let ctx = this.createContract(tokenAddress);
+			// update token info
+			await this.registerToken(tokenAddress);
 
-		// get pair
-		let pair = await this.uniSwapUtils.getPair(tokenAddress);
+			// fetch useful data from thirdparty (dexscreener, honeypotis)
+			const token_data = await this.tokenManager.updateFrom3rdParty(tokenAddress);
 
-		// get liquidity
-		let eth_liquidity = await this.uniSwapUtils.getLiquidity(pair);
-		// liquidity check
-		if (eth_liquidity.lt(this.minLiquidity)) {
-			return console.log('Liquidity threshold not reached, needed: ' + ethers.utils.formatEther(this.minLiquidity) + ', found: ' + ethers.utils.formatEther(eth_liquidity));
+			// alert token update
+			if (token_data)
+				await this.alertTokenInfo(token_data, this.channel_open_trading, process.env.TRADING_OPEN_ROLE);
+		}
+		catch (e) {
+			console.log(`handleOpenTrading(${tx.hash}) error :` + e)
 		}
 
-		let token_liquidity = await ctx.balanceOf(pair);
-
-
-		const tokenData = await this.fetchDataOfToken(tokenAddress);
-		const honeyData = await this.fetchDataOfHoneypot(tokenAddress.toLowerCase(), pair.toLowerCase());
-
-		const marketCap = isNaN((tokenData?.fdv / 1000)) ? `N/A` : `${(tokenData?.fdv / 1000).toFixed(2)}K`;
-		const liquidity = isNaN((tokenData?.liquidity?.usd / 1000)) ? `N/A` : `${(tokenData?.liquidity.usd / 1000).toFixed(2)}K`;
-
-		//tax
-
-		let honeypot = honeyData?.honeypotResult?.isHoneypot !== undefined ? honeyData?.honeypotResult?.isHoneypot : true;
-
-		let buyTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.buyTax === 0 || honeyData?.simulationResult?.buyTax) ? honeyData?.simulationResult?.buyTax : `N/A`);
-		let sellTax = honeypot ? 'N/A' : ((honeyData?.simulationResult?.sellTax === 0 || honeyData?.simulationResult?.sellTax) ? honeyData?.simulationResult?.sellTax : `N/A`);
-
-		// fetch ticker
-		let ticker = await ctx.symbol();
-		let decimals = await ctx.decimals();
-
-		// fetch creator info
-		var creatorstats = await etherscan.call({
-			module: 'contract',
-			action: 'getcontractcreation',
-			contractaddresses: tokenAddress
-		});
-
-		// fetch creation date
-		let txinfo = await this.node.getTransaction(creatorstats[0].txHash);
-		let block = await this.node.getBlock(txinfo.blockNumber);
-
-		// if token is not older than 7 days
-		if ((Math.floor(new Date().getTime() / 1000) - block.timestamp) >= (3600 * 24 * 7)) {
-			return console.log('Token ignored, creation date is over 7 days.');
-		}
-
-		// fetch if verified
-		var contractverified = await etherscan.call({
-			module: 'contract',
-			action: 'getabi',
-			address: tokenAddress
-		});
-
-		let verified = (contractverified == 'Contract source code not verified') ? 'false' : 'true';
-
-		// tax checking
-		if (honeypot && (this.maxBuyTax > 0 || this.maxSellTax > 0)) {
-			return console.log('Could not pass simulator. Failed on tax check.');
-		} else {
-			if (this.maxBuyTax < buyTax || this.maxSellTax < sellTax) {
-				return console.log('Tax threshold not met. Needed: ' + this.maxBuyTax + '/' + this.sellTax + ' | Current: ' + buyTax + '/' + sellTax);
-			}
-		}
-
-		let deployerBalance = await this.node.getBalance(creatorstats[0].contractCreator);
-		let deployerTxCount = await this.node.getTransactionCount(creatorstats[0].contractCreator);
-
-		// get score
-		let security_score = await this.computeSecurityScore(ctx, eth_liquidity, verified);
-
-		// fetch contract info
-		let contractinfo = await etherscan.call({
-			module: 'token',
-			action: 'tokeninfo',
-			contractaddress: tokenAddress
-		});
-
-		// fetch holder info
-
-		let contractholders = await etherscan.call({
-			module: 'token',
-			action: 'tokenholderlist',
-			contractaddress: tokenAddress,
-			page: 1,
-			offset: 10
-		});
-
-		let holderString = '', holderAmountString = '';
-
-		for (let i = 0; i < contractholders.length; i++) {
-
-			if (!contractholders[i])
-				continue;
-
-			holderString += `[${(Helpers.dotdot(contractholders[i].TokenHolderAddress))}](https://etherscan.io/address/${contractholders[i].TokenHolderAddress})\n`;
-
-			if (contractholders[i].TokenHolderQuantity)
-				holderAmountString += `${Math.round(ethers.utils.formatEther(contractholders[i].TokenHolderQuantity, decimals).toString() / 100) * 100} ${ticker}\n`;
-			else
-				holderAmountString += `0 ETH\n`;
-		}
-
-		
-		const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
-
-		let interaction = await this.channel_open_trading.send({
-			content: `<@&${process.env.TRADING_OPEN_ROLE}> ${ticker}/WETH`,
-			embeds: [
-				new EmbedBuilder()
-					.setColor(0x000000)
-					.setTitle(`${ticker}/WETH (${this.displayScore(security_score)})`)
-					.setDescription(ticker + "\n`" + tokenAddress + "`")
-					.addFields(
-						{ name: 'Created', value: `<t:${block.timestamp}:R>`, inline: true },
-						{ name: 'Verified', value: verified ? ':green_circle:' : ':red_circle:', inline: true },
-						{ name: 'Marketcap', value: marketCap , inline: true },
-					)
-					.addFields(
-						{ name: 'Buys | Sells', value: '`N/A`', inline: true },
-						{ name: 'Honeypot', value: honeypot ? ':red_circle: True' : ':green_circle: False', inline: true },
-						{ name: 'Taxes', value: (honeypot ? '`N/A`' : (buyTax.toFixed(2) + '% | ' + sellTax.toFixed(2) + '%')), inline: true },
-					)
-					.addFields(
-						{ name: 'Holder', value: holderString, inline: true },
-						{ name: 'Amount', value: holderAmountString, inline: true },
-					)
-					.addFields(
-						{
-							name: 'Liquidity',
-							// value: (Math.round(ethers.utils.formatEther(2 * eth_liquidity).toString() * 100) / 100).toString() + 'WETH',
-							value: liquidity,
-							inline: true
-						},
-						{ name: 'Owner', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-					)
-					.addFields(
-						{ name: 'Deployer', value: `[${Helpers.dotdot(creatorstats[0].contractCreator.toString())}](https://etherscan.io/address/${creatorstats[0].contractCreator.toString()})`, inline: true },
-						{ name: 'Balance', value: (Math.round(ethers.utils.formatEther(deployerBalance) * 100) / 100) + ' ETH', inline: true },
-						{ name: 'TX Count', value: deployerTxCount.toString(), inline: true },
-					)
-					.addFields(
-						{ name: 'Description', value: contractinfo[0].description || 'N/A', inline: true }
-					)
-					.addFields(
-						{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${tokenAddress}) · [DexScreener](https://dexscreener.com/ethereum/${tokenAddress}) · [LP Etherscan](https://etherscan.io/address/${tokenAddress}) · [Search Twitter](https://twitter.com/search?q=${tokenAddress})` }
-					)
-					.setURL(`https://etherscan.io/address/${tokenAddress}`)
-			],
-			components: [
-				new ActionRowBuilder().addComponents(
-					new ButtonBuilder().setCustomId('buy').setLabel('Buy').setStyle(ButtonStyle.Primary),
-					new ButtonBuilder().setCustomId('sell').setLabel('Sell').setStyle(ButtonStyle.Primary),
-					//new ButtonBuilder().setCustomId('ape').setLabel('🦍').setStyle(ButtonStyle.Primary),
-					orderButton
-				),
-			]
-		});
-
-		await saveTokenInfoByInteraction(interaction.id, tokenAddress);
-
-		// add even if already exists
-		// this.availableTokens.push({
-		// 	address: tokenAddress.toLowerCase(),
-		// 	interaction: interaction.id
-		// });
-
-		// buy it for the auto-buyers
-		// this.autoBuyForUsers(ctx);
 	}
 
 	async simulateTransaction(token) {
@@ -1886,30 +755,19 @@ class Network {
 		let sellGas = honeypot ? '-' : simulation.sellGas;
 
 		// fetch if verified
-		var contractverified = await etherscan.call({
-			module: 'contract',
-			action: 'getabi',
-			address: tokenAddress
-		});
 
-		let verified = (contractverified == 'Contract source code not verified') ? 'false' : 'true';
+		let verified = this.isContractVerified(tokenAddress) ? 'false' : 'true';
 
 		// fetch contract info
-		let contractinfo = await etherscan.call({
-			module: 'token',
-			action: 'tokeninfo',
-			contractaddress: tokenAddress
-		});
+		// let contractinfo = await etherscan.call({
+		// 	module: 'token',
+		// 	action: 'tokeninfo',
+		// 	contractaddress: tokenAddress
+		// });
 
 		// fetch holder info
 
-		let contractholders = await etherscan.call({
-			module: 'token',
-			action: 'tokenholderlist',
-			contractaddress: tokenAddress,
-			page: 1,
-			offset: 10
-		});
+		let contractholders = await this.fetchContractHolders(tokenAddress)
 
 		let holderString = '', holderAmountString = '';
 
@@ -1950,9 +808,9 @@ class Network {
 					.addFields(
 						{ name: 'Verified', value: verified },
 					)
-					.addFields(
-						{ name: 'Description', value: contractinfo[0].description, inline: true }
-					)
+				// .addFields(
+				// 	{ name: 'Description', value: contractinfo[0].description, inline: true }
+				// )
 			],
 			components: [
 				new ActionRowBuilder().addComponents(
@@ -1989,51 +847,8 @@ class Network {
 		return Date.now() + 1000 * 60 * minutes;
 	}
 
-
-
-	async fetchDataOfToken(tokenAddress) {
-		let fetch_try_count = 0
-		while (true) {
-			try {
-				const apiUrl = `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`;
-				const response = await fetch(apiUrl);
-
-				const data = await response.json();
-				return data?.pairs[0];//(data?.pairs && data?.pairs[0]) || null;
-			}
-			catch (err) {
-				fetch_try_count = fetch_try_count + 1
-				await this.wait(10);
-				if(fetch_try_count > 10) return null;
-			}
-		}
-	}
-
-	async fetchDataOfHoneypot(tokenAddress, pairAddress) {
-		let fetch_try_count = 0
-		while (true) {
-			try {
-				if(tokenAddress && pairAddress) {
-					const apiUrl = `https://api.honeypot.is/v2/IsHoneypot?address=${tokenAddress}&pair=${pairAddress}&chainID=1`;
-		
-					const response = await fetch(apiUrl);
-		
-					const data = await response.json();
-					return data;
-				}
-				else {
-					return null;
-				}
-			}
-			catch (err) {
-				fetch_try_count = fetch_try_count + 1
-				await this.wait(10);
-				if(fetch_try_count > 10) return null;
-			}
-		}
-	}
-
 	matchWithOrder(orderData, curTokenPrice) {
+
 		console.log(`orderData?.mentionedPrice ${orderData?.mentionedPrice}`);
 		const mentionedPrice = ethers.BigNumber.from(orderData?.mentionedPrice);
 		const changedAmount = mentionedPrice.mul(orderData?.slippagePercentage).div(100);
@@ -2041,7 +856,7 @@ class Network {
 		console.log(`orderData?.isBuy ${orderData?.isBuy}`);
 
 		let slippedPrice;
-		if(orderData?.isBuy) {
+		if (orderData?.isBuy) {
 			slippedPrice = mentionedPrice.sub(changedAmount);
 		}
 		else {
@@ -2052,7 +867,7 @@ class Network {
 		console.log(`is gt? ${curTokenPrice.gt(slippedPrice)}`);
 		console.log(`is lt? ${curTokenPrice.lt(slippedPrice)}`);
 		console.log(`curTokenPrice ${curTokenPrice}`);
-		if(!orderData?.isBuy) {
+		if (!orderData?.isBuy) {
 			return curTokenPrice.gt(slippedPrice);
 		}
 		else {
@@ -2060,132 +875,18 @@ class Network {
 		}
 	}
 
-	async limitTrading(tokenAddress) {
-		// const orderList = await getOrderList(tokenAddress);
-		const orderList = await OrderCollection.getOrderList(tokenAddress);
-		
-		console.log(`orders.length ${orderList.length}`);
-		if(orderList && orderList.length > 0) {
-			
-			for(let i = 0; i < orderList.length; i++) {
-				const userDiscordId = orderList[i]?.discordId;
-				console.log(`userDiscordId ${userDiscordId}`);
-				const user = UserCollection.users[userDiscordId];
-
-				if(user && !orderList[i]?.isFinished) {
-					const order = orderList[i];
-					console.log(`order ${order.isBuy}`);
-
-					const curTokenPrice = await user.getCurTokenPrice(tokenAddress, 1, true);
-
-					const isMatchedWithOrder = this.matchWithOrder(order, curTokenPrice);
-					console.log(`isMatchedWithOrder ${isMatchedWithOrder}`);
-					if(isMatchedWithOrder) {
-						if(order?.isBuy) {
-							console.log(`do buy for order`);
-							user.sendOrderBuyTransaction(tokenAddress, order?.purchaseAmount, order._id.toString());
-						}
-						else {
-							console.log(`do sell for order`);
-							user.sendOrderSellTransaction(tokenAddress, order?.purchaseAmount, order._id.toString());
-						}
-					}
-				}
-
-			}
-		}
-	}
-
-	async detectPriceChange(tx, mode) {
-		// console.log(`start detected tokenprice transaction with ${mode}`);
-		let tokenAddress = ``;
-		let data;
-		switch(mode) {
-			case `swapExactETHForTokens`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[1][1];
-				break;
-
-			case `swapETHForExactTokens`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[1][1];
-				break;
-
-			case `swapExactETHForTokensSupportingFeeOnTransferTokens`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[1][1];
-				break;
-
-			case `swapExactTokensForETH`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[2][0];
-				break;
-
-			case `swapExactTokensForETHSupportingFeeOnTransferTokens`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[2][0];
-				break;
-
-			case `swapExactTokensForTokens`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[2][1];
-				break;
-
-			case `swapExactTokensForTokensSupportingFeeOnTransferTokens`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[2][1];
-				break;
-
-			case `swapTokensForExactETH`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[2][0];
-				break;
-
-			case `swapTokensForExactTokens`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[2][2];
-				break;
-
-			case `addLiquidity`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[1];
-				break;
-
-			case `addLiquidityETH`:
-				data = this.uniSwapUtils.decodeRouther(mode, tx.data);
-				tokenAddress = data[0];
-				break;
-			
-			case `buy_bot`:
-				data = this.asapswap.interface.decodeFunctionData('SwapEthToToken', tx.data);
-				tokenAddress = data[0];
-				break;
-
-			case `sell_bot`:
-				data = this.asapswap.interface.decodeFunctionData('SwapTokenToEth', tx.data);
-				tokenAddress = data[1];
-				break;
-
-			default:
-				break;
-		}
-
-		if(tokenAddress) {
-			//await setTokenPrice(tokenAddress, curTokenPrice);
-			this.limitTrading(tokenAddress);
-		}
-	}
 
 	async getBalnaceForETH(walletAddress) {
 		console.log(`start getBalnaceForETH`);
 		try {
-			console.log(`start getBalnaceForETH`);
-			const bal = await this.node.getBalance(walletAddress);
 
+			const bal = await this.node.getBalance(walletAddress.toLowerCase());
+			console.log(`balance of wallet${walletAddress} is ${ethers.utils.formatEther(bal)}eth.`);
 			return bal;
 		}
-		catch(err) {
-			console.log(`error in node.getBalanc is ${error}`)
+		catch (err) {
+			console.log(`error in node.getBalance is ${err}`)
+			throw `Error: Getting balance of wallet(${walletAddress}) get failed.\nError :` + err;
 		}
 
 		return ethers.utils.parseUnits(`0`, 18);

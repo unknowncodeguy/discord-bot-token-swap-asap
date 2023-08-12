@@ -19,31 +19,70 @@ const items = {
 	TRANSACTION_MODE_PINKSALE: 2,
 
 	TEAM_FINANCE_LOCKER_ADDRESS: '0xe2fe530c047f2d85298b07d9333c05737f1435fb',
+	TEAM_FINANCE_LOCK_METHOD: '0x5af06fed',
+	TEAM_FINANCE_ABI :[
+		{ "inputs": [{ "internalType": "address", "name": "_tokenAddress", "type": "address" }], "name": "getTotalTokenBalance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+	],
 	UNICRYPT_LOCKER_ADDRESS: '0x663a5c229c09b049e36dcc11a9b0d4a8eb9db214',
-
+	UNICRYPT_LOCK_METHOD: '0x8af416f6',
+	UNICRYPT_ABI:[
+		{ "inputs": [{ "internalType": "address", "name": "_lpToken", "type": "address" }], "name": "getNumLocksForToken", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+		{ "inputs": [{ "internalType": "address", "name": "", "type": "address" }, { "internalType": "uint256", "name": "", "type": "uint256" }], "name": "tokenLocks", "outputs": [{ "internalType": "uint256", "name": "lockDate", "type": "uint256" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }, { "internalType": "uint256", "name": "initialAmount", "type": "uint256" }, { "internalType": "uint256", "name": "unlockDate", "type": "uint256" }, { "internalType": "uint256", "name": "lockID", "type": "uint256" }, { "internalType": "address", "name": "owner", "type": "address" }], "stateMutability": "view", "type": "function" }
+	],
 	ADD_LIQUIDITY_FUNC: '0xe8e33700',
 	ADD_LIQUIDITY_ETH_FUNC: '0xf305d719',
 	ADD_LIQUIDITY_AVAX_FUNC: '0xf91b3f72',
 	ADD_LIQUIDITY_BURNT_FUNC: '0x02751cec',
 
-	SWAP_ETH_TO_TOKEN: `0xfb3bdb41`,
+	ASAP_SWAP_ETH_TO_TOKEN: `0x2cff306b`,
+	ASAP_SWAP_TOKEN_TO_ETH: `0xfa0c6257`,
 
-	SWAP_BUY_BY_BOT: `0xa83d93e9`, // missing
-	SWAP_SELL_BY_BOT: `0x8e870408`, // missing
-
-	UNISWAP_METHODS: {
-		swapExactETHForTokens: `0x7ff36ab5`,
-		swapETHForExactTokens: `0xfb3bdb41`,
-		swapExactETHForTokensSupportingFeeOnTransferTokens: `0xb6f9de95`,
-		swapExactTokensForETH: `0x18cbafe5`,
-		swapExactTokensForETHSupportingFeeOnTransferTokens: `0x791ac947`,
-		swapExactTokensForTokens: `0x38ed1739`,
-		swapExactTokensForTokensSupportingFeeOnTransferTokens: `0x5c11d795`,
-		swapTokensForExactETH: `0x4a25d94a`,
-		swapTokensForExactTokens: `0x8803dbee`,
-		addLiquidity: `0xe8e33700`,
-		addLiquidityETH: `0xf305d719`
-	},
+	UNISWAP_METHODS: [
+		{
+			method:'swapExactETHForTokens',
+			hex:`0x7ff36ab5`
+		},
+		{
+			method:'swapExactTokensForTokensSupportingFeeOnTransferTokens',
+			hex:`0x5c11d795`
+		},
+		{
+			method:'swapExactTokensForTokens',
+			hex:`0x38ed1739`
+		},
+		{
+			method:'swapExactTokensForETHSupportingFeeOnTransferTokens',
+			hex:`0x791ac947`
+		},
+		{
+			method:'swapExactTokensForETH',
+			hex:`0x18cbafe5`
+		},
+		{
+			method:'swapExactETHForTokensSupportingFeeOnTransferTokens',
+			hex:`0xb6f9de95`
+		},
+		{
+			method:'swapETHForExactTokens',
+			hex:`0xfb3bdb41`
+		},
+		{
+			method:'swapTokensForExactETH',
+			hex:`0x4a25d94a`
+		},
+		{
+			method:'swapTokensForExactTokens',
+			hex:`0x8803dbee`
+		},
+		{
+			method:'addLiquidity',
+			hex:`0xe8e33700`
+		},
+		{
+			method:'addLiquidityETH',
+			hex:`0xf305d719`
+		},
+	],
 
 	UNISWAP_ABI: [
 		'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
@@ -64,13 +103,8 @@ const items = {
 	ADD_LIQUIDITY_UNK_FUNC: '0x267dd102',
 	ADD_LIQUIDITY_UNK2_FUNC: '0xe8078d94',
 
-	TEAM_FINANCE_LOCK: '0x5af06fed',
-	UNICRYPT_LOCK: '0x8af416f6',
 
 	CREATE_PAIR_FUNC: '0xc9c65396',
-
-	USDT_WETH_PAIR :'0x4e68Ccd3E89f51C3074ca5072bbAC773960dFa36',
-	USDT_ADDRESS:'0xdAC17F958D2ee523a2206206994597C13D831ec7',
 
 	DEFAULT_GAS_LIMIT: 600000,
 	APPROVE_AMOUNT: `115792089237316195423570985008687907853269984665640564039457584007913129639935`,
@@ -761,11 +795,10 @@ const items = {
 		{ "constant": true, "inputs": [], "name": "token1", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "payable": false, "stateMutability": "view", "type": "function" }
 	],
 
-	REFERRAL_TOKEN_ADDRESS: `0xc36ad98e62598ae24d4487d8012209f687c30d45`,
-	REFERRAL_DETECT_TOKEN_NUMBER: 100, //set to 100
+
 	REFERRAL_LINK_MAX_USE: 0,
 	REFERRAL_LINK_EXPIRE_SEC: 0,
-	REFERRAL_START_MEMBER: 10,  //set to 10
+
 
 	MAX_CREATABLE_WALLET: 2,
 
@@ -774,7 +807,66 @@ const items = {
 		REFERRAL: `referral`
 	},
 
-	MINIMUM_BALANCE_CHANGE: 0.04,
+	TRADE_MODE: {
+		BUY: `buy`,
+		SELL: `sell`
+	},
+
+	ANALYZE_BLOCK_TIME_INTERVAL: 3000,
+	BLOCK_FETCHING_STATUS :{
+		NONE:0,
+		FETCHING_TXS:1,
+		ANALYZING:2,
+		UPDATING_TOKENS:3,
+		PROCESSING_LIMIT_ORDER:4,
+		COMPLETED:5
+
+	},
+	MINIMUM_BALANCE_CHANGE: 0.01,
+	ORDER_STATUS: {
+		WAITING: 0,
+		PENDING: 1,
+		SUCCESS: 2,
+		FAILED: 3,
+		CANCELED: 4,
+	},
+	MAX_WALLETSIZE_METHODS:[
+		'_maxWalletSize',
+	],
+	BLOCKED_FUNCTIONS: [
+		'0x3c59639b',
+		'0x9d83fc32',
+		'0x0bffdcf4',
+		'0xef176b98',
+		'0x1507bd2f',
+		'0x8f283970',
+		'0x5932ead1',
+		'0x357dae04',
+		'0xba2a80ae',
+		'0xdafd18e9',
+		'0x96642ad9',
+		'0xa1c17686',
+		'0x57ae5708',
+		'0x9d83fc32',
+		'0x9d83fc32',
+
+		// contract
+		'60a060405260405162000d4b38038062000d4b83398101604081905262000026916200027b565b818484600362000037838262000394565b50600462000046828262000394565b50505060ff1660805280620000ae5760405162461bcd60e51b8152602060048201526024808201527f5374616e6461726445524332303a20737570706c792063616e6e6f74206265206044820152637a65726f60e01b60648201526084015b60405180910390fd5b620000ba3382620000c4565b5050505062000487565b6001600160a01b0382166200011c5760405162461bcd60e51b815260206004820152601f60248201527f45524332'
+	],
+	OPEN_TRADING_FUNCS: [
+		'0xc9567bf9',
+		'0x01339c21',
+		'0x293230b8'
+	],
+
+	LIMIT_ORDER_TEST_TOKENS:[
+		'0xbF7f4cdF6084d57e3bddc2Afa2308be72B0Ea087',
+		'0x5EaEb4171b1f12884Bbf403b17B21B8BECC9dDA2',
+		'0x73d5B2f081ceDf63A9e660a22088C7724aF78774',
+		'0xE6550144ACD9954a5dA5a3eb4b8E2e09be13C0D9',
+		'0x1a5A656851BDbf0ed39B9D404F188e67B2bB5cC5'
+	],
+	DEFAULT_READ_BLOCKS:3,
 }
 
 module.exports = items;

@@ -1,13 +1,27 @@
 const mongoose = require('mongoose');
 
 const TokenSchema = new mongoose.Schema({
-    interaction: {
-        type: String,
-        required: true,
-      },
-    tokenAddress: {
+    address: {
         type: String,
         required: true
+    },
+    sellPrice: {
+        type: Number
+    },
+    buyPrice: {
+        type: Number
+    },
+    pair:{
+        type: String
+    },
+    liquidity:{
+        type: String
+    },
+    updateBlock: {
+        type: Number
+    },
+    decimals: {
+        type: Number
     }
 })
 
