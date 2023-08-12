@@ -1096,10 +1096,7 @@ class ASAPUser {
 			"My Bot's message",
 			{ 
 				content: 'Here is your image:', 
-				files: [{
-					attachment: buffer,
-					name: `my-image`
-				}] 
+				files: [attachment] 
 			}
 		);
 
