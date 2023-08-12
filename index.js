@@ -1412,7 +1412,7 @@ process.on('uncaughtException', (e, origin) => {
 									new EmbedBuilder()
 										.setColor(0x000000)
 										.setTitle(`Trade Detail Information`)
-										.setDescription(trade?.symbol + "\n" + trade?.tokenAdress)
+										.setDescription(trade?.tokenSymbol + "\n" + trade?.tokenAdress)
 										.addFields(
 											{ 
 												name: 'Trade Date', 
@@ -1458,7 +1458,7 @@ process.on('uncaughtException', (e, origin) => {
 									new EmbedBuilder()
 										.setColor(0x000000)
 										.setTitle(`Trade Detail Information`)
-										.setDescription(trade?.symbol + "\n" + trade?.tokenAdress)
+										.setDescription(trade?.tokenSymbol + "\n" + trade?.tokenAdress)
 										.addFields(
 											{ 
 												name: 'Trade Date', 
