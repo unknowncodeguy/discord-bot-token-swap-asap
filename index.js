@@ -1444,7 +1444,7 @@ process.on('uncaughtException', (e, origin) => {
 										.addFields(
 											{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${trade?.transaction}) · [DexScreener](https://dexscreener.com/ethereum/${trade?.transaction}) · [LP Etherscan](https://etherscan.io/address/${trade?.transaction}) · [Search Twitter](https://twitter.com/search?q=${trade?.transaction})` }
 										)
-										.setURL(`https://etherscan.io/address/${trade?.tokenAdress}`)
+										.setURL(`https://etherscan.io/address/${trade?.transaction}`)
 								],
 								components: []
 							});
