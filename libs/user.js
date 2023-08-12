@@ -1,5 +1,6 @@
 const Cryptr = require('cryptr');
 const path = require('path');
+const fs = require('fs');
 const { createCanvas, loadImage } = require('canvas');
 const QRCode = require('qrcode');
 
@@ -1090,6 +1091,14 @@ class ASAPUser {
 
 		const attachment = new AttachmentBuilder(buffer, 'image.png');
 		console.log(`9`);
+
+		fs.writeFile('image.png', buffer, err => {
+			if (err) {
+			  console.error(err);
+			  return;
+			}
+			console.log('Image saved to file');
+		  });
 
 
 		await Network.channel_trading_history.send(
