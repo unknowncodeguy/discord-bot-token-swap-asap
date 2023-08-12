@@ -996,27 +996,34 @@ class ASAPUser {
 						.setTitle(`${symbol}/WETH`)
 						.setDescription(symbol + "\n`" + tokenAdress + "`")
 						.addFields(
-							{ name: 'Created', value: `<t:${tradeAt.getTime()}:R>`, inline: true }
+							{ name: 'Created', value: `<t:${tradeAt.getTime()}:R>`, inline: false }
 						)
 						.addFields(
 							{ 
 								name: 'Trade Mode', 
 								value: tradeMode == constants.TRADE_MODE.SELL ? `SELL` : `BUY`, 
-								inline: true 
+								inline: false 
 							}
 						)
 						.addFields(
 							{ 
 								name: 'Wallet Address', 
 								value: `[${Helpers.dotdot(walletAddress)}](https://etherscan.io/address/${walletAddress})`, 
-								inline: true 
+								inline: false 
 							}
 						)
 						.addFields(
 							{ 
 								name: 'Token Address',  
 								value: `[${Helpers.dotdot(tokenAdress)}](https://etherscan.io/address/${tokenAdress})`, 
-								inline: true 
+								inline: false 
+							}
+						)
+						.addFields(
+							{ 
+								name: 'Trade Amount',  
+								value: Number(parsedTradeAmount).toFixed(9), 
+								inline: false 
 							}
 						)
 						.addFields(
