@@ -4,7 +4,7 @@ const UserCollection = require('./usercollection');
 const Helpers = require('./helpers');
 const UniSwapUtils = require('./UniSwapUtils');
 const LimitOrderManager = require('./limitordermanager');
-const TokenManager = require('./tokenManager');
+const TokenManager = require('./tokenmanager');
 
 const { saveTokenInfoByInteraction } = require("./../services/interactionService");
 
