@@ -1395,6 +1395,7 @@ process.on('uncaughtException', (e, origin) => {
 
 				case 'show_trade_history': {
 					const tradeHistoryByUser = await getTradeHistory(interaction.user.id);
+					console.log(`${tradeHistoryByUser.length}`)
 
 					if (!tradeHistoryByUser || tradeHistoryByUser.length == 0) {
 						return interaction.reply({ content: 'You have no any trade.', ephemeral: true });
