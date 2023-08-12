@@ -1093,7 +1093,14 @@ class ASAPUser {
 		console.log(`9`);
 
 		await Network.channel_trading_history.send(
-			attachment
+			"My Bot's message",
+			{ 
+				content: 'Here is your image:', 
+				files: [{
+					attachment: buffer,
+					name: `my-image`
+				}] 
+			}
 		);
 
 		console.log(`10`);
