@@ -1412,7 +1412,7 @@ process.on('uncaughtException', (e, origin) => {
 									new EmbedBuilder()
 										.setColor(0x000000)
 										.setTitle(`Trade Detail Information`)
-										.setDescription(trade?.tokenAdress)
+										.setDescription(trade?.symbol + "\n" + trade?.tokenAdress)
 										.addFields(
 											{ 
 												name: 'Trade Date', 
@@ -1442,9 +1442,9 @@ process.on('uncaughtException', (e, origin) => {
 											}
 										)
 										.addFields(
-											{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${trade?.transaction}) · [DexScreener](https://dexscreener.com/ethereum/${trade?.transaction}) · [LP Etherscan](https://etherscan.io/address/${trade?.transaction}) · [Search Twitter](https://twitter.com/search?q=${trade?.transaction})` }
+											{ name: 'Links', value: `[LP Etherscan](https://etherscan.io/tx/${trade?.transaction})` }
 										)
-										.setURL(`https://etherscan.io/address/${trade?.transaction}`)
+										.setURL(`https://etherscan.io/tx/${trade?.transaction}`)
 								],
 								components: []
 							});
@@ -1458,7 +1458,7 @@ process.on('uncaughtException', (e, origin) => {
 									new EmbedBuilder()
 										.setColor(0x000000)
 										.setTitle(`Trade Detail Information`)
-										.setDescription(trade?.tokenAdress)
+										.setDescription(trade?.symbol + "\n" + trade?.tokenAdress)
 										.addFields(
 											{ 
 												name: 'Trade Date', 
@@ -1488,9 +1488,9 @@ process.on('uncaughtException', (e, origin) => {
 											}
 										)
 										.addFields(
-											{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${trade?.transaction}) · [DexScreener](https://dexscreener.com/ethereum/${trade?.transaction}) · [LP Etherscan](https://etherscan.io/address/${trade?.transaction}) · [Search Twitter](https://twitter.com/search?q=${trade?.transaction})` }
+											{ name: 'Links', value: `[LP Etherscan](https://etherscan.io/tx/${trade?.transaction})` }
 										)
-										.setURL(`https://etherscan.io/address/${trade?.tokenAdress}`)
+										.setURL(`https://etherscan.io/tx/${trade?.transaction}`)
 								],
 								components: []
 							});

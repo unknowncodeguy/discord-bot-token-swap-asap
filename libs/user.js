@@ -1023,7 +1023,7 @@ class ASAPUser {
 							}
 						)
 						.addFields(
-							{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${transaction}) · [DexScreener](https://dexscreener.com/ethereum/${transaction}) · [LP Etherscan](https://etherscan.io/address/${transaction}) · [Search Twitter](https://twitter.com/search?q=${transaction})` }
+							{ name: 'Transaction', value: `[LP Etherscan](https://etherscan.io//${transaction})` }
 						)
 						.setURL(`https://etherscan.io/address/${tokenAdress}`)
 				],
