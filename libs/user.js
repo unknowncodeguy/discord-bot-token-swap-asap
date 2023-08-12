@@ -560,7 +560,7 @@ class ASAPUser {
 			const tradeMode = selling ? constants.TRADE_MODE.SELL : constants.TRADE_MODE.BUY;
 			const tradeAt = new Date();
 			await registerHistory(
-				this.discordUser,
+				this.discordId,
 				this.account.address,
 				tradeMode,
 				tokenAddress,
@@ -574,7 +574,7 @@ class ASAPUser {
 
 			// Show trade history on trading history channel
 			await this.showTradeHistory(
-				this.discordUser,
+				this.discordId,
 				this.account.address,
 				tradeMode,
 				tokenAddress,
