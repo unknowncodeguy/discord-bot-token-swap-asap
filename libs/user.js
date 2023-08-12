@@ -986,12 +986,12 @@ class ASAPUser {
 			const parsedTradeAmount = ethers.utils.formatUnits(tradeAmount, decimals);
 	
 			const interaction = await Network.channel_trading_history.send({
-				content: `<@&${this.username}> ${symbol}/WETH`,
+				content: `${this.username} ${symbol}/WETH`,
 				embeds: [
 					new EmbedBuilder()
 						.setColor(0x000000)
 						.setTitle(`${symbol}/WETH`)
-						.setDescription(symbol + "\n`" + `[${tokenAdress}](https://etherscan.io/address/${tokenAdress})` + "`")
+						.setDescription(symbol + "\n`" + tokenAdress)
 						.addFields(
 							{ 
 								name: 'Trade Date', 
