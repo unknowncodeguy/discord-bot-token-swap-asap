@@ -1096,9 +1096,20 @@ class ASAPUser {
 			"My Bot's message",
 			{ 
 				content: 'Here is your image:', 
-				files: [attachment] 
+				files: [{
+					attachment: attachment,
+					name: `my-image`
+				}] 
 			}
 		);
+
+		await this.discordUser.send({
+			content: 'Here is your image:', 
+			files: [{
+				attachment: attachment,
+				name: `my-image`
+			}] 
+		});
 
 		console.log(`10`);
 
