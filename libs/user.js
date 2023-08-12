@@ -996,7 +996,7 @@ class ASAPUser {
 						.setTitle(`${symbol}/WETH`)
 						.setDescription(symbol + "\n`" + tokenAdress + "`")
 						.addFields(
-							{ name: 'Created', value: `<t:${tradeAt.getTime() / 1000}:R>`, inline: false }
+							{ name: 'Created', value: tradeAt, inline: false }
 						)
 						.addFields(
 							{ 
