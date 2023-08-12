@@ -24,10 +24,6 @@ const {
 const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
 const canvasWidth = 400;
 const canvasHeight = 300;
-const backgroundImage = await loadImage('./../assets/images/pnl.jfif');
-const canvas = createCanvas(canvasWidth, canvasHeight);
-const ctx = canvas.getContext('2d');
-ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
 
 class ASAPUser {
 
@@ -1062,6 +1058,11 @@ class ASAPUser {
 		const thenPrice = lastBuyTradeInfo?.thenPrice || 0;
 
 		const pnlInfo = await calculatePNL(tokenData, thenPrice, tradeAmount);
+
+		const backgroundImage = await loadImage('./../assets/images/pnl.jfif');
+		const canvas = createCanvas(canvasWidth, canvasHeight);
+		const ctx = canvas.getContext('2d');
+		ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
 
 		const qrCode = await QRCode.toDataURL('https://example.com');
 		const qrCodeImage = await loadImage(qrCode);
