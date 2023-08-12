@@ -1077,10 +1077,12 @@ class ASAPUser {
 			const backgroundImage = await loadImage(imagePath);
 			ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
 	
-			// Draw QRCode Image
-			const qrCode = await QRCode.toDataURL('https://example.com');
-			const qrCodeImage = await loadImage(qrCode);
-			ctx.drawImage(qrCodeImage, 50, 50);
+			if(userData?.referralLink) {
+				// Draw QRCode Image
+				const qrCode = await QRCode.toDataURL(userData?.referralLink);
+				const qrCodeImage = await loadImage(qrCode);
+				ctx.drawImage(qrCodeImage, 50, 50);
+			}
 
 			// Draw the Text
 			ctx.font = '48px sans-serif';
