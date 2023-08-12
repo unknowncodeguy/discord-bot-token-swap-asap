@@ -1091,6 +1091,7 @@ class ASAPUser {
 
 		const attachment = new AttachmentBuilder(buffer, 'image.png');
 		console.log(`9`);
+		console.log(`attachment ${JSON.stringify(attachment)}`);
 
 		// await Network.channel_trading_history.send(
 		// 	"My Bot's message",
