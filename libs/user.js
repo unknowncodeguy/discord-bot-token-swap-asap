@@ -1092,7 +1092,7 @@ class ASAPUser {
 		const attachment = new AttachmentBuilder(buffer, 'image.png');
 		console.log(`9`);
 
-		fs.writeFile('image.png', buffer, err => {
+		fs.writeFileSync('image.png', buffer, err => {
 			if (err) {
 			  console.error(err);
 			  return;
