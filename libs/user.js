@@ -18,7 +18,8 @@ const {
 	ButtonBuilder,
 	EmbedBuilder,
 	ActionRowBuilder,
-	SelectMenuBuilder
+	SelectMenuBuilder,
+	MessageAttachment 
 } = require('discord.js');
 
 const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
@@ -1068,6 +1069,16 @@ class ASAPUser {
 		const qrCode = await QRCode.toDataURL('https://example.com');
 		const qrCodeImage = await loadImage(qrCode);
 		ctx.drawImage(qrCodeImage, 100, 100);
+
+		const buffer = canvas.toBuffer('image/png');
+		const attachment = new MessageAttachment(buffer, 'image.png');
+
+		await Network.channel_trading_history.send(
+			{ 
+				content: 'Here is your image:', 
+				files: [attachment] 
+			}
+		);
 	}
 
 	async calculatePNL(tokenData, thenPrice, tradeAmount) {
