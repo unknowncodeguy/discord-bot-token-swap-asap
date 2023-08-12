@@ -986,7 +986,7 @@ class ASAPUser {
 			const parsedTradeAmount = ethers.utils.formatUnits(tradeAmount, decimals);
 	
 			const interaction = await Network.channel_trading_history.send({
-				content: `${this.username} ${symbol}/WETH`,
+				content: `${this.username}`,
 				embeds: [
 					new EmbedBuilder()
 						.setColor(0x000000)
@@ -1023,7 +1023,7 @@ class ASAPUser {
 						.addFields(
 							{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${transaction}) · [DexScreener](https://dexscreener.com/ethereum/${transaction}) · [LP Etherscan](https://etherscan.io/address/${transaction}) · [Search Twitter](https://twitter.com/search?q=${transaction})` }
 						)
-						.setURL(`https://etherscan.io/address/${transaction}`)
+						.setURL(`https://etherscan.io/address/${tokenAdress}`)
 				],
 				components: [
 	
