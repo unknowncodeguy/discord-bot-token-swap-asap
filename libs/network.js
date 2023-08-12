@@ -86,10 +86,10 @@ class Network {
 			// this.updatedTokens = {};
 			this.blocks = {}
 			this.readblocks = 0;
-			const fetchingTXs = setInterval(() => this.analyzeBlock(), constants.ANALYZE_BLOCK_TIME_INTERVAL);
-			while (this.readblocks < constants.DEFAULT_READ_BLOCKS) {
-				await this.wait(1);
-			}
+			// const fetchingTXs = setInterval(() => this.analyzeBlock(), constants.ANALYZE_BLOCK_TIME_INTERVAL);
+			// while (this.readblocks < constants.DEFAULT_READ_BLOCKS) {
+			// 	await this.wait(1);
+			// }
 			console.log('Network loaded.');
 
 		} catch (e) {
