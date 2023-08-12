@@ -17,7 +17,8 @@ const items = {
 	TRANSACTION_MODE_REGULAR: 0,
 	TRANSACTION_MODE_DXSALE: 1,
 	TRANSACTION_MODE_PINKSALE: 2,
-
+	DEAD_ADDRESS:				 '0x000000000000000000000000000000000000dEaD',
+	ERC20_TRANSFER_METHOD : '0xa9059cbb',
 	TEAM_FINANCE_LOCKER_ADDRESS: '0xe2fe530c047f2d85298b07d9333c05737f1435fb',
 	TEAM_FINANCE_LOCK_METHOD: '0x5af06fed',
 	TEAM_FINANCE_ABI :[
@@ -33,6 +34,20 @@ const items = {
 	ADD_LIQUIDITY_ETH_FUNC: '0xf305d719',
 	ADD_LIQUIDITY_AVAX_FUNC: '0xf91b3f72',
 	ADD_LIQUIDITY_BURNT_FUNC: '0x02751cec',
+	REMOVE_LIQUIDITY_FUNCS:[
+		{method: 'removeLiquidity',hex:'0xbaa2abde'},//removeLiquidity(address tokenA, address tokenB, uint256 liquidity, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline)
+		{method: 'removeLiquidityETH',hex:'0x02751cec'},//removeLiquidityETH(address token, uint256 liquidity, uint256 amountTokenMin, uint256 amountETHMin, address to, uint256 deadline)
+		{method: 'removeLiquidityWithPermit',hex:'0x2195995c'},//removeLiquidityWithPermit(address tokenA, address tokenB, uint256 liquidity, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline, bool approveMax, uint8 v, bytes32 r, bytes32 s)
+		{method: 'removeLiquidityETHWithPermit',hex:'0xded9382a'},//removeLiquidityETHWithPermit(address token, uint256 liquidity, uint256 amountTokenMin, uint256 amountETHMin, address to, uint256 deadline, bool approveMax, uint8 v, bytes32 r, bytes32 s)
+		{method: 'removeLiquidityETHSupportingFeeOnTransferTokens',hex:'0xaf2979eb'},//removeLiquidityETHSupportingFeeOnTransferTokens(address token, uint256 liquidity, uint256 amountTokenMin, uint256 amountETHMin, address to, uint256 deadline)
+		{method: 'removeLiquidityETHWithPermitSupportingFeeOnTransferTokens',hex:'0x5b0d5984'},//removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(address token, uint256 liquidity, uint256 amountTokenMin, uint256 amountETHMin, address to, uint256 deadline, bool approveMax, uint8 v, bytes32 r, bytes32 s)
+	],
+	ALERT_IGNORE_TIMES:{
+		CHANNEL_NEW_LIQUIDTY:3600 * 24 * 7,//7 days
+		CHANNEL_LOCKED_LIQUIDITY:3600 * 24 * 7,//7 days
+		CHANNEL_OPEN_TRADING:3600 * 24 * 7,//7 days
+		CHANNEL_BURNT_ALERT:3600 * 24 * 7 //7 days
+	},
 
 	ASAP_SWAP_ETH_TO_TOKEN: `0x2cff306b`,
 	ASAP_SWAP_TOKEN_TO_ETH: `0xfa0c6257`,
@@ -91,7 +106,12 @@ const items = {
 		'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable',
 		'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external',
 		'function addLiquidityETH( address token, uint amountTokenDesired, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH, uint liquidity)',
-		'function removeLiquidityETH( address token, uint liquidity, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external payable returns (uint amountToken, uint amountETH)',
+		'function removeLiquidity(  address tokenA, address tokenB, uint liquidity, uint amountAMin, uint amountBMin, address to, uint deadline) external returns (uint amountA, uint amountB)',
+    	'function removeLiquidityETH( address token, uint liquidity, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external returns (uint amountToken, uint amountETH)',
+    	'function removeLiquidityWithPermit( address tokenA, address tokenB, uint liquidity, uint amountAMin, uint amountBMin, address to, uint deadline, bool approveMax, uint8 v, bytes32 r, bytes32 s ) external returns (uint amountA, uint amountB)',
+    	'function removeLiquidityETHWithPermit( address token, uint liquidity, uint amountTokenMin, uint amountETHMin, address to, uint deadline, bool approveMax, uint8 v, bytes32 r, bytes32 s ) external returns (uint amountToken, uint amountETH)',
+    	'function removeLiquidityETHSupportingFeeOnTransferTokens( address token, uint liquidity, uint amountTokenMin, uint amountETHMin, address to, uint deadline ) external returns (uint amountETH)',
+    	'function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens( address token, uint liquidity, uint amountTokenMin, uint amountETHMin, address to, uint deadline, bool approveMax, uint8 v, bytes32 r, bytes32 s ) external returns (uint amountETH)',
 		'function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)',
 		'function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)',
 		'function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',

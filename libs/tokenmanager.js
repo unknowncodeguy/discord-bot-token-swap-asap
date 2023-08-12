@@ -197,8 +197,6 @@ class TokenManger {
 				
 			}
 
-			console.log(`Defined main token infomation!`);
-
 			if(this.network.Current_Block - tokenData.updateAt > process.env.TOKEN_INFO_UPDATE_INTERVAL)
 			{
 	

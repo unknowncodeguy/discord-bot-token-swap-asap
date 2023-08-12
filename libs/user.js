@@ -986,7 +986,7 @@ class ASAPUser {
 			const parsedTradeAmount = ethers.utils.formatUnits(tradeAmount, decimals);
 	
 			const interaction = await Network.channel_trading_history.send({
-				content: `<@&${process.env.TRADING_HISTORY_ROLE}> ${symbol}/WETH`,
+				content: `<@&${this.username}> ${symbol}/WETH`,
 				embeds: [
 					new EmbedBuilder()
 						.setColor(0x000000)

@@ -1,5 +1,6 @@
 const ethers = require('ethers');
 const constants = require('./constants');
+const etherscan = new (require('./etherscan'))();
 
 class UniSwapUtils {
 
@@ -108,9 +109,7 @@ class UniSwapUtils {
 			return this.factory.interface.decodeFunctionData(method, data);
 		}
 		catch(e)	{
-			console.log("UniSwapUtils.decodeFactory: " + method );
-			console.log("UniSwapUtils.decodeFactory: " + data );
-			console.log("UniSwapUtils.decodeFactory: " + e );
+			console.log("Decoding uniswap factory get failed method: " + method  + " data : " + data + "\nError:" + e) ;
 			return null;
 		}
 	}
@@ -121,9 +120,7 @@ class UniSwapUtils {
 			return this.router.interface.decodeFunctionData(method, data);
 		}
 		catch(e)	{
-			console.log("UniSwapUtils.decodeRouter: " + method );
-			console.log("UniSwapUtils.decodeRouter: " + data );
-			console.log("UniSwapUtils.decodeRouter: " + e );
+			console.log("Decoding uniswap router get failed method: " + method  + " data : " + data + "\nError:" + e) ;
 			return null;
 		}
 	}
@@ -134,7 +131,7 @@ class UniSwapUtils {
 			const abi = await etherscan.call({
 				module: 'contract',
 				action: 'getabi',
-				address: token_address
+				address: contractAddr
 			});
 			const ctx = new ethers.Contract(
 				contractAddr,
@@ -146,11 +143,25 @@ class UniSwapUtils {
 			const token0 = await ctx.token0();
 			const token1 = await ctx.token1();
 			reserves.token = token0.toLowerCase() == this.weth.address ? token1 : token0;
+			console.log(`${contractAddr} is Pair cotract for token ${reserves.token}`);
 		}
 		catch(e){
+			console.log(`${contractAddr} is not Uniswap Pair cotract` + e);
 			reserves.isPair = false;
 		}
 		return reserves;
+	}
+
+	 decodeErc20Transfer( data)
+	{
+		try{
+			return this.weth.interface.decodeFunctionData("transfer", data);
+		}
+		catch(e)	{
+			console.log(`decode erc20 transfer failed` + e);
+			return null;
+		}
+		
 	}
 }	
 

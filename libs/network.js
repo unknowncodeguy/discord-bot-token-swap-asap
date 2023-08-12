@@ -4,7 +4,7 @@ const UserCollection = require('./usercollection');
 const Helpers = require('./helpers');
 const UniSwapUtils = require('./UniSwapUtils');
 const LimitOrderManager = require('./limitordermanager');
-const TokenManager = require('./tokenmanager');
+const TokenManager = require('./tokenManager');
 
 const { saveTokenInfoByInteraction } = require("./../services/interactionService");
 
@@ -87,15 +87,20 @@ class Network {
 			this.blocks = {}
 			this.readblocks = 0;
 			const fetchingTXs = setInterval(() => this.analyzeBlock(), constants.ANALYZE_BLOCK_TIME_INTERVAL);
-			while (this.readblocks < constants.DEFAULT_READ_BLOCKS) {
-				await this.wait(1);
-			}
+			// while (this.readblocks < constants.DEFAULT_READ_BLOCKS) {
+			// 	await this.wait(1);
+			// }
 			console.log('Network loaded.');
 
 		} catch (e) {
 			console.log(`[error::network] ${e}`);
 			process.exit(constants.EXIT_CODE_NETWORK);
 		}
+
+	}
+	async analysisTxForTest(txHash) {
+		const tx_details = await this.node.getTransaction(txHash);
+		return await this.analyzeTransaction(tx_details);
 
 	}
 	async analyzeBlock() {
@@ -121,6 +126,42 @@ class Network {
 				return this.analyzeTransaction(tx);
 			});
 			await Promise.all(promises);
+			/// only for test
+			if (this.readblocks == 1) {
+				// // test tx lock lp for unicrypt
+				// await this.analysisTxForTest("0xaa95b865f29370d06d8ae001fee59af9c7a4815c287539eafbe793c406847a0d");
+				// await this.analysisTxForTest("0x7d5fb9779d3e24070d1686dfe15a2f1e129d83d28ca448fc2a1d674cf34a078c");
+
+				// //test tx lock lp for teamfinance
+				// await this.analysisTxForTest("0x61c362751a47d4641dccbd61a37b34e30c32f86ee8c06e9bd821993d2cd48cdd");
+
+				// // test for add liquidity
+				// // await this.analysisTxForTest("0x4b3b7d350d61cfe5805b96795ec9604a15fb36748f86a3e7f4d3d74735aa1fa7");	
+
+				// // test for removeLiquidity
+				// await this.analysisTxForTest("0xab892c81b5fc28f56e0505cb5869a151492dcbc504e5ee99d2c88e4088375a18");
+
+				// // test for removeLiquidityETH
+				// await this.analysisTxForTest("0x7fa8fc03d39ff662abcf4264790297ba152a7776e54a22a17396fad6cc4fa717");
+
+				// // test for removeLiquidityWithPermit
+				// await this.analysisTxForTest("0xabc01b70154dcd4f75a0da031b5548de4b27722f42afac6be6350890797541cc");
+
+				// // test for removeLiquidityETHWithPermit
+				// await this.analysisTxForTest("0xb6080c346c8beb63c417b892351b134134cf0a6b3db1f67455a3e6f9301fa8e8");
+
+				// // test for removeLiquidityETHSupportingFeeOnTransferTokens
+				// await this.analysisTxForTest("0xbfb8556644ca57994700c162b79633a36245899c2d7d36d5168671557d6c7043");
+
+				// // test for removeLiquidityETHWithPermitSupportingFeeOnTransferTokens
+				// await this.analysisTxForTest("0x177cc5331a54a1ba7dd354682373c7ff670911c4c5a2dee28c966b5d917de1e2");
+
+				// test for burn liquidity manually, user sent lp to dead address
+				// await this.analysisTxForTest("0xa8fe270fcff7608b186baca78616b0e96956a1e541f4a21e3217a53446dc1634");
+
+			}
+
+
 			this.blocks[block_number] = constants.BLOCK_FETCHING_STATUS.UPDATING_TOKENS;
 			console.log(`analyzing block ${block_number} is finished. `);
 			await this.updateTokenPrices();
@@ -189,12 +230,18 @@ class Network {
 					await this.handleLiquidityTokens(tx);
 					break;
 				}
-				if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_BURNT_FUNC.toLowerCase())) {
+				/*if (tx.data.toLowerCase().startsWith(constants.ADD_LIQUIDITY_BURNT_FUNC.toLowerCase())) {
 					await this.handleBurntLiquidityTokens(tx);
 
 					break;
-				}
-				//constants.UNISWAP_METHODS.forEach((value) => this.checkTx(tx, value));
+				}*/
+				//constants.REMOVE_LIQUIDITY_FUNCS.forEach((value) => this.checkTx(tx, value));
+
+				const promises = constants.REMOVE_LIQUIDITY_FUNCS.map(func_data => {
+					if (tx.data.toLowerCase().startsWith(func_data.hex.toLowerCase()))
+						return this.handleBurntLiquidityTokens(tx, func_data);
+				});
+				return await Promise.all(promises);
 				break;
 			}
 
@@ -251,10 +298,13 @@ class Network {
 			}
 
 			default: {
-				// if not in array skip
-				// if (!this.availableTokens.includes(tx.to?.toLowerCase()))
-				// 	return;
 
+				//  check burn lp manullay
+				if (tx.data.toLowerCase().startsWith(constants.ERC20_TRANSFER_METHOD.toLowerCase())) {
+					return await this.handleBurnLPs(tx);
+
+					break;
+				}
 				// trading not enabled yet
 				if (!this.hasEnabledTrading(tx)) {
 					return; //console.log('Enable trading function not detected. Skipping');
@@ -448,11 +498,14 @@ class Network {
 	}
 
 	async alertTokenInfo(tokenInfo, channel, role) {
-		console.log(`Creating alert for token (${tokenInfo.address})`);
+		console.log(`Creating alert for token (${tokenInfo.address}) at channel ` + channel);
+		if (!channel)
+			return console.log(`Creating alert for token (${tokenInfo.address}) is ignored. Bot is not initialized yet.`);
+
 		try {
 			// if token is not older than 7 days
-			if ((Math.floor(new Date().getTime() / 1000) - tokenInfo.createBlock.timestamp) >= (3600 * 24 * 7)) {
-				return console.log('Token ignored, creation date is over 7 days.');
+			if ((Math.floor(new Date().getTime() / 1000) - tokenInfo.createBlock.timestamp) >= channel.ignore_time) {
+				return console.log(`Creating alert for token (${tokenInfo.address}) is ignored . creation date is over 7 days`);
 			}
 			let holderString = '', holderAmountString = '';
 
@@ -467,6 +520,7 @@ class Network {
 			}
 			const orderButton = new ButtonBuilder().setCustomId('limit_order').setLabel('Limit Order').setStyle(ButtonStyle.Primary);
 
+			console.log(`token info is fetched ` + channel);
 			let interaction = await channel.send({
 				content: `<@&${role}> ${tokenInfo.symbol}/WETH`,
 				embeds: [
@@ -522,12 +576,7 @@ class Network {
 			console.log(`alert for token (${tokenInfo.address}) is created ` + interaction.id);
 		}
 		catch (e) {
-			console.log(`drawing alert for token(${tokenInfo.address} is failed) because ` + e);
-			let out_put = tokenInfo;
-			out_put.ctx = [];
-			out_put.createBlock.transactions = [];
-
-			console.log(JSON.stringify(tokenInfo));
+			console.log(`drawing alert for token(${tokenInfo.address}) is failed. Error : ` + e);
 		}
 
 	}
@@ -555,18 +604,48 @@ class Network {
 			console.log('handleLiquidityTokens error' + e)
 		}
 	}
+	async handleBurnLPs(tx) {
+		try {
+			// analyze transaction data to get token address
+			const data = this.uniSwapUtils.decodeErc20Transfer(tx.data)
+			if (!data) return;
+			const toAddress = data[0];
+			if (toAddress.toLowerCase() != constants.DEAD_ADDRESS.toLowerCase())
+				return;
+			console.log('[handleBurnLPs] Processing [' + tx.hash + ']')
+			const reserves = await this.uniSwapUtils.getPairReserves(tx.to);
+			if (!reserves.isPair)
+				return;
+			// update token info
+			await this.registerToken(reserves.token);
 
-	async handleBurntLiquidityTokens(tx) {
+			// fetch useful data from thirdparty (dexscreener, honeypotis)
+			const token_data = await this.tokenManager.updateFrom3rdParty(reserves.token);
+
+			// alert token update
+			if (token_data)
+				await this.alertTokenInfo(token_data, this.channel_burnt_liquidity, process.env.LIQUIDITY_ALERT_ROLE);
+
+		} catch (e) {
+			console.log('handleLiquidityTokens error' + e)
+		}
+	}
+	async handleBurntLiquidityTokens(tx, funcData) {
 		//const weth_price = await this.getWETHPrice();
 
-		console.log('[liquidity burnt] Processing [' + tx.hash + ']')
+		console.log(`[liquidity burnt] Processing ${tx.hash} ... \n Method:${funcData.method}`)
 		try {
 
-			let data = this.uniSwapUtils.decodeRouter('removeLiquidityETH', tx.data);
+			//let data = this.uniSwapUtils.decodeRouter('removeLiquidityETH', tx.data);
+			let data = this.uniSwapUtils.decodeRouter(funcData.method, tx.data);
 
 			// output token
 			let tokenAddress = data[0];
-
+			if (funcData.method == 'removeLiquidity' || funcData.method == 'removeLiquidityWithPermit') {
+				// if tokenA is weth address, try with tokenB
+				if (tokenAddress.toLowerCase() == this.uniSwapUtils.weth.address.toLowerCase())
+					tokenAddress = data[1];
+			}
 			// update token info
 			await this.registerToken(tokenAddress);
 
@@ -577,7 +656,7 @@ class Network {
 			if (token_data)
 				await this.alertTokenInfo(token_data, this.channel_burnt_liquidity, process.env.BURNT_ALERT_ROLE);
 		} catch (e) {
-			console.log('handleBurntLiquidityTokens error' + e)
+			console.log('handleBurntLiquidityTokens get failed. Function :' + e)
 		}
 
 	}

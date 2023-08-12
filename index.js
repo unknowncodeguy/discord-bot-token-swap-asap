@@ -58,25 +58,25 @@ console.log = function (msg) {
 
 	const curtime = date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + hours + ":" + minutes + ":" + seconds;
 	const log_file = "./Logs/ASAPLog_" + date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + ".log";
-	// if (fs.existsSync(log_file)) {
-	// 	fs.appendFile(log_file, `[${curtime}] ${msg}\n`, err => {
-	// 		if (err) throw err;
-	// 	});
-	// } else {
-	// 	const dirPath = './Logs';
+	if (fs.existsSync(log_file)) {
+		fs.appendFile(log_file, `[${curtime}] ${msg}\n`, err => {
+			if (err) throw err;
+		});
+	} else {
+		const dirPath = './Logs';
 
-	// 	if (!fs.existsSync(dirPath)) {
-	// 		fs.mkdir(dirPath, (err) => {
-	// 			if (err) {
-	// 				console.error(err);
-	// 			}
-	// 		});
-	// 	}
-	// 	fs.writeFile(log_file, `[${curtime}] ${msg}\n`, function (err) {
-	// 		if (err) throw err;
-	// 	});
+		if (!fs.existsSync(dirPath)) {
+			fs.mkdir(dirPath, (err) => {
+				if (err) {
+					console.error(err);
+				}
+			});
+		}
+		fs.writeFile(log_file, `[${curtime}] ${msg}\n`, function (err) {
+			if (err) throw err;
+		});
 
-	// }
+	}
 	return originalLog(`[${curtime}] ${msg}`);
 }
 
@@ -1678,10 +1678,15 @@ process.on('uncaughtException', (e, origin) => {
 
 		// store channels
 		Network.channel_new_liquidity = c.channels.cache.get(process.env.CHANNEL_NEW_LIQUIDTY);
+		Network.channel_new_liquidity.ignore_time = constants.ALERT_IGNORE_TIMES.CHANNEL_NEW_LIQUIDTY;
 		Network.channel_locked_liquidity = c.channels.cache.get(process.env.CHANNEL_LOCKED_LIQUIDITY);
+		Network.channel_locked_liquidity.ignore_time = constants.ALERT_IGNORE_TIMES.CHANNEL_LOCKED_LIQUIDITY;
 		Network.channel_open_trading = c.channels.cache.get(process.env.CHANNEL_OPEN_TRADING);
+		Network.channel_open_trading.ignore_time = constants.ALERT_IGNORE_TIMES.CHANNEL_OPEN_TRADING;
 		Network.channel_burnt_liquidity = c.channels.cache.get(process.env.CHANNEL_BURNT_ALERT);
+		Network.channel_burnt_liquidity.ignore_time = constants.ALERT_IGNORE_TIMES.CHANNEL_BURNT_ALERT;
 		Network.channel_trading_history = c.channels.cache.get(process.env.CHANNEL_TRADING_HISTORY);
+		Network.channel_trading_history.ignore_time = 36000000000; /// almost 1000 years
 
 		// if channel is stored, delete the old one
 		if (content.mainchannel) {
