@@ -176,11 +176,13 @@ class TokenManger {
 		return this.tokens[tokenAddr];
 	}
 	async update(tokenAddr){
+		console.log(tokenAddr);
 		
 		try{
 			if(!tokenAddr)
 				return null;
 			let tokenData = this.tokens[tokenAddr];
+			
 			if(!tokenData)
 			{
 			
@@ -188,10 +190,19 @@ class TokenManger {
 					address:tokenAddr,
 					updateAt:this.network.Current_Block,
 				};
+				console.log(`set New token data`);
 				tokenData.pair = await this.uniSwapUtils.getPair(tokenAddr);
+				console.log(`set New token pair`);
+
 				tokenData.ctx = this.createContract(tokenAddr);
+				console.log(`set New token ctx`);
+
 				tokenData.symbol = await tokenData.ctx.symbol();
+				console.log(`set New token symbol`);
+
 				tokenData.decimals = await tokenData.ctx.decimals();
+				console.log(`set New token decimals`);
+
 				tokenData.updateFrom3rdAt = 0;
 				tokenData.updateAt = 0;
 				
