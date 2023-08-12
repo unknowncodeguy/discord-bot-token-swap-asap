@@ -1167,7 +1167,7 @@ class ASAPUser {
 			const codes = inviteUrl.match(/discord\.gg\/(.+)/)[1];
 			return codes.split("#")[0];
 		}
-		catch(er) {
+		catch(err) {
 			console.log(`Couldn't extract invite code from ${inviteUrl} with error: ${err}`);
 		}
 
