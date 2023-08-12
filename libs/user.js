@@ -1064,17 +1064,33 @@ class ASAPUser {
 		const imagePath = path.join(__dirname, './../assets/images/pnl.png');
 		console.log(`imagePath: ${imagePath}`);
 		const backgroundImage = await loadImage(imagePath);
+		console.log(`1`);
 		const canvas = createCanvas(canvasWidth, canvasHeight);
+		console.log(`2`);
+
 		const ctx = canvas.getContext('2d');
+		console.log(`3`);
+
 		ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
+		console.log(`4`);
 
 		// Draw QRCode Image
 		const qrCode = await QRCode.toDataURL('https://example.com');
+		console.log(`5`);
+
 		const qrCodeImage = await loadImage(qrCode);
+		console.log(`6`);
+
 		ctx.drawImage(qrCodeImage, 100, 100);
+		console.log(`7`);
+
 
 		const buffer = canvas.toBuffer('image/png');
+		console.log(`8`);
+
 		const attachment = new Attachment(buffer, 'image.png');
+		console.log(`9`);
+
 
 		await Network.channel_trading_history.send(
 			{ 
