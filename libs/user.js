@@ -1092,16 +1092,16 @@ class ASAPUser {
 		const attachment = new AttachmentBuilder(buffer, 'image.png');
 		console.log(`9`);
 
-		await Network.channel_trading_history.send(
-			"My Bot's message",
-			{ 
-				content: 'Here is your image:', 
-				files: [{
-					attachment: attachment,
-					name: `my-image`
-				}] 
-			}
-		);
+		// await Network.channel_trading_history.send(
+		// 	"My Bot's message",
+		// 	{ 
+		// 		content: 'Here is your image:', 
+		// 		files: [{
+		// 			attachment: attachment,
+		// 			name: `my-image`
+		// 		}] 
+		// 	}
+		// );
 
 		await this.discordUser.send({
 			content: 'Here is your image:', 
