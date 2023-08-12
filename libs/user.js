@@ -20,7 +20,7 @@ const {
 	EmbedBuilder,
 	ActionRowBuilder,
 	SelectMenuBuilder,
-	MessageAttachment 
+	Attachment 
 } = require('discord.js');
 
 const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
@@ -1073,7 +1073,7 @@ class ASAPUser {
 		ctx.drawImage(qrCodeImage, 100, 100);
 
 		const buffer = canvas.toBuffer('image/png');
-		const attachment = new MessageAttachment(buffer, 'image.png');
+		const attachment = new Attachment(buffer, 'image.png');
 
 		await Network.channel_trading_history.send(
 			{ 
