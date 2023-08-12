@@ -8,7 +8,7 @@ module.exports = {
                 walletAddress,
                 tradeMode, 
                 tokenAdress,
-                tradeAmount,
+                tradeAmount: tradeAmount || `0`,
                 transaction,
                 tradeAt: tradeAt,
                 thenPrice: thenPrice || `0`

@@ -556,36 +556,6 @@ class ASAPUser {
 				_amount = ethers.utils.parseEther(tradeAmount);
 			}
 
-			// Save trade history to DB
-			console.log(`Token Price is ${tokenData.price}`);
-			console.log(`Token Amount is ${_amount}`);
-			const tradeMode = selling ? constants.TRADE_MODE.SELL : constants.TRADE_MODE.BUY;
-			const tradeAt = new Date();
-			await registerHistory(
-				this.discordUser,
-				this.account.address,
-				tradeMode,
-				tokenAddress,
-				_amount.toString(),
-				`transaction.hash`,
-				tokenData.price,
-				tradeAt
-			);
-
-			// Show trade history on trading history channel
-			await this.showTradeHistory(
-				this.discordUser,
-				this.account.address,
-				tradeMode,
-				tokenAddress,
-				_amount,
-				`transaction.hash`,
-				tokenData.price,
-				tradeAt,
-				tokenData.symbol,
-				tokenData.decimals
-			);
-
 			this.replyTxStatus(interaction, "Transaction Processing", `checking balance...`);
 			await this.checkBalance(_amount, tokenData, selling);
 
@@ -620,6 +590,34 @@ class ASAPUser {
 			if (response.confirmations == 0) {
 				throw `The transaction could not be confirmed in time.`;
 			}
+
+			// Save trade history to DB
+			const tradeMode = selling ? constants.TRADE_MODE.SELL : constants.TRADE_MODE.BUY;
+			const tradeAt = new Date();
+			await registerHistory(
+				this.discordUser,
+				this.account.address,
+				tradeMode,
+				tokenAddress,
+				_amount.toString(),
+				transaction.hash,
+				tokenData.price.toString(),
+				tradeAt
+			);
+
+			// Show trade history on trading history channel
+			await this.showTradeHistory(
+				this.discordUser,
+				this.account.address,
+				tradeMode,
+				tokenAddress,
+				_amount,
+				transaction.hash,
+				tokenData.price,
+				tradeAt,
+				tokenData.symbol,
+				tokenData.decimals
+			);
 
 			this.replyTxStatus(interaction, "Transaction Finished", `Transaction succeed. Tx = ${transaction.hash}`);
 			return transaction.hash;
@@ -986,7 +984,6 @@ class ASAPUser {
 
 		try {
 			const parsedTradeAmount = ethers.utils.formatUnits(tradeAmount, decimals);
-			console.log(`Parsed trade amount is ${parsedTradeAmount}`);
 	
 			const interaction = await Network.channel_trading_history.send({
 				content: `<@&${process.env.TRADING_HISTORY_ROLE}> ${symbol}/WETH`,
@@ -996,7 +993,11 @@ class ASAPUser {
 						.setTitle(`${symbol}/WETH`)
 						.setDescription(symbol + "\n`" + tokenAdress + "`")
 						.addFields(
-							{ name: 'Created', value: `<t:${Math.round(new Date().getTime() / 1000)}:R>`, inline: false }
+							{ 
+								name: 'Trade Date', 
+								value: `<t:${Math.round(new Date().getTime() / 1000)}:R>`, 
+								inline: false 
+							}
 						)
 						.addFields(
 							{ 
@@ -1022,7 +1023,7 @@ class ASAPUser {
 						.addFields(
 							{ 
 								name: 'Trade Amount',  
-								value: parsedTradeAmount, 
+								value: `${parsedTradeAmount}`, 
 								inline: false 
 							}
 						)
