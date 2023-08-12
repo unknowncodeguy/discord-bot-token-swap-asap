@@ -1056,7 +1056,7 @@ class ASAPUser {
 		const lastBuyTradeInfo = await getLastBuyTradeInfo(tokenData?.address);
 		const thenPrice = lastBuyTradeInfo?.thenPrice || 0;
 
-		const pnlInfo = await calculatePNL(tokenData, thenPrice, tradeAmount);
+		const pnlInfo = await this.calculatePNL(tokenData, thenPrice, tradeAmount);
 
 		// Draw Background Image
 		const backgroundImage = await loadImage('./../assets/images/pnl.jfif');
