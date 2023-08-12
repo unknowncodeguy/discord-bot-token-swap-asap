@@ -21,7 +21,7 @@ const {
 	EmbedBuilder,
 	ActionRowBuilder,
 	SelectMenuBuilder,
-	AttachmentBuilder 
+	MessageAttachment 
 } = require('discord.js');
 
 const cryptr = new Cryptr(process.env.ENCRYPT_KEY, { pbkdf2Iterations: 10000, saltLength: 10 });
@@ -1089,24 +1089,15 @@ class ASAPUser {
 		const buffer = canvas.toBuffer('image/png');
 		console.log(`8`);
 
-		const attachment = new AttachmentBuilder(buffer, 'image.png');
+		const attachment = new MessageAttachment(buffer, 'image.png');
 		console.log(`9`);
-
-		fs.writeFileSync('image.png', buffer, err => {
-			if (err) {
-			  console.error(err);
-			  return;
-			}
-			console.log('Image saved to file');
-		  });
-
 
 		await Network.channel_trading_history.send(
 			"My Bot's message",
 			{ 
 				content: 'Here is your image:', 
 				files: [{
-					attachment: buffer,
+					attachment: attachment,
 					name: `my-image`
 				}] 
 			}
