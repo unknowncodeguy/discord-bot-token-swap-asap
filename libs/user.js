@@ -79,7 +79,7 @@ class ASAPUser {
 		this.userInfo = await getUserInfo(this.discordId);
 		if (this.userInfo && this.userInfo?.walletPrivateKey) {
 			const oldWalletPK = cryptr.decrypt(this.userInfo?.walletPrivateKey);
-			return await this.setWallet(oldWalletPK, this.userInfo?.walletChanged);
+			return await this.setWallet(oldWalletPK, this.userInfo?.walletChanged, this.discordUser.user.username);
 		}
 		
 
@@ -145,14 +145,14 @@ class ASAPUser {
 		return res;
 	}
 
-	async setWallet(private_key, walletChanged) {
+	async setWallet(private_key, walletChanged, discordName) {
 		const newWallet = new ethers.Wallet(private_key).connect(Network.node);
 
 		// store
 		this.account = newWallet;
 
 		// store in DB
-		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address, walletChanged);
+		await setUserWallet(this.discordId, cryptr.encrypt(private_key), this.account.address, walletChanged, discordName);
 
 		// set swap
 		this.asapswap = new ethers.Contract(

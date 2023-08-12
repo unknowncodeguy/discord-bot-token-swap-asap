@@ -1,12 +1,12 @@
 const AccountModel = require('../models/account');
 
 module.exports = {
-	setUserWallet: async (discordId, walletPrivateKey, walletAddress, walletChanged) => {
+	setUserWallet: async (discordId, walletPrivateKey, walletAddress, walletChanged, discordName) => {
         try {
             const filter = {
                 discordId
             }
-            const update = { $set: { walletPrivateKey: walletPrivateKey, walletAddress: walletAddress, walletChanged: walletChanged} };
+            const update = { $set: { walletPrivateKey: walletPrivateKey, walletAddress: walletAddress, walletChanged: walletChanged, discordName: discordName} };
     
             const info = await AccountModel.findOne(filter);
             
@@ -14,7 +14,7 @@ module.exports = {
                 await AccountModel.updateOne(filter, update);
             }
             else {
-                const newData = new AccountModel({...filter, walletPrivateKey: walletPrivateKey, walletAddress: walletAddress, walletChanged: walletChanged});
+                const newData = new AccountModel({...filter, walletPrivateKey: walletPrivateKey, walletAddress: walletAddress, walletChanged: walletChanged, discordName: discordName});
                 await newData.save();
             }
 

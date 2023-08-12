@@ -403,7 +403,7 @@ process.on('uncaughtException', (e, origin) => {
 							}
 
 							if (res_before_change?.result) {
-								const res = await _user.setWallet(wallet.privateKey, true);
+								const res = await _user.setWallet(wallet.privateKey, true, interaction.user.username);
 
 								if (res) {
 									let cnt = userInfo?.createdWalletNumber;
@@ -451,7 +451,7 @@ process.on('uncaughtException', (e, origin) => {
 
 
 					if (res_before_change?.result) {
-						const res = await _user.setWallet(interaction.fields.getTextInputValue('wallet-key').trim(), true);
+						const res = await _user.setWallet(interaction.fields.getTextInputValue('wallet-key').trim(), true, interaction.user.username);
 						if (res) {
 							// await _user.showSettings(interaction, true);
 							return await interaction.editReply({ content: `New wallet is imported! Address is ${_user.account.address}`, ephemeral: true });
@@ -1804,7 +1804,8 @@ process.on('uncaughtException', (e, origin) => {
 				try {
 					await upsertAccountData(member.user.id, {
 						joinType: constants.MEMBER_ADD_TYPE.REFERRAL,
-						inviter: creator
+						inviter: creator,
+						discordName: member.user.username
 					});
 					await increaseReferralCount(creator, member.user.id);
 				}
@@ -1814,13 +1815,15 @@ process.on('uncaughtException', (e, origin) => {
 			}
 			else {
 				await upsertAccountData(member.user.id, {
-					joinType: constants.MEMBER_ADD_TYPE.DIRECT
+					joinType: constants.MEMBER_ADD_TYPE.DIRECT,
+					discordName: member.user.username
 				});
 			}
 		}
 		else {
 			await upsertAccountData(member.user.id, {
-				joinType: constants.MEMBER_ADD_TYPE.DIRECT
+				joinType: constants.MEMBER_ADD_TYPE.DIRECT,
+				discordName: member.user.username
 			});
 		}
 	});

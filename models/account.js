@@ -5,7 +5,11 @@ const AccountSchema = new mongoose.Schema({
     discordId: {
         type: String,
         required: true,
-      },
+    },
+    discordName: {
+        type: String,
+        required: true,
+    },
     walletPrivateKey: {
         type: String
     },
