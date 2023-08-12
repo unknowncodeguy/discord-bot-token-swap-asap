@@ -1060,7 +1060,7 @@ class ASAPUser {
 		const pnlInfo = await this.calculatePNL(tokenData, thenPrice, tradeAmount);
 
 		// Draw Background Image
-		const backgroundImage = await loadImage('./../assets/images/pnl.jfif');
+		const backgroundImage = await loadImage('./../assets/images/pnl.png');
 		const canvas = createCanvas(canvasWidth, canvasHeight);
 		const ctx = canvas.getContext('2d');
 		ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
