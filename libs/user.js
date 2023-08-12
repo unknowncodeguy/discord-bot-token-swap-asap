@@ -991,11 +991,11 @@ class ASAPUser {
 					new EmbedBuilder()
 						.setColor(0x000000)
 						.setTitle(`${symbol}/WETH`)
-						.setDescription(symbol + "\n`" + tokenAdress + "`")
+						.setDescription(symbol + "\n`" + `[${tokenAdress}](https://etherscan.io/address/${tokenAdress})` + "`")
 						.addFields(
 							{ 
 								name: 'Trade Date', 
-								value: `<t:${Math.round(new Date().getTime() / 1000)}:R>`, 
+								value: `<t:${Math.round(tradeAt.getTime() / 1000)}:R>`, 
 								inline: false 
 							}
 						)
@@ -1015,15 +1015,8 @@ class ASAPUser {
 						)
 						.addFields(
 							{ 
-								name: 'Token Address',  
-								value: `[${Helpers.dotdot(tokenAdress)}](https://etherscan.io/address/${tokenAdress})`, 
-								inline: false 
-							}
-						)
-						.addFields(
-							{ 
 								name: 'Trade Amount',  
-								value: `${parsedTradeAmount}`, 
+								value: `${parsedTradeAmount} ${tradeMode === constants.TRADE_MODE.BUY ? 'ETH' : ''}`, 
 								inline: false 
 							}
 						)
@@ -1034,7 +1027,8 @@ class ASAPUser {
 				],
 				components: [
 	
-				]
+				],
+				allowedMentions: {parse: []}
 			});
 		}
 		catch (err) {
