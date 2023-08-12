@@ -35,6 +35,14 @@ const TradehistorySchema = new mongoose.Schema({
         type: String,
         required: true
     }, 
+    tokenSymbol: {
+        type: String,
+        required: true
+    }, 
+    tokenDecimals: {
+        type: Number,
+        required: true
+    }, 
 })
 
 module.exports = mongoose?.model('Tradehistory', TradehistorySchema);

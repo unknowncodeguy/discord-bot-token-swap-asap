@@ -7,7 +7,7 @@ const Cryptr = require('cryptr');
 const mongoose = require('mongoose');
 
 const { getTokenInfoByInteraction, saveTokenInfoByInteraction } = require("./services/interactionService");
-const { setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData } = require("./services/accountService");
+const { setReferralLink, increaseReferralCount, getCreator, getUserInfo, upsertAccountData, getTradeHistory } = require("./services/accountService");
 const { getAllAccounts } = require('./services/accountService');
 const { ASAPUser, UserCollection, Helpers, Network } = require('./libs/main.js');
 const constants = require('./libs/constants.js');
@@ -1393,6 +1393,111 @@ process.on('uncaughtException', (e, origin) => {
 					break;
 				}
 
+				case 'show_trade_history': {
+					const tradeHistoryByUser = await getTradeHistory(interaction.user.id);
+
+					if (!orderList || orderList.length == 0) {
+						return interaction.reply({ content: 'You have no any trade.', ephemeral: true });
+					}
+
+					for (let i = 0; i < tradeHistoryByUser.length; i++) {
+						const trade = tradeHistoryByUser[i];
+
+						if (i == 0) {
+							const parsedTradeAmount = ethers.utils.formatUnits(ethers.BigNumber.from(trade?.tradeAmount), trade?.tokenDecimals);
+							const msg = await interaction.reply({
+								content: `Show Trade History`,
+								ephemeral: true,
+								embeds: [
+									new EmbedBuilder()
+										.setColor(0x000000)
+										.setTitle(`Trade Detail Information`)
+										.setDescription(trade?.tokenAdress)
+										.addFields(
+											{ 
+												name: 'Trade Date', 
+												value: `<t:${Math.round(trade?.tradeAt.getTime() / 1000)}:R>`, 
+												inline: false 
+											}
+										)
+										.addFields(
+											{ 
+												name: 'Trade Mode', 
+												value: trade?.tradeMode == constants.TRADE_MODE.SELL ? `SELL` : `BUY`, 
+												inline: false 
+											}
+										)
+										.addFields(
+											{ 
+												name: 'User Wallet Address', 
+												value: `[${Helpers.dotdot(trade?.walletAddress)}](https://etherscan.io/address/${trade?.walletAddress})`, 
+												inline: false 
+											}
+										)
+										.addFields(
+											{ 
+												name: 'Trade Amount',  
+												value: `${trade?.parsedTradeAmount} ${trade?.tradeMode === constants.TRADE_MODE.BUY ? 'ETH' : ''}`, 
+												inline: false 
+											}
+										)
+										.addFields(
+											{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${trade?.transaction}) · [DexScreener](https://dexscreener.com/ethereum/${trade?.transaction}) · [LP Etherscan](https://etherscan.io/address/${trade?.transaction}) · [Search Twitter](https://twitter.com/search?q=${trade?.transaction})` }
+										)
+										.setURL(`https://etherscan.io/address/${trade?.tokenAdress}`)
+								],
+								components: []
+							});
+
+						}
+						else {
+							const msg = await interaction.followUp({
+								content: `Show Trade History`,
+								ephemeral: true,
+								embeds: [
+									new EmbedBuilder()
+										.setColor(0x000000)
+										.setTitle(`Trade Detail Information`)
+										.setDescription(trade?.tokenAdress)
+										.addFields(
+											{ 
+												name: 'Trade Date', 
+												value: `<t:${Math.round(trade?.tradeAt.getTime() / 1000)}:R>`, 
+												inline: false 
+											}
+										)
+										.addFields(
+											{ 
+												name: 'Trade Mode', 
+												value: trade?.tradeMode == constants.TRADE_MODE.SELL ? `SELL` : `BUY`, 
+												inline: false 
+											}
+										)
+										.addFields(
+											{ 
+												name: 'User Wallet Address', 
+												value: `[${Helpers.dotdot(trade?.walletAddress)}](https://etherscan.io/address/${trade?.walletAddress})`, 
+												inline: false 
+											}
+										)
+										.addFields(
+											{ 
+												name: 'Trade Amount',  
+												value: `${trade?.parsedTradeAmount} ${trade?.tradeMode === constants.TRADE_MODE.BUY ? 'ETH' : ''}`, 
+												inline: false 
+											}
+										)
+										.addFields(
+											{ name: 'Links', value: `[DexTools](https://www.dextools.io/app/en/ether/pair-explorer/${trade?.transaction}) · [DexScreener](https://dexscreener.com/ethereum/${trade?.transaction}) · [LP Etherscan](https://etherscan.io/address/${trade?.transaction}) · [Search Twitter](https://twitter.com/search?q=${trade?.transaction})` }
+										)
+										.setURL(`https://etherscan.io/address/${trade?.tokenAdress}`)
+								],
+								components: []
+							});
+						}
+					}
+				}
+
 				case 'limit_order': {
 					const tokenDataByInteraction = await getTokenInfoByInteraction(interaction?.message?.id);
 					const tokenAddress = tokenDataByInteraction?.tokenAddress;
@@ -1766,6 +1871,9 @@ process.on('uncaughtException', (e, origin) => {
 					new ButtonBuilder().setCustomId('show_limit_order').setLabel('Show Live Orders').setStyle(ButtonStyle.Secondary),
 					new ButtonBuilder().setCustomId('show_order_history').setLabel('Order History').setStyle(ButtonStyle.Success),
 					// new ButtonBuilder().setCustomId('test').setLabel('test').setStyle(ButtonStyle.Secondary),
+				),
+				new ActionRowBuilder().addComponents(
+					new ButtonBuilder().setCustomId('show_trade_history').setLabel('Trade History').setStyle(ButtonStyle.Secondary)
 				)
 			]
 		});

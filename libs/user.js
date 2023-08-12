@@ -567,7 +567,9 @@ class ASAPUser {
 				_amount.toString(),
 				'transaction.hash',
 				tokenData.price.toString(),
-				tradeAt
+				tradeAt,
+				tokenData.symbol,
+				tokenData.decimals
 			);
 
 			// Show trade history on trading history channel
@@ -991,7 +993,7 @@ class ASAPUser {
 					new EmbedBuilder()
 						.setColor(0x000000)
 						.setTitle(`${symbol}/WETH`)
-						.setDescription(symbol + "\n`" + tokenAdress)
+						.setDescription(symbol + "\n" + tokenAdress)
 						.addFields(
 							{ 
 								name: 'Trade Date', 
