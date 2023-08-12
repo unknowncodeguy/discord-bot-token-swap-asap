@@ -80,6 +80,8 @@ class UniSwapUtils {
 		if(token_addr.toLowerCase() == this.weth.address)
 			throw new Error("token address could not be weth address. " );
 	
+		console.log("this.factory: " + this.factory.address );
+		
 		let pairAddress = await this.factory.getPair(this.weth.address, token_addr);
 		console.log("pairAddress: " + pairAddress );
 
