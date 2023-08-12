@@ -990,7 +990,7 @@ class ASAPUser {
 				embeds: [
 					new EmbedBuilder()
 						.setColor(0x000000)
-						.setTitle(``)
+						.setTitle(`${symbol}/WETH`)
 						.setDescription(symbol + "\n`" + tokenAdress)
 						.addFields(
 							{ 
