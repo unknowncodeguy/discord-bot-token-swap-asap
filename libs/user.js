@@ -1054,16 +1054,17 @@ class ASAPUser {
 
 	async showPNLData(tokenData, tradeAmount) {
 		const lastBuyTradeInfo = await getLastBuyTradeInfo(tokenData?.address);
-		
 		const thenPrice = lastBuyTradeInfo?.thenPrice || 0;
 
 		const pnlInfo = await calculatePNL(tokenData, thenPrice, tradeAmount);
 
+		// Draw Background Image
 		const backgroundImage = await loadImage('./../assets/images/pnl.jfif');
 		const canvas = createCanvas(canvasWidth, canvasHeight);
 		const ctx = canvas.getContext('2d');
 		ctx.drawImage(backgroundImage, 0, 0, canvasWidth, canvasHeight);
 
+		// Draw QRCode Image
 		const qrCode = await QRCode.toDataURL('https://example.com');
 		const qrCodeImage = await loadImage(qrCode);
 		ctx.drawImage(qrCodeImage, 100, 100);
