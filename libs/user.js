@@ -1062,6 +1062,7 @@ class ASAPUser {
 
 		// Draw Background Image
 		const imagePath = path.join(__dirname, './../assets/images/pnl.png');
+		console.log(`imagePath: ${imagePath}`);
 		const backgroundImage = await loadImage(imagePath);
 		const canvas = createCanvas(canvasWidth, canvasHeight);
 		const ctx = canvas.getContext('2d');
