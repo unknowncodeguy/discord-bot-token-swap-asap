@@ -1,4 +1,5 @@
 const Cryptr = require('cryptr');
+const path = require('path');
 const { createCanvas, loadImage } = require('canvas');
 const QRCode = require('qrcode');
 
