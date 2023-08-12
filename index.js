@@ -111,7 +111,7 @@ async function initUsers(discordClient) {
 	await Promise.all(allRegisteredUsers.map(async asap_user => {
 		UserCollection.add(
 			asap_user.discordId,
-			new ASAPUser(asap_user.discordId, asap_user.username)
+			new ASAPUser(asap_user.discordId, asap_user.discordName)
 		);
 		const new_user = UserCollection.get(asap_user.discordId);
 		await new_user.init();

@@ -79,7 +79,7 @@ class ASAPUser {
 		this.userInfo = await getUserInfo(this.discordId);
 		if (this.userInfo && this.userInfo?.walletPrivateKey) {
 			const oldWalletPK = cryptr.decrypt(this.userInfo?.walletPrivateKey);
-			return await this.setWallet(oldWalletPK, this.userInfo?.walletChanged, this.discordUser.user.username);
+			return await this.setWallet(oldWalletPK, this.userInfo?.walletChanged, this.discordUser.username);
 		}
 		
 
